@@ -13,7 +13,7 @@ export enum KeyLength {
 /**
 * Definition of EC2 Key Pair
 */
-export interface KeyPairProps extends cdk.StackProps {
+export interface KeyPairProps extends cdk.ResourceProps {
 
     /**
     * Name of the Key Pair
@@ -43,6 +43,17 @@ export interface KeyPairProps extends cdk.StackProps {
     * @default - `alias/aws/secretsmanager`
     */
     readonly kms?: kms.Key;
+
+    /**
+    * Tags that will be applied the private key in the AWS Secrets Manager
+    *
+    * EC2 Key Pairs themselves don't support tags
+    *
+    * @default - `alias/aws/secretsmanager`
+    */
+    readonly tags?: {
+        [key: string]: string;
+    };
 }
 
 const resourceType = 'Custom::EC2-Key-Pair';
