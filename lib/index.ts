@@ -85,6 +85,10 @@ export class KeyPair extends cdk.Construct {
         const stack = cdk.Stack.of(this).stackName;
         const fn = this.ensureLambda();
 
+        if (typeof props.kms !== 'undefined') {
+            props.kms.grantEncrypt(fn.role!);
+        }
+
         const tags = props.tags || {};
         tags.CreatedBy = ID;
 
