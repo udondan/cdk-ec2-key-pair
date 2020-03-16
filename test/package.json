@@ -1,0 +1,22 @@
+{
+  "name": "test",
+  "version": "0.0.0",
+  "bin": {
+    "test": "bin/test.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "cdk": "cdk"
+  },
+  "devDependencies": {
+    "@aws-cdk/assert": "^1.24.0",
+    "@types/node": "10.17.5",
+    "aws-cdk": "1.27.0",
+    "ts-node": "^8.1.0",
+    "typescript": "~3.7.2"
+  },
+  "dependencies": {
+    "@aws-cdk/core": "^1.24.0",
+    "source-map-support": "^0.5.16"
+  }
+}
