@@ -40,6 +40,8 @@ export interface KeyPairProps extends cdk.ResourceProps {
     /**
     * The KMS key to use to encrypt the private key with
     *
+    * This needs to be a key created in the same stack. You cannot use a key imported via ARN.
+    *
     * @default - `alias/aws/secretsmanager`
     */
     readonly kms?: kms.Key;
@@ -85,10 +87,6 @@ export class KeyPair extends cdk.Construct {
         const stack = cdk.Stack.of(this).stackName;
         const fn = this.ensureLambda();
 
-        if (typeof props.kms !== 'undefined') {
-            props.kms.grantEncrypt(fn.role!);
-        }
-
         const tags = props.tags || {};
         tags.CreatedBy = ID;
 
@@ -102,8 +100,14 @@ export class KeyPair extends cdk.Construct {
                 kms: props.kms?.keyArn || 'alias/aws/secretsmanager',
                 StackName: stack,
                 tags: tags,
-            }
+            },
         });
+
+        if (typeof props.kms !== 'undefined') {
+            props.kms.grantEncrypt(fn.role!);
+            key.node.addDependency(props.kms);
+            key.node.addDependency(fn.role!);
+        }
 
         this.arn = key.getAttString('PrivateKeyARN');
         this.name = key.getAttString('KeyPairName');
