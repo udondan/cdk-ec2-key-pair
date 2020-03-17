@@ -19,7 +19,16 @@
   "bugs": {
     "url": "https://github.com/udondan/cdk-ec2-key-pair/issues"
   },
-  "keywords": [],
+  "keywords": [
+    "aws",
+    "cdk",
+    "aws-cdk",
+    "aws-cdk-construct",
+    "ec2",
+    "ec2-key-pair",
+    "cloudformation",
+    "cloudformation-custom-resource"
+  ],
   "stability": "stable",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",

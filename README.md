@@ -9,22 +9,29 @@
 
 [AWS CDK] L3 construct for managing [EC2 Key Pairs].
 
-CloudFormation does not directly support creation of EC2 Key Pairs. This construct provides an easy interface for creating Key Pairs through a [custom CloudFormation resource]. The private key is stored in [AWS Secrets Manager].
+CloudFormation doesn't directly support creation of EC2 Key Pairs. This construct provides an easy interface for creating Key Pairs through a [custom CloudFormation resource]. The private key is stored in [AWS Secrets Manager].
 
 ## Usage
 
 ```typescript
 import cdk = require('@aws-cdk/core');
+import ec2 = require('@aws-cdk/aws-ec2');
 import { KeyPair } from 'cdk-ec2-key-pair';
 
-// Create the Private Key
+// Create the Key Pair
 const key = new KeyPair(this, 'A-Key-Pair', {
     name: 'a-key-pair',
     description: 'This is a Key Pair',
 });
 
-// Grant read access to a role or user
+// Grant read access to the private key to a role or user
 key.grantRead(someRole)
+
+// Use Key Pair on an EC2 instance
+new ec2.Instance(this, 'An-Instance', {
+    keyName: key.name,
+    // ...
+})
 ```
 
 The private key will be stored in AWS Secrets Manager. The secret name is prefixed with `ec2-private-key/`, so in this example it will be saved as `ec2-private-key/a-key-pair`.
