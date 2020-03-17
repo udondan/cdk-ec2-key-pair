@@ -5,6 +5,11 @@ import lambda = require('@aws-cdk/aws-lambda');
 import cdk = require('@aws-cdk/core');
 import path = require('path');
 
+const resourceType = 'Custom::EC2-Key-Pair';
+const ID = `CFN::Resource::${resourceType}`;
+const cleanID = ID.replace(/:+/g, '-');
+const lambdaTimeout = 3; // minutes
+
 export enum KeyLength {
     L2048 = 2048,
     L4096 = 4096,
@@ -58,11 +63,6 @@ export interface KeyPairProps extends cdk.ResourceProps {
     };
 }
 
-const resourceType = 'Custom::EC2-Key-Pair';
-const ID = `CFN::Resource::${resourceType}`;
-const cleanID = ID.replace(/:+/g, '-');
-const lambdaTimeout = 3; // minutes
-
 /**
 * An EC2 Key Pair
 */
@@ -104,7 +104,7 @@ export class KeyPair extends cdk.Construct {
         });
 
         if (typeof props.kms !== 'undefined') {
-            props.kms.grantEncrypt(fn.role!);
+            props.kms.grantEncryptDecrypt(fn.role!);
             key.node.addDependency(props.kms);
             key.node.addDependency(fn.role!);
         }
