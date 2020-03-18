@@ -52,7 +52,7 @@ export interface KeyPairProps extends cdk.ResourceProps {
     readonly kms?: kms.Key;
 
     /**
-    * Tags that will be applied the private key in the AWS Secrets Manager
+    * Tags that will be applied to the private key in the AWS Secrets Manager
     *
     * EC2 Key Pairs themselves don't support tags
     *
@@ -194,7 +194,7 @@ export class KeyPair extends cdk.Construct {
     }
 
     /**
-    * Grants read access to the private key in the AWS Secrets Manager
+    * Grants read access to the private key in AWS Secrets Manager
     */
     grantRead(grantee: iam.IGrantable) {
         const result = iam.Grant.addToPrincipal({

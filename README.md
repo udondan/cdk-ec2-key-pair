@@ -1,4 +1,4 @@
-# CDK SSM Document
+# CDK EC2 Key Pair
 
 [![Source](https://img.shields.io/badge/Source-GitHub-blue)][source]
 [![Docs](https://img.shields.io/badge/Docs-awscdk.io-orange)][docs]
@@ -38,6 +38,8 @@ The private key will be stored in AWS Secrets Manager. The secret name is prefix
 
 ## Roadmap
 
+- Secret prefix should be configurable
+- Name should be optional
 - Automated Tests
 - Tagging support in a more standard way
 
