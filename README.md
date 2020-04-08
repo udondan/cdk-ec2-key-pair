@@ -6,6 +6,7 @@
 [![PyPI version](https://badge.fury.io/py/cdk-ec2-key-pair.svg)][PyPI]
 [![NuGet version](https://badge.fury.io/nu/CDK.EC2.KeyPair.svg)][NuGet]
 [![GitHub](https://img.shields.io/github/license/udondan/cdk-ec2-key-pair)][license]
+![Test](https://github.com/udondan/cdk-ec2-key-pair/workflows/Deploy/badge.svg)
 
 [AWS CDK] L3 construct for managing [EC2 Key Pairs].
 
