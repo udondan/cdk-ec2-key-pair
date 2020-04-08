@@ -1,20 +1,11 @@
 build:
 	@npm run build
 
-list: build
-	cdk ls
-
-diff: build
-	@cdk diff
-
-synth: build
-	@cdk synth
-
 deploy: build lambda
-	@cdk deploy
+	@cdk deploy --require-approval never
 
-destroy: build
-	@cdk destroy
+DESTROY: build
+	@cdk destroy --require-approval never
 
 lambda:
 	@../lambda/build
