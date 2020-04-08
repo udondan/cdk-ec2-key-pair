@@ -5,7 +5,7 @@ deploy: build lambda
 	@cdk deploy --require-approval never
 
 DESTROY: build
-	@cdk destroy --require-approval never
+	@cdk destroy --force
 
 lambda:
 	@../lambda/build
