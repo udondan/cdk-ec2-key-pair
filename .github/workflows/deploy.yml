@@ -26,3 +26,4 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           DIR: test
           COMMAND: make deploy DESTROY
+          DEBUG: true
