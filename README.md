@@ -49,7 +49,6 @@ aws secretsmanager get-secret-value \
 
 - Secret prefix should be configurable
 - Name should be optional
-- Automated Tests
 - Tagging support in a more standard way
 
    [AWS CDK]: https://aws.amazon.com/cdk/
