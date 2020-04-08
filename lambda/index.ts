@@ -200,10 +200,19 @@ function updatePrivaterKeyRemoveTags(event: Event): Promise<Event> {
 
 function deletePrivaterKey(event: Event): Promise<Event> {
     return new Promise(function (resolve, reject) {
-        secretsmanager.deleteSecret({
-            RecoveryWindowInDays: 7, //TODO: should this be be configurable?
+        const options: any = {
             SecretId: `${secretPrefix}${event.ResourceProperties.Name}`,
-        }, function (err: AWS.AWSError, data: AWS.SecretsManager.DeleteSecretResponse) {
+        };
+
+        const removePrivateKeyAfterDays = event.ResourceProperties.RemovePrivateKeyAfterDays as number;
+
+        if (removePrivateKeyAfterDays > 0) {
+            options.RecoveryWindowInDays = event.ResourceProperties.RemovePrivateKeyAfterDays;
+        } else {
+            options.ForceDeleteWithoutRecovery = true;
+        }
+
+        secretsmanager.deleteSecret(options, function (err: AWS.AWSError, data: AWS.SecretsManager.DeleteSecretResponse) {
             if (err) return reject(err);
             event.secretARN = data.ARN;
             resolve(event);
