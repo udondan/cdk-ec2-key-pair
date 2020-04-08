@@ -19,5 +19,8 @@
   "dependencies": {
     "@aws-cdk/core": "^1.24.0",
     "source-map-support": "^0.5.16"
+  },
+  "peerDependencies": {
+    "cdk-ec2-key-pair": "file:.."
   }
 }
