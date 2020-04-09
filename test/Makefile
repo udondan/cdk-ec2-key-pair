@@ -2,10 +2,10 @@ build:
 	@npm run build
 
 deploy: build lambda
-	@cdk deploy --require-approval never
+	@cdk deploy --require-approval never EC2KeyPair
 
 DESTROY: build
-	@cdk destroy --require-approval never
+	@cdk destroy --force EC2KeyPair
 
 lambda:
 	@../lambda/build

@@ -61,6 +61,15 @@ export interface KeyPairProps extends cdk.ResourceProps {
     readonly tags?: {
         [key: string]: string;
     };
+
+    /**
+    * When the resource is destroyed, after how many days the private key in the AWS Secrets Manager should be deleted.
+    *
+    * Valid values are 0 and 7 to 30
+    *
+    * @default 0
+    */
+    readonly removePrivateKeyAfterDays?: number;
 }
 
 /**
@@ -84,6 +93,13 @@ export class KeyPair extends cdk.Construct {
     constructor(scope: cdk.Construct, id: string, props: KeyPairProps) {
         super(scope, id);
 
+        if (props.removePrivateKeyAfterDays && (
+            props.removePrivateKeyAfterDays < 0 ||
+            props.removePrivateKeyAfterDays > 0 && props.removePrivateKeyAfterDays < 7 ||
+            props.removePrivateKeyAfterDays > 30)) {
+            scope.node.addError(`Parameter removePrivateKeyAfterDays must be 0 or between 7 and 30. Got ${props.removePrivateKeyAfterDays}`);
+        }
+
         const stack = cdk.Stack.of(this).stackName;
         const fn = this.ensureLambda();
 
@@ -94,12 +110,13 @@ export class KeyPair extends cdk.Construct {
             provider: cfn.CustomResourceProvider.fromLambda(fn),
             resourceType: resourceType,
             properties: {
-                name: props.name,
-                description: props.description || '',
-                keyLength: props.keyLength || KeyLength.L2048,
-                kms: props.kms?.keyArn || 'alias/aws/secretsmanager',
+                Name: props.name,
+                Description: props.description || '',
+                KeyLength: props.keyLength || KeyLength.L2048,
+                Kms: props.kms?.keyArn || 'alias/aws/secretsmanager',
+                RemovePrivateKeyAfterDays: props.removePrivateKeyAfterDays || 0,
                 StackName: stack,
-                tags: tags,
+                Tags: tags,
             },
         });
 
