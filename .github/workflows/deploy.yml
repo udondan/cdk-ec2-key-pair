@@ -20,19 +20,17 @@ jobs:
           fetch-depth: 1
 
       - name: Deploy
-        uses: udondan/cdk-nodejs@v0.1.1
+        uses: udondan/cdk-nodejs@v0.1.2
         with:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           SUBDIR: test
           COMMAND: make deploy
-          DEBUG: true
 
       - name: Destroy
-        uses: udondan/cdk-nodejs@v0.1.1
+        uses: udondan/cdk-nodejs@v0.1.2
         with:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           SUBDIR: test
           COMMAND: make DESTROY
-          DEBUG: true
