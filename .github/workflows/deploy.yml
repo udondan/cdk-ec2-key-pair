@@ -1,5 +1,5 @@
 ---
-name: Publish packages
+name: Deploy
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
       - master
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -20,9 +20,17 @@ jobs:
           fetch-depth: 1
 
       - name: Deploy
-        uses: udondan/cdk-nodejs-deploy@master
+        uses: udondan/cdk-nodejs@v0.1.2
         with:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          DIR: test
-          COMMAND: make deploy DESTROY
+          SUBDIR: test
+          COMMAND: make deploy
+
+      - name: Destroy
+        uses: udondan/cdk-nodejs@v0.1.2
+        with:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          SUBDIR: test
+          COMMAND: make DESTROY

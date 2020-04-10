@@ -6,7 +6,6 @@ export class TestStack extends cdk.Stack {
     constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
         super(scope, id, props);
 
-
         new KeyPair(this, 'Test-Key-Pair', {
             name: 'test-key-pair',
             description: 'A test Key Pair',
