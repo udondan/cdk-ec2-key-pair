@@ -70,6 +70,13 @@ export interface KeyPairProps extends cdk.ResourceProps {
     * @default 0
     */
     readonly removePrivateKeyAfterDays?: number;
+
+    /**
+    * Prefix for the secret in AWS Secrets Manager.
+    *
+    * @default `ec2-private-key/`
+    */
+    readonly secretPrefix?: string;
 }
 
 /**
@@ -115,6 +122,7 @@ export class KeyPair extends cdk.Construct {
                 KeyLength: props.keyLength || KeyLength.L2048,
                 Kms: props.kms?.keyArn || 'alias/aws/secretsmanager',
                 RemovePrivateKeyAfterDays: props.removePrivateKeyAfterDays || 0,
+                SecretPrefix: props.secretPrefix || 'ec2-private-key/',
                 StackName: stack,
                 Tags: tags,
             },

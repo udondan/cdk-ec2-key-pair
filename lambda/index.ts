@@ -3,8 +3,6 @@ import AWS = require('aws-sdk');
 import https = require('https');
 import URL = require('url');
 
-const secretPrefix = 'ec2-private-key/';
-
 var ec2 = new AWS.EC2();
 var secretsmanager = new AWS.SecretsManager();
 
@@ -128,7 +126,7 @@ function deleteKeyPair(event: Event): Promise<Event> {
 function savePrivaterKey(event: Event): Promise<Event> {
     return new Promise(function (resolve, reject) {
         secretsmanager.createSecret({
-            Name: `${secretPrefix}${event.ResourceProperties.Name}`,
+            Name: `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}`,
             Description: event.ResourceProperties.Description,
             SecretString: event.KeyMaterial,
             KmsKeyId: event.ResourceProperties.Kms,
@@ -144,7 +142,7 @@ function savePrivaterKey(event: Event): Promise<Event> {
 function updatePrivaterKey(event: Event): Promise<Event> {
     return new Promise(function (resolve, reject) {
         secretsmanager.updateSecret({
-            SecretId: `${secretPrefix}${event.ResourceProperties.Name}`,
+            SecretId: `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}`,
             Description: event.ResourceProperties.Description,
             KmsKeyId: event.ResourceProperties.Kms,
         }, function (err: AWS.AWSError, data: AWS.SecretsManager.UpdateSecretResponse) {
@@ -166,7 +164,7 @@ function updatePrivaterKeyAddTags(event: Event): Promise<Event> {
         }
 
         secretsmanager.tagResource({
-            SecretId: `${secretPrefix}${event.ResourceProperties.Name}`,
+            SecretId: `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}`,
             Tags: newTags,
         }, function (err: AWS.AWSError, data: {}) {
             if (err) return reject(err);
@@ -188,7 +186,7 @@ function updatePrivaterKeyRemoveTags(event: Event): Promise<Event> {
 
         console.log(`Will remove the following tags: ${JSON.stringify(tagsToRemove)}`);
         secretsmanager.untagResource({
-            SecretId: `${secretPrefix}${event.ResourceProperties.Name}`,
+            SecretId: `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}`,
             TagKeys: tagsToRemove,
         }, function (err: AWS.AWSError, data: {}) {
             event.results.push({ data: data, error: err });
@@ -201,7 +199,7 @@ function updatePrivaterKeyRemoveTags(event: Event): Promise<Event> {
 function deletePrivaterKey(event: Event): Promise<Event> {
     return new Promise(function (resolve, reject) {
         const options: any = {
-            SecretId: `${secretPrefix}${event.ResourceProperties.Name}`,
+            SecretId: `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}`,
         };
 
         const removePrivateKeyAfterDays = event.ResourceProperties.RemovePrivateKeyAfterDays as number;

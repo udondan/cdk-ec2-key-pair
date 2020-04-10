@@ -35,7 +35,7 @@ new ec2.Instance(this, 'An-Instance', {
 })
 ```
 
-The private key will be stored in AWS Secrets Manager. The secret name is prefixed with `ec2-private-key/`, so in this example it will be saved as `ec2-private-key/a-key-pair`.
+The private key will be stored in AWS Secrets Manager. The secret name by default is prefixed with `ec2-private-key/`, so in this example it will be saved as `ec2-private-key/a-key-pair`.
 
 To download the private key via AWS cli you can run:
 
@@ -48,7 +48,6 @@ aws secretsmanager get-secret-value \
 
 ## Roadmap
 
-- Secret prefix should be configurable
 - Name should be optional
 - Tagging support in a more standard way
 
