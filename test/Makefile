@@ -1,11 +1,14 @@
-build:
+install:
+	@cd .. && npm i
+
+build: install lambda
 	@npm run build
 
-deploy: build lambda
-	@cdk deploy --require-approval never EC2KeyPair
+deploy: build
+	@cdk deploy --require-approval never
 
 DESTROY: build
-	@cdk destroy --force EC2KeyPair
+	@cdk destroy --force
 
 lambda:
 	@../lambda/build
