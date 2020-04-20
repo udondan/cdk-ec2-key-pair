@@ -49,7 +49,6 @@ aws secretsmanager get-secret-value \
 ## Roadmap
 
 - Name should be optional
-- Tagging support in a more standard way
 
    [AWS CDK]: https://aws.amazon.com/cdk/
    [custom CloudFormation resource]: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-custom-resources.html
@@ -58,6 +57,6 @@ aws secretsmanager get-secret-value \
    [npm]: https://www.npmjs.com/package/cdk-ec2-key-pair
    [PyPI]: https://pypi.org/project/cdk-ec2-key-pair/
    [NuGet]: https://www.nuget.org/packages/CDK.EC2.KeyPair/
-   [docs]: https://awscdk.io/packages/cdk-ec2-key-pair@1.1.1
+   [docs]: https://awscdk.io/packages/cdk-ec2-key-pair@1.2.0
    [source]: https://github.com/udondan/cdk-ec2-key-pair
    [license]: https://github.com/udondan/cdk-ec2-key-pair/blob/master/LICENSE
