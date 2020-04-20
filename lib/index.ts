@@ -82,7 +82,7 @@ export interface KeyPairProps extends cdk.ResourceProps {
 /**
 * An EC2 Key Pair
 */
-export class KeyPair extends cdk.Construct {
+export class KeyPair extends cdk.Construct implements cdk.ITaggable {
 
     /**
     * ARN of the private key in AWS Secrets Manager
@@ -93,6 +93,11 @@ export class KeyPair extends cdk.Construct {
     * Name of the Key Pair
     */
     public readonly name: string = '';
+
+    /**
+    * Resource tags
+    */
+    public readonly tags: cdk.TagManager;
 
     /**
     * Defines a new EC2 Key Pair. The private key will be stored in AWS Secrets Manager
@@ -110,8 +115,8 @@ export class KeyPair extends cdk.Construct {
         const stack = cdk.Stack.of(this).stackName;
         const fn = this.ensureLambda();
 
-        const tags = props.tags || {};
-        tags.CreatedBy = ID;
+        this.tags = new cdk.TagManager(cdk.TagType.MAP, 'Custom::EC2-Key-Pair');
+        this.tags.setTag('CreatedBy', ID);
 
         const key = new cfn.CustomResource(this, `EC2-Key-Pair-${props.name}`, {
             provider: cfn.CustomResourceProvider.fromLambda(fn),
@@ -124,7 +129,7 @@ export class KeyPair extends cdk.Construct {
                 RemovePrivateKeyAfterDays: props.removePrivateKeyAfterDays || 0,
                 SecretPrefix: props.secretPrefix || 'ec2-private-key/',
                 StackName: stack,
-                Tags: tags,
+                Tags: cdk.Lazy.anyValue({ produce: () => this.tags.renderTags() }),
             },
         });
 

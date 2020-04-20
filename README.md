@@ -49,7 +49,6 @@ aws secretsmanager get-secret-value \
 ## Roadmap
 
 - Name should be optional
-- Tagging support in a more standard way
 
    [AWS CDK]: https://aws.amazon.com/cdk/
    [custom CloudFormation resource]: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-custom-resources.html
