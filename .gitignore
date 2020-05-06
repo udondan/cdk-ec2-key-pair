@@ -5,6 +5,7 @@ dist
 lambda/*
 !lambda/*.ts
 !lambda/build
+!lambda/package.json
 **/*.js
 **/*.d.ts
 **/cdk.out
