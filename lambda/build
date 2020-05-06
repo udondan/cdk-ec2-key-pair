@@ -2,6 +2,7 @@
 
 set -e
 cd "$( dirname "${BASH_SOURCE[0]}" )"
-npx tsc index.ts
-zip code.zip index.js
-rm index.js
+npm i
+npx tsc ./*.ts
+zip -r code.zip ./*.js node_modules
+rm ./*.js

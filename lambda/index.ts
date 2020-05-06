@@ -1,48 +1,21 @@
+import { CustomResource, Event, StandardLogger } from 'aws-cloudformation-custom-resource';
 import { Callback, Context } from 'aws-lambda';
 import AWS = require('aws-sdk');
-import https = require('https');
-import URL = require('url');
 
-var ec2 = new AWS.EC2();
-var secretsmanager = new AWS.SecretsManager();
-
-interface Event {
-    [key: string]: any;
-}
+const ec2 = new AWS.EC2();
+const secretsmanager = new AWS.SecretsManager();
+const logger = new StandardLogger();
 
 export const handler = function (event: Event = {}, context: Context, callback: Callback) {
-
-    if (typeof event.ResponseURL === 'undefined') {
-        throw new Error('ResponseURL missing');
-    }
-
-    try {
-        timeout(event, context, callback);
-        console.log('REQUEST RECEIVED:\n' + JSON.stringify(event));
-
-        event.results = [];
-
-        let func: (event: Event) => Promise<Event>;
-
-        if (event.RequestType == 'Create') func = Create;
-        else if (event.RequestType == 'Update') func = Update;
-        else if (event.RequestType == 'Delete') func = Delete;
-        else return sendResponse(event, context, 'FAILED', `Unexpected request type: ${event.RequestType}`);
-
-        func(event).then(function (response) {
-            console.log(response);
-            sendResponse(event, context, 'SUCCESS', `${event.RequestType} completed successfully`);
-        }).catch(function (err: AWS.AWSError) {
-            console.log(err, err.stack);
-            sendResponse(event, context, 'FAILED', err.message || err.code);
-        });
-    } catch (err) {
-        sendResponse(event, context, 'FAILED', (err as Error).message);
-    }
+    new CustomResource(event, context, callback, logger)
+        .onCreate(Create)
+        .onUpdate(Update)
+        .onDelete(Delete)
+        .handle(event);
 };
 
 function Create(event: Event): Promise<Event | AWS.AWSError> {
-    console.log(`Attempting to create EC2 Key Pair ${event.ResourceProperties.Name}`);
+    logger.info(`Attempting to create EC2 Key Pair ${event.ResourceProperties.Name}`);
     return new Promise(function (resolve, reject) {
         createKeyPair(event)
             .then(savePrivaterKey)
@@ -56,7 +29,7 @@ function Create(event: Event): Promise<Event | AWS.AWSError> {
 }
 
 function Update(event: Event): Promise<Event | AWS.AWSError> {
-    console.log(`Attempting to update EC2 Key Pair ${event.OldResourceProperties.Name}`);
+    logger.info(`Attempting to update EC2 Key Pair ${event.OldResourceProperties.Name}`);
     return new Promise(function (resolve, reject) {
         if (event.ResourceProperties.Name !== event.OldResourceProperties.Name) {
             reject(new Error('A Key Pair cannot be renamed. Please create a new Key Pair instead'));
@@ -76,7 +49,7 @@ function Update(event: Event): Promise<Event | AWS.AWSError> {
 }
 
 function Delete(event: any): Promise<Event | AWS.AWSError> {
-    console.log(`Attempting to delete EC2 Key Pair ${event.ResourceProperties.Name}`);
+    logger.info(`Attempting to delete EC2 Key Pair ${event.ResourceProperties.Name}`);
     return new Promise(function (resolve, reject) {
         deleteKeyPair(event)
             .then(deletePrivaterKey)
@@ -154,12 +127,12 @@ function updatePrivaterKey(event: Event): Promise<Event> {
 }
 
 function updatePrivaterKeyAddTags(event: Event): Promise<Event> {
-    console.log(`Attempting to update tags for EC2 private key ${event.ResourceProperties.Name}`);
+    logger.info(`Attempting to update tags for EC2 private key ${event.ResourceProperties.Name}`);
     return new Promise(function (resolve, reject) {
         const oldTags = makeTags(event, event.OldResourceProperties);
         const newTags = makeTags(event, event.ResourceProperties);
         if (JSON.stringify(oldTags) == JSON.stringify(newTags)) {
-            console.log(`No changes of tags detected for EC2 private key ${event.ResourceProperties.Name}. Not attempting any update`);
+            logger.info(`No changes of tags detected for EC2 private key ${event.ResourceProperties.Name}. Not attempting any update`);
             return resolve(event);
         }
 
@@ -174,17 +147,17 @@ function updatePrivaterKeyAddTags(event: Event): Promise<Event> {
 }
 
 function updatePrivaterKeyRemoveTags(event: Event): Promise<Event> {
-    console.log(`Attempting to remove some tags for EC2 private key ${event.ResourceProperties.Name}`);
+    logger.info(`Attempting to remove some tags for EC2 private key ${event.ResourceProperties.Name}`);
     return new Promise(function (resolve, reject) {
         const oldTags = makeTags(event, event.OldResourceProperties);
         const newTags = makeTags(event, event.ResourceProperties);
         const tagsToRemove = getMissingTags(oldTags, newTags);
         if (JSON.stringify(oldTags) == JSON.stringify(newTags) || !tagsToRemove.length) {
-            console.log(`No changes of tags detected for EC2 private key ${event.ResourceProperties.Name}. Not attempting any update`);
+            logger.info(`No changes of tags detected for EC2 private key ${event.ResourceProperties.Name}. Not attempting any update`);
             return resolve(event);
         }
 
-        console.log(`Will remove the following tags: ${JSON.stringify(tagsToRemove)}`);
+        logger.info(`Will remove the following tags: ${JSON.stringify(tagsToRemove)}`);
         secretsmanager.untagResource({
             SecretId: `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}`,
             TagKeys: tagsToRemove,
@@ -218,63 +191,6 @@ function deletePrivaterKey(event: Event): Promise<Event> {
     });
 }
 
-function timeout(event: Event, context: Context, callback: Callback) {
-    const handler = () => {
-        console.log('Timeout FAILURE!');
-        new Promise(() => sendResponse(event, context, 'FAILED', 'Function timed out'))
-            .then(() => callback(new Error('Function timed out')));
-    };
-    setTimeout(handler, context.getRemainingTimeInMillis() - 1000);
-}
-
-function sendResponse(event: Event, context: Context, responseStatus: string, responseData: string) {
-    console.log(`Sending response ${responseStatus}:\n${JSON.stringify(responseData)}`);
-
-    var body = JSON.stringify({
-        Status: responseStatus,
-        Reason: `${responseData} | Full error in CloudWatch ${context.logStreamName}`,
-        PhysicalResourceId: event.ResourceProperties.Name,
-        StackId: event.StackId,
-        RequestId: event.RequestId,
-        LogicalResourceId: event.LogicalResourceId,
-        Data: {
-            Message: responseData,
-            PrivateKeyARN: event.secretARN,
-            KeyPairName: event.KeyName,
-        },
-    });
-
-    console.log(`RESPONSE BODY:\n`, body);
-
-    var url = URL.parse(event.ResponseURL);
-    var options = {
-        hostname: url.hostname,
-        port: 443,
-        path: url.path,
-        method: 'PUT',
-        headers: {
-            'content-type': '',
-            'content-length': body.length,
-        }
-    };
-
-    console.log('SENDING RESPONSE...\n');
-
-    var request = https.request(options, function (response: any) {
-        console.log('STATUS: ' + response.statusCode);
-        console.log('HEADERS: ' + JSON.stringify(response.headers));
-        context.done();
-    });
-
-    request.on('error', function (error: Error) {
-        console.log('sendResponse Error:' + error);
-        context.done();
-    });
-
-    request.write(body);
-    request.end();
-}
-
 function makeTags(event: Event, properties: any): AWS.SecretsManager.TagListType {
     const tags: AWS.SecretsManager.TagListType = [{
         Key: 'aws-cloudformation:stack-id',
@@ -286,7 +202,7 @@ function makeTags(event: Event, properties: any): AWS.SecretsManager.TagListType
         Key: 'aws-cloudformation:logical-id',
         Value: event.LogicalResourceId,
     }];
-    if ("Tags" in properties) {
+    if ('Tags' in properties) {
         Object.keys(properties.Tags).forEach(function (key: string) {
             tags.push({
                 Key: key,
