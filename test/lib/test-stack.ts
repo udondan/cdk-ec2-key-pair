@@ -13,7 +13,7 @@ export class TestStack extends cdk.Stack {
                 a: 'b',
                 c: 'd',
             },
-            removePrivateKeyAfterDays: 0
+            removePrivateKeyAfterDays: 0,
         });
     }
 }
