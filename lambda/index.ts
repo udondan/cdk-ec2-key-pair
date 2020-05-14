@@ -1,4 +1,4 @@
-import { CustomResource, Event, StandardLogger } from 'aws-cloudformation-custom-resource';
+import { CustomResource, Event, LambdaEvent, StandardLogger } from 'aws-cloudformation-custom-resource';
 import { Callback, Context } from 'aws-lambda';
 import AWS = require('aws-sdk');
 
@@ -7,7 +7,7 @@ const secretsmanager = new AWS.SecretsManager();
 const logger = new StandardLogger();
 
 export const handler = function (
-    event: Event,
+    event: LambdaEvent,
     context: Context,
     callback: Callback
 ) {
@@ -86,7 +86,7 @@ function createKeyPair(event: Event): Promise<Event> {
             },
             function (err: AWS.AWSError, data: AWS.EC2.KeyPair) {
                 if (err) return reject(err);
-                event.KeyName = data.KeyName;
+                event.addResponseValue('KeyPairName', data.KeyName);
                 event.KeyFingerprint = data.KeyFingerprint;
                 event.KeyMaterial = data.KeyMaterial;
                 resolve(event);
@@ -98,7 +98,7 @@ function createKeyPair(event: Event): Promise<Event> {
 function updateKeyPair(event: Event): Promise<Event> {
     return new Promise(function (resolve, reject) {
         // there is nothing to update. a key cannot be changed
-        event.KeyName = event.ResourceProperties.Name;
+        event.addResponseValue('KeyPairName', event.ResourceProperties.Name);
         resolve(event);
     });
 }
@@ -111,7 +111,10 @@ function deleteKeyPair(event: Event): Promise<Event> {
             },
             function (err: AWS.AWSError, data: {}) {
                 if (err) return reject(err);
-                event.KeyName = event.ResourceProperties.Name;
+                event.addResponseValue(
+                    'KeyPairName',
+                    event.ResourceProperties.Name
+                );
                 resolve(event);
             }
         );
@@ -133,7 +136,7 @@ function savePrivaterKey(event: Event): Promise<Event> {
                 data: AWS.SecretsManager.CreateSecretResponse
             ) {
                 if (err) return reject(err);
-                event.secretARN = data.ARN;
+                event.addResponseValue('PrivateKeyARN', data.ARN);
                 resolve(event);
             }
         );
@@ -153,7 +156,7 @@ function updatePrivaterKey(event: Event): Promise<Event> {
                 data: AWS.SecretsManager.UpdateSecretResponse
             ) {
                 if (err) return reject(err);
-                event.secretARN = data.ARN;
+                event.addResponseValue('PrivateKeyARN', data.ARN);
                 resolve(event);
             }
         );
@@ -243,7 +246,7 @@ function deletePrivaterKey(event: Event): Promise<Event> {
             data: AWS.SecretsManager.DeleteSecretResponse
         ) {
             if (err) return reject(err);
-            event.secretARN = data.ARN;
+            event.addResponseValue('PrivateKeyARN', data.ARN);
             resolve(event);
         });
     });
