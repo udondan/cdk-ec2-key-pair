@@ -1,81 +1,81 @@
 {
-  "name": "cdk-ec2-key-pair",
-  "description": "CDK Construct for managing EC2 key pairs",
-  "version": "0.0.0",
-  "license": "Apache-2.0",
-  "author": {
-    "name": "Daniel Schroeder",
-    "url": "https://www.udondan.com/",
-    "twitter": "udondan"
-  },
-  "awscdkio": {
-    "twitter": "udondan"
-  },
-  "homepage": "https://github.com/udondan/cdk-ec2-key-pair",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/udondan/cdk-ec2-key-pair.git"
-  },
-  "bugs": {
-    "url": "https://github.com/udondan/cdk-ec2-key-pair/issues"
-  },
-  "keywords": [
-    "aws",
-    "cdk",
-    "aws-cdk",
-    "aws-cdk-construct",
-    "ec2",
-    "ec2-key-pair",
-    "cloudformation",
-    "cloudformation-custom-resource"
-  ],
-  "stability": "stable",
-  "main": "lib/index.js",
-  "types": "lib/index.d.ts",
-  "scripts": {
-    "build": "jsii",
-    "build:watch": "jsii -w",
-    "package": "jsii-pacmak",
-    "prepackage": "jsii && lambda/build"
-  },
-  "jsii": {
-    "excludeTypescript": [
-      "lambda"
+    "name": "cdk-ec2-key-pair",
+    "description": "CDK Construct for managing EC2 key pairs",
+    "version": "0.0.0",
+    "license": "Apache-2.0",
+    "author": {
+        "name": "Daniel Schroeder",
+        "url": "https://www.udondan.com/",
+        "twitter": "udondan"
+    },
+    "awscdkio": {
+        "twitter": "udondan"
+    },
+    "homepage": "https://github.com/udondan/cdk-ec2-key-pair",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/udondan/cdk-ec2-key-pair.git"
+    },
+    "bugs": {
+        "url": "https://github.com/udondan/cdk-ec2-key-pair/issues"
+    },
+    "keywords": [
+        "aws",
+        "cdk",
+        "aws-cdk",
+        "aws-cdk-construct",
+        "ec2",
+        "ec2-key-pair",
+        "cloudformation",
+        "cloudformation-custom-resource"
     ],
-    "outdir": "dist",
-    "targets": {
-      "python": {
-        "distName": "cdk-ec2-key-pair",
-        "module": "cdk_ec2_key_pair"
-      },
-      "dotnet": {
-        "namespace": "CDK.EC2.KeyPair",
-        "packageId": "CDK.EC2.KeyPair"
-      }
+    "stability": "stable",
+    "main": "lib/index.js",
+    "types": "lib/index.d.ts",
+    "scripts": {
+        "build": "jsii",
+        "build:watch": "jsii -w",
+        "package": "jsii-pacmak",
+        "prepackage": "jsii && lambda/build"
+    },
+    "jsii": {
+        "excludeTypescript": [
+            "lambda"
+        ],
+        "outdir": "dist",
+        "targets": {
+            "python": {
+                "distName": "cdk-ec2-key-pair",
+                "module": "cdk_ec2_key_pair"
+            },
+            "dotnet": {
+                "namespace": "CDK.EC2.KeyPair",
+                "packageId": "CDK.EC2.KeyPair"
+            }
+        }
+    },
+    "devDependencies": {
+        "@aws-cdk/assert": "^1.24.0",
+        "@types/aws-lambda": "^8.10.46",
+        "@types/node": "10.17.5",
+        "aws-lambda": "^1.0.5",
+        "aws-sdk": "^2.635.0",
+        "jsii": "^1.1.0",
+        "jsii-pacmak": "^1.1.0",
+        "ts-node": "^8.1.0",
+        "typescript": "~3.7.2"
+    },
+    "dependencies": {
+        "@aws-cdk/aws-cloudformation": "^1.24.0",
+        "@aws-cdk/aws-iam": "^1.24.0",
+        "@aws-cdk/aws-lambda": "^1.24.0",
+        "@aws-cdk/core": "^1.24.0"
+    },
+    "peerDependencies": {
+        "@aws-cdk/aws-cloudformation": "^1.24.0",
+        "@aws-cdk/aws-iam": "^1.24.0",
+        "@aws-cdk/aws-lambda": "^1.24.0",
+        "@aws-cdk/core": "^1.24.0",
+        "@aws-cdk/aws-kms": "^1.24.0"
     }
-  },
-  "devDependencies": {
-    "@aws-cdk/assert": "^1.24.0",
-    "@types/aws-lambda": "^8.10.46",
-    "@types/node": "10.17.5",
-    "aws-lambda": "^1.0.5",
-    "aws-sdk": "^2.635.0",
-    "jsii": "^1.1.0",
-    "jsii-pacmak": "^1.1.0",
-    "ts-node": "^8.1.0",
-    "typescript": "~3.7.2"
-  },
-  "dependencies": {
-    "@aws-cdk/aws-cloudformation": "^1.24.0",
-    "@aws-cdk/aws-iam": "^1.24.0",
-    "@aws-cdk/aws-lambda": "^1.24.0",
-    "@aws-cdk/core": "^1.24.0"
-  },
-  "peerDependencies": {
-    "@aws-cdk/aws-cloudformation": "^1.24.0",
-    "@aws-cdk/aws-iam": "^1.24.0",
-    "@aws-cdk/aws-lambda": "^1.24.0",
-    "@aws-cdk/core": "^1.24.0",
-    "@aws-cdk/aws-kms": "^1.24.0"
-  }
 }
