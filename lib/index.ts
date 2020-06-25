@@ -3,6 +3,7 @@ import iam = require('@aws-cdk/aws-iam');
 import kms = require('@aws-cdk/aws-kms');
 import lambda = require('@aws-cdk/aws-lambda');
 import cdk = require('@aws-cdk/core');
+import * as statement from 'iam-floyd';
 import path = require('path');
 
 const resourceType = 'Custom::EC2-Key-Pair';
@@ -173,48 +174,25 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
       managedPolicyName: `${this.prefix}-${cleanID}`,
       description: `Used by Lambda ${cleanID}, which is a custom CFN resource, managing EC2 Key Pairs`,
       statements: [
-        new iam.PolicyStatement({
-          actions: [
-            'ec2:CreateKeyPair',
-            'ec2:DeleteKeyPair',
-            'ec2:DescribeKeyPairs',
-            'secretsmanager:ListSecrets',
-          ],
-          resources: ['*'],
-        }),
-        new iam.PolicyStatement({
-          actions: [
-            'secretsmanager:CreateSecret',
-            'secretsmanager:TagResource',
-          ],
-          resources: ['*'],
-          conditions: {
-            StringEquals: {
-              'aws:RequestTag/CreatedBy': ID,
-            },
-          },
-        }),
-        new iam.PolicyStatement({
-          actions: [
-            'secretsmanager:DeleteResourcePolicy',
-            'secretsmanager:DeleteSecret',
-            'secretsmanager:DescribeSecret',
-            'secretsmanager:GetResourcePolicy',
-            'secretsmanager:ListSecretVersionIds',
-            'secretsmanager:PutResourcePolicy',
-            'secretsmanager:PutSecretValue',
-            'secretsmanager:RestoreSecret',
-            'secretsmanager:UntagResource',
-            'secretsmanager:UpdateSecret',
-            'secretsmanager:UpdateSecretVersionStage',
-          ],
-          resources: ['*'],
-          conditions: {
-            StringEquals: {
-              'aws:ResourceTag/CreatedBy': ID,
-            },
-          },
-        }),
+        new statement.Ec2()
+          .allow()
+          .describeKeyPairs()
+          .createKeyPair()
+          .deleteKeyPair(),
+        new statement.Secretsmanager().allow().listSecrets(),
+        new statement.Secretsmanager()
+          .allow()
+          .createSecret()
+          .tagResource()
+          .ifRequestTag('CreatedBy', ID),
+        new statement.Secretsmanager()
+          .allow()
+          .allActions(/^(Describe|Delete|Put|Update)/)
+          .getResourcePolicy()
+          .restoreSecret()
+          .listSecretVersionIds()
+          .untagResource()
+          .ifResourceTag('CreatedBy', ID),
       ],
     });
 
