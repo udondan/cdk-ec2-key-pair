@@ -8,7 +8,10 @@ DOCKER_WORKDIR := /workdir
 PWD := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
 build:
-	npm run build
+	@npm run build
+
+package: build
+	@npm run package
 
 docker-build:
 	docker run -it \
