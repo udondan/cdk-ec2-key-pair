@@ -76,6 +76,15 @@ export interface KeyPairProps extends cdk.ResourceProps {
    * @default `ec2-private-key/`
    */
   readonly secretPrefix?: string;
+
+  /**
+   * A prefix for all resource names.
+   *
+   * By default all resources are prefixed with the stack name to avoid collisions with other stacks. This might cause problems when you work with long stack names and can be overridden through this parameter.
+   *
+   * @default Name of the stack
+   */
+  readonly resourcePrefix?: string;
 }
 
 /**
@@ -97,6 +106,8 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
    */
   public readonly tags: cdk.TagManager;
 
+  public readonly prefix: string = '';
+
   /**
    * Defines a new EC2 Key Pair. The private key will be stored in AWS Secrets Manager
    */
@@ -116,6 +127,8 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
     }
 
     const stack = cdk.Stack.of(this).stackName;
+    this.prefix = props.resourcePrefix || stack;
+
     const fn = this.ensureLambda();
 
     this.tags = new cdk.TagManager(cdk.TagType.MAP, 'Custom::EC2-Key-Pair');
@@ -157,7 +170,7 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
     }
 
     const policy = new iam.ManagedPolicy(stack, 'EC2-Key-Pair-Manager-Policy', {
-      managedPolicyName: `${stack.stackName}-${cleanID}`,
+      managedPolicyName: `${this.prefix}-${cleanID}`,
       description: `Used by Lambda ${cleanID}, which is a custom CFN resource, managing EC2 Key Pairs`,
       statements: [
         new iam.PolicyStatement({
@@ -206,7 +219,7 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
     });
 
     const role = new iam.Role(stack, 'EC2-Key-Pair-Manager-Role', {
-      roleName: `${stack.stackName}-${cleanID}`,
+      roleName: `${this.prefix}-${cleanID}`,
       description: `Used by Lambda ${cleanID}, which is a custom CFN resource, managing EC2 Key Pairs`,
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
       managedPolicies: [
@@ -218,7 +231,7 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
     });
 
     const fn = new lambda.Function(stack, constructName, {
-      functionName: `${stack.stackName}-${cleanID}`,
+      functionName: `${this.prefix}-${cleanID}`,
       role: role,
       description: 'Custom CFN resource: Manage EC2 Key Pairs',
       runtime: lambda.Runtime.NODEJS_10_X,
