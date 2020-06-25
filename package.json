@@ -60,8 +60,8 @@
     "@types/node": "10.17.5",
     "aws-lambda": "^1.0.5",
     "aws-sdk": "^2.635.0",
-    "jsii": "^1.1.0",
-    "jsii-pacmak": "^1.1.0",
+    "jsii": "^1.5.0",
+    "jsii-pacmak": "^1.5.0",
     "ts-node": "^8.1.0",
     "typescript": "~3.7.2"
   },
@@ -69,13 +69,16 @@
     "@aws-cdk/aws-cloudformation": "^1.24.0",
     "@aws-cdk/aws-iam": "^1.24.0",
     "@aws-cdk/aws-lambda": "^1.24.0",
-    "@aws-cdk/core": "^1.24.0"
+    "@aws-cdk/core": "^1.24.0",
+    "iam-floyd": "^0.13.0"
   },
   "peerDependencies": {
     "@aws-cdk/aws-cloudformation": "^1.24.0",
     "@aws-cdk/aws-iam": "^1.24.0",
     "@aws-cdk/aws-lambda": "^1.24.0",
     "@aws-cdk/core": "^1.24.0",
-    "@aws-cdk/aws-kms": "^1.24.0"
+    "@aws-cdk/aws-kms": "^1.24.0",
+    "iam-floyd": "^0.13.0",
+    "constructs": "^3.0.4"
   }
 }
