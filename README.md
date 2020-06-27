@@ -3,7 +3,7 @@
 [![Source](https://img.shields.io/badge/Source-GitHub-blue?logo=github)][source]
 [![Test](https://github.com/udondan/cdk-ec2-key-pair/workflows/Test/badge.svg)](https://github.com/udondan/cdk-ec2-key-pair/actions?query=workflow%3ATest)
 [![GitHub](https://img.shields.io/github/license/udondan/cdk-ec2-key-pair)][license]
-[![Docs](https://img.shields.io/badge/awscdk.io-iam--floyd-orange)][docs]
+[![Docs](https://img.shields.io/badge/awscdk.io-cdk--ec2--key--pair-orange)][docs]
 
 [![npm package](https://img.shields.io/npm/v/cdk-ec2-key-pair?color=brightgreen)][npm]
 [![PyPI package](https://img.shields.io/pypi/v/cdk-ec2-key-pair?color=brightgreen)][PyPI]
