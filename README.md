@@ -1,7 +1,7 @@
 # CDK EC2 Key Pair
 
 [![Source](https://img.shields.io/badge/Source-GitHub-blue?logo=github)][source]
-![Test](https://github.com/udondan/cdk-ec2-key-pair/workflows/Test/badge.svg)
+[![Test](https://github.com/udondan/cdk-ec2-key-pair/workflows/Test/badge.svg)](https://github.com/udondan/cdk-ec2-key-pair/actions?query=workflow%3ATest)
 [![GitHub](https://img.shields.io/github/license/udondan/cdk-ec2-key-pair)][license]
 [![Docs](https://img.shields.io/badge/awscdk.io-iam--floyd-orange)][docs]
 
