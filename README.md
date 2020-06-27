@@ -1,12 +1,18 @@
 # CDK EC2 Key Pair
 
-[![Source](https://img.shields.io/badge/Source-GitHub-blue)][source]
-[![Docs](https://img.shields.io/badge/Docs-awscdk.io-orange)][docs]
-[![npm version](https://badge.fury.io/js/cdk-ec2-key-pair.svg)][npm]
-[![PyPI version](https://badge.fury.io/py/cdk-ec2-key-pair.svg)][PyPI]
-[![NuGet version](https://badge.fury.io/nu/CDK.EC2.KeyPair.svg)][NuGet]
+[![Source](https://img.shields.io/badge/Source-GitHub-blue?logo=github)][source]
+![Test](https://github.com/udondan/cdk-ec2-key-pair/workflows/Test/badge.svg)
 [![GitHub](https://img.shields.io/github/license/udondan/cdk-ec2-key-pair)][license]
-![Test](https://github.com/udondan/cdk-ec2-key-pair/workflows/Deploy/badge.svg)
+[![Docs](https://img.shields.io/badge/awscdk.io-iam--floyd-orange)][docs]
+
+[![npm package](https://img.shields.io/npm/v/cdk-ec2-key-pair?color=brightgreen)][npm]
+[![PyPI package](https://img.shields.io/pypi/v/cdk-ec2-key-pair?color=brightgreen)][PyPI]
+[![NuGet package](https://img.shields.io/nuget/v/CDK.EC2.KeyPair?color=brightgreen)][NuGet]
+
+![Downloads](https://img.shields.io/badge/-DOWNLOADS:-brightgreen?color=gray)
+[![npm](https://img.shields.io/npm/dt/cdk-ec2-key-pair?label=npm&color=blueviolet)][npm]
+[![PyPI](https://img.shields.io/pypi/dm/cdk-ec2-key-pair?label=pypi&color=blueviolet)][PyPI]
+[![NuGet](https://img.shields.io/nuget/dt/CDK.EC2.KeyPair?label=nuget&color=blueviolet)][NuGet]
 
 [AWS CDK] L3 construct for managing [EC2 Key Pairs].
 
