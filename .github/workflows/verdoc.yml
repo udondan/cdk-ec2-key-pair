@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - VERSION
+  workflow_dispatch:
 
 jobs:
   set-version:
