@@ -11,7 +11,7 @@ export const handler = function (
   context: Context,
   callback: Callback
 ) {
-  new CustomResource(event, context, callback, logger)
+  new CustomResource(context, callback, logger)
     .onCreate(Create)
     .onUpdate(Update)
     .onDelete(Delete)

@@ -9,16 +9,14 @@
     "cdk": "cdk"
   },
   "devDependencies": {
-    "@aws-cdk/assert": "^1.47.0",
-    "@types/node": "10.17.5",
-    "aws-cdk": "1.47.0",
-    "ts-node": "^8.1.0",
-    "typescript": "~3.8.3",
+    "@types/node": "14.0.26",
+    "aws-cdk": "^1.54.0",
+    "ts-node": "^8.10.2",
+    "typescript": "~3.9.7",
     "cdk-ec2-key-pair": "file:.."
   },
   "dependencies": {
-    "@aws-cdk/core": "^1.47.0",
-    "source-map-support": "^0.5.16"
+    "@aws-cdk/core": "^1.54.0"
   },
   "peerDependencies": {
     "cdk-ec2-key-pair": "file:.."
