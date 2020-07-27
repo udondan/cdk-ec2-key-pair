@@ -3,7 +3,7 @@ import iam = require('@aws-cdk/aws-iam');
 import kms = require('@aws-cdk/aws-kms');
 import lambda = require('@aws-cdk/aws-lambda');
 import cdk = require('@aws-cdk/core');
-import * as statement from 'iam-floyd';
+import * as statement from 'cdk-iam-floyd';
 import path = require('path');
 
 const resourceType = 'Custom::EC2-Key-Pair';
@@ -184,7 +184,7 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
           .allow()
           .createSecret()
           .tagResource()
-          .ifRequestTag('CreatedBy', ID),
+          .ifAwsRequestTag('CreatedBy', ID),
         new statement.Secretsmanager()
           .allow()
           .allActions(/^(Describe|Delete|Put|Update)/)
