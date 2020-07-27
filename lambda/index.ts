@@ -212,7 +212,6 @@ function updatePrivaterKeyRemoveTags(event: Event): Promise<Event> {
         TagKeys: tagsToRemove,
       },
       function (err: AWS.AWSError, data: {}) {
-        event.results.push({ data: data, error: err });
         if (err) reject(err);
         else resolve(event);
       }
