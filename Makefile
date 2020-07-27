@@ -13,6 +13,12 @@ build:
 package: build
 	@npm run package
 
+clean:
+	@rm -rf node_modules package-lock.json
+
+install: clean
+	@npm i
+
 docker-build:
 	docker run -it \
 		--workdir ${DOCKER_WORKDIR} \
