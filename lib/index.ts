@@ -3,6 +3,7 @@ import iam = require('@aws-cdk/aws-iam');
 import kms = require('@aws-cdk/aws-kms');
 import lambda = require('@aws-cdk/aws-lambda');
 import cdk = require('@aws-cdk/core');
+import { IFunction } from '@aws-cdk/aws-lambda';
 import * as statement from 'cdk-iam-floyd';
 import path = require('path');
 
@@ -93,6 +94,11 @@ export interface KeyPairProps extends cdk.ResourceProps {
  */
 export class KeyPair extends cdk.Construct implements cdk.ITaggable {
   /**
+   * The lambda function that is created
+   */
+  public readonly lambda: IFunction
+  
+  /**
    * ARN of the private key in AWS Secrets Manager
    */
   public readonly arn: string = '';
@@ -130,13 +136,14 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
     const stack = cdk.Stack.of(this).stackName;
     this.prefix = props.resourcePrefix || stack;
 
-    const fn = this.ensureLambda();
+    this.lambda = this.ensureLambda();
+    
 
     this.tags = new cdk.TagManager(cdk.TagType.MAP, 'Custom::EC2-Key-Pair');
     this.tags.setTag('CreatedBy', ID);
 
     const key = new cfn.CustomResource(this, `EC2-Key-Pair-${props.name}`, {
-      provider: cfn.CustomResourceProvider.fromLambda(fn),
+      provider: cfn.CustomResourceProvider.fromLambda(this.lambda),
       resourceType: resourceType,
       properties: {
         Name: props.name,
@@ -153,9 +160,9 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
     });
 
     if (typeof props.kms !== 'undefined') {
-      props.kms.grantEncryptDecrypt(fn.role!);
+      props.kms.grantEncryptDecrypt(this.lambda.role!);
       key.node.addDependency(props.kms);
-      key.node.addDependency(fn.role!);
+      key.node.addDependency(this.lambda.role!);
     }
 
     this.arn = key.getAttString('PrivateKeyARN');
