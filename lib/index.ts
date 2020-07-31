@@ -3,7 +3,6 @@ import iam = require('@aws-cdk/aws-iam');
 import kms = require('@aws-cdk/aws-kms');
 import lambda = require('@aws-cdk/aws-lambda');
 import cdk = require('@aws-cdk/core');
-import { IFunction } from '@aws-cdk/aws-lambda';
 import * as statement from 'cdk-iam-floyd';
 import path = require('path');
 
@@ -96,7 +95,7 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
   /**
    * The lambda function that is created
    */
-  public readonly lambda: IFunction
+  public readonly lambda: lambda.IFunction
   
   /**
    * ARN of the private key in AWS Secrets Manager
