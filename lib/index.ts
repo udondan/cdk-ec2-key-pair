@@ -95,8 +95,8 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
   /**
    * The lambda function that is created
    */
-  public readonly lambda: lambda.IFunction
-  
+  public readonly lambda: lambda.IFunction;
+
   /**
    * ARN of the private key in AWS Secrets Manager
    */
@@ -136,7 +136,6 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
     this.prefix = props.resourcePrefix || stack;
 
     this.lambda = this.ensureLambda();
-    
 
     this.tags = new cdk.TagManager(cdk.TagType.MAP, 'Custom::EC2-Key-Pair');
     this.tags.setTag('CreatedBy', ID);
@@ -182,22 +181,22 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
       statements: [
         new statement.Ec2()
           .allow()
-          .describeKeyPairs()
-          .createKeyPair()
-          .deleteKeyPair(),
-        new statement.Secretsmanager().allow().listSecrets(),
+          .toDescribeKeyPairs()
+          .toCreateKeyPair()
+          .toDeleteKeyPair(),
+        new statement.Secretsmanager().allow().toListSecrets(),
         new statement.Secretsmanager()
           .allow()
-          .createSecret()
-          .tagResource()
+          .toCreateSecret()
+          .toTagResource()
           .ifAwsRequestTag('CreatedBy', ID),
         new statement.Secretsmanager()
           .allow()
-          .allActions(/^(Describe|Delete|Put|Update)/)
-          .getResourcePolicy()
-          .restoreSecret()
-          .listSecretVersionIds()
-          .untagResource()
+          .allMatchingActions('/^(Describe|Delete|Put|Update)/')
+          .toGetResourcePolicy()
+          .toRestoreSecret()
+          .toListSecretVersionIds()
+          .toUntagResource()
           .ifResourceTag('CreatedBy', ID),
       ],
     });
