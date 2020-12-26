@@ -10,15 +10,15 @@
   },
   "devDependencies": {
     "@types/node": "14.14.16",
-    "aws-cdk": "^1.80.0",
     "ts-node": "^9.1.1",
-    "typescript": "~4.1.3",
-    "cdk-ec2-key-pair": "file:.."
+    "typescript": "~4.1.3"
   },
   "dependencies": {
-    "@aws-cdk/core": "^1.80.0"
-  },
-  "peerDependencies": {
-    "cdk-ec2-key-pair": "file:.."
+    "@aws-cdk/aws-cloudformation": "1.x",
+    "@aws-cdk/aws-iam": "1.x",
+    "@aws-cdk/aws-kms": "1.x",
+    "@aws-cdk/aws-lambda": "1.x",
+    "@aws-cdk/core": "1.x",
+    "cdk-ssm-document": "file:.."
   }
 }
