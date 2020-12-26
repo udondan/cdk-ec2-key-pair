@@ -55,11 +55,11 @@
     }
   },
   "devDependencies": {
-    "@aws-cdk/aws-cloudformation": "1.x",
-    "@aws-cdk/aws-iam": "1.x",
-    "@aws-cdk/aws-kms": "1.x",
-    "@aws-cdk/aws-lambda": "1.x",
-    "@aws-cdk/core": "1.x",
+    "@aws-cdk/aws-cloudformation": "^1.54.0",
+    "@aws-cdk/aws-iam": "^1.54.0",
+    "@aws-cdk/aws-kms": "^1.54.0",
+    "@aws-cdk/aws-lambda": "^1.54.0",
+    "@aws-cdk/core": "^1.54.0",
     "@types/aws-lambda": "^8.10.68",
     "@types/node": "14.14.16",
     "aws-lambda": "^1.0.6",
@@ -73,11 +73,11 @@
     "cdk-iam-floyd": "^0.112.1"
   },
   "peerDependencies": {
-    "@aws-cdk/aws-cloudformation": "1.x",
-    "@aws-cdk/aws-iam": "1.x",
-    "@aws-cdk/aws-kms": "1.x",
-    "@aws-cdk/aws-lambda": "1.x",
-    "@aws-cdk/core": "1.x",
+    "@aws-cdk/aws-cloudformation": "^1.54.0",
+    "@aws-cdk/aws-iam": "^1.54.0",
+    "@aws-cdk/aws-kms": "^1.54.0",
+    "@aws-cdk/aws-lambda": "^1.54.0",
+    "@aws-cdk/core": "^1.54.0",
     "cdk-iam-floyd": "^0.112.1",
     "constructs": "^3.2.80"
   }
