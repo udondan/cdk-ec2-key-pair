@@ -20,6 +20,12 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Set Build Permissions
+        run: |
+          mkdir $GITHUB_WORKSPACE/test/cdk.out
+          chmod 777 $GITHUB_WORKSPACE/test/cdk.out --recursive
+          chmod 777 $GITHUB_WORKSPACE/lambda --recursive
+
       - name: Deploy
         uses: udondan/cdk-nodejs@v0.4.0
         with:
