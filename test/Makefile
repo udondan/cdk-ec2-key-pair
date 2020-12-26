@@ -1,6 +1,11 @@
-install:
+clean:
+	@rm -rf ../node_modules ../package-lock.json
+	@rm -rf node_modules package-lock.json
+
+install: clean
 	@echo Installing dependencies...
 	@cd .. && npm i
+	@npm i
 
 build: install lambda
 	@echo Building application...
