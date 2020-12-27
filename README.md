@@ -18,6 +18,28 @@
 
 CloudFormation doesn't directly support creation of EC2 Key Pairs. This construct provides an easy interface for creating Key Pairs through a [custom CloudFormation resource]. The private key is stored in [AWS Secrets Manager].
 
+## Installation
+
+This package has peer dependencies, which need to be installed along in the expected version.
+
+For TypeScript/NodeJS, add these to your `dependencies` in `package.json`:
+
+- cdk-ec2-key-pair
+- @aws-cdk/aws-cloudformation
+- @aws-cdk/aws-ec2
+- @aws-cdk/aws-iam
+- @aws-cdk/aws-kms
+- @aws-cdk/aws-lambda
+
+For Python, add these to your `requirements.txt`:
+
+- cdk-ec2-key-pair
+- aws-cdk.aws-cloudformation
+- aws-cdk.aws-ec2
+- aws-cdk.aws-iam
+- aws-cdk.aws-kms
+- aws-cdk.aws-lambda
+
 ## Usage
 
 ```typescript
