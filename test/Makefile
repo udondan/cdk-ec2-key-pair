@@ -13,11 +13,11 @@ build: install lambda
 
 deploy: build
 	@echo Deploying application...
-	@cdk deploy --require-approval never
+	@npm run cdk deploy --require-approval never
 
 DESTROY: build
 	@echo Destroying application...
-	@cdk destroy --force
+	@npm run cdk destroy --force
 
 lambda:
 	@echo Building Lambda...
