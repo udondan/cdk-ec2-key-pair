@@ -140,6 +140,12 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
     this.tags = new cdk.TagManager(cdk.TagType.MAP, 'Custom::EC2-Key-Pair');
     this.tags.setTag('CreatedBy', ID);
 
+    if (props.tags) {
+      for (const [key, value] of Object.entries(props.tags!)) {
+        this.tags.setTag(key, value);
+      }
+    }
+
     const key = new cfn.CustomResource(this, `EC2-Key-Pair-${props.name}`, {
       provider: cfn.CustomResourceProvider.fromLambda(this.lambda),
       resourceType: resourceType,
