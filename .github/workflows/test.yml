@@ -15,6 +15,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Setup node
+        uses: actions/setup-node@v2
+        with:
+          node-version: "14"
+
       - name: Checkout code
         uses: actions/checkout@v2
         with:
@@ -27,17 +32,13 @@ jobs:
           chmod 777 $GITHUB_WORKSPACE/lambda --recursive
 
       - name: Deploy
-        uses: udondan/cdk-nodejs@v0.4.0
-        with:
+        run: cd test && make deploy
+        env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          SUBDIR: test
-          args: make deploy
 
       - name: Destroy
-        uses: udondan/cdk-nodejs@v0.4.0
-        with:
+        run: cd test && make DESTROY
+        env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          SUBDIR: test
-          args: make DESTROY
