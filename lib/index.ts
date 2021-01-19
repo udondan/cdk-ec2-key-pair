@@ -56,7 +56,7 @@ export interface KeyPairProps extends cdk.ResourceProps {
    *
    * EC2 Key Pairs themselves don't support tags
    *
-   * @default - `alias/aws/secretsmanager`
+   * @default - None
    */
   readonly tags?: {
     [key: string]: string;
