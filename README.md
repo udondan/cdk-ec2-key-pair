@@ -51,10 +51,14 @@ import { KeyPair } from 'cdk-ec2-key-pair';
 const key = new KeyPair(this, 'A-Key-Pair', {
     name: 'a-key-pair',
     description: 'This is a Key Pair',
+    storePublicKey: true, // by default the public key will not be stored in Secrets Manager
 });
 
 // Grant read access to the private key to a role or user
-key.grantRead(someRole)
+key.grantReadOnPrivateKey(someRole)
+
+// Grant read access to the public key to another role or user
+key.grantReadOnPublicKey(anotherRole)
 
 // Use Key Pair on an EC2 instance
 new ec2.Instance(this, 'An-Instance', {
@@ -63,15 +67,23 @@ new ec2.Instance(this, 'An-Instance', {
 })
 ```
 
-The private key will be stored in AWS Secrets Manager. The secret name by default is prefixed with `ec2-private-key/`, so in this example it will be saved as `ec2-private-key/a-key-pair`.
+The private (and optionally the public) key will be stored in AWS Secrets Manager. The secret names by default are prefixed with `ec2-ssh-key/`. The private key is suffixed with `/private`, the public key is suffixed with `/public`. So in this example they will be stored as `ec2-ssh-key/a-key-pair/private` and `ec2-ssh-key/a-key-pair/public`.
 
 To download the private key via AWS cli you can run:
 
 ```bash
 aws secretsmanager get-secret-value \
-  --secret-id ec2-private-key/a-key-pair \
+  --secret-id ec2-ssh-key/a-key-pair/private \
   --query SecretString \
   --output text
+```
+
+### Tag support
+
+The construct supports tagging. Tags though are only applied to the secrets, since EC2 KeyPairs don't support tags.
+
+```typescript
+cdk.Tags.of(key).add('someTag', 'some value');
 ```
 
 ## Roadmap

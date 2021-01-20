@@ -1,6 +1,7 @@
 import { CustomResource, Event, LambdaEvent, StandardLogger } from 'aws-cloudformation-custom-resource';
 import { Callback, Context } from 'aws-lambda';
 import AWS = require('aws-sdk');
+import forge = require('node-forge');
 
 const ec2 = new AWS.EC2();
 const secretsmanager = new AWS.SecretsManager();
@@ -24,7 +25,8 @@ function Create(event: Event): Promise<Event | AWS.AWSError> {
   );
   return new Promise(function (resolve, reject) {
     createKeyPair(event)
-      .then(savePrivaterKey)
+      .then(createPrivateKeySecret)
+      .then(createPublicKeySecret)
       .then(function (data) {
         resolve(data);
       })
@@ -47,10 +49,22 @@ function Update(event: Event): Promise<Event | AWS.AWSError> {
       );
     }
 
+    if (
+      event.ResourceProperties.StorePublicKey !==
+      event.OldResourceProperties.StorePublicKey
+    ) {
+      reject(
+        new Error(
+          'Once created, a key cannot be modified or accessed. Therefore the public key can only be stored, when the key is created.'
+        )
+      );
+    }
+
     updateKeyPair(event)
-      .then(updatePrivaterKey)
-      .then(updatePrivaterKeyAddTags)
-      .then(updatePrivaterKeyRemoveTags)
+      .then(updatePrivateKeySecret)
+      .then(updatePublicKeySecret)
+      .then(updateSecretsAddTags)
+      .then(updateSecretsRemoveTags)
       .then(function (data) {
         resolve(data);
       })
@@ -66,7 +80,8 @@ function Delete(event: any): Promise<Event | AWS.AWSError> {
   );
   return new Promise(function (resolve, reject) {
     deleteKeyPair(event)
-      .then(deletePrivaterKey)
+      .then(deletePrivateKeySecret)
+      .then(deletePublicKeySecret)
       .then(function (data) {
         resolve(data);
       })
@@ -116,12 +131,12 @@ function deleteKeyPair(event: Event): Promise<Event> {
   });
 }
 
-function savePrivaterKey(event: Event): Promise<Event> {
+function createPrivateKeySecret(event: Event): Promise<Event> {
   return new Promise(function (resolve, reject) {
     secretsmanager.createSecret(
       {
-        Name: `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}`,
-        Description: event.ResourceProperties.Description,
+        Name: `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}/private`,
+        Description: `${event.ResourceProperties.Description} (Private Key)`,
         SecretString: event.KeyMaterial,
         KmsKeyId: event.ResourceProperties.Kms,
         Tags: makeTags(event, event.ResourceProperties),
@@ -138,12 +153,45 @@ function savePrivaterKey(event: Event): Promise<Event> {
   });
 }
 
-function updatePrivaterKey(event: Event): Promise<Event> {
+function createPublicKeySecret(event: Event): Promise<Event> {
+  return new Promise(function (resolve, reject) {
+    if (event.ResourceProperties.StorePublicKey !== 'true') {
+      return resolve(event);
+    }
+
+    const privateKey = forge.pki.privateKeyFromPem(event.KeyMaterial);
+    const forgePublicKey = forge.pki.rsa.setPublicKey(
+      privateKey.n,
+      privateKey.e
+    );
+    const publicKey = forge.ssh.publicKeyToOpenSSH(forgePublicKey);
+
+    secretsmanager.createSecret(
+      {
+        Name: `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}/public`,
+        Description: `${event.ResourceProperties.Description} (Public Key)`,
+        SecretString: publicKey,
+        KmsKeyId: event.ResourceProperties.Kms,
+        Tags: makeTags(event, event.ResourceProperties),
+      },
+      function (
+        err: AWS.AWSError,
+        data: AWS.SecretsManager.CreateSecretResponse
+      ) {
+        if (err) return reject(err);
+        event.addResponseValue('PublicKeyARN', data.ARN);
+        resolve(event);
+      }
+    );
+  });
+}
+
+function updatePrivateKeySecret(event: Event): Promise<Event> {
   return new Promise(function (resolve, reject) {
     secretsmanager.updateSecret(
       {
-        SecretId: `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}`,
-        Description: event.ResourceProperties.Description,
+        SecretId: `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}/private`,
+        Description: `${event.ResourceProperties.Description} (Private key)`,
         KmsKeyId: event.ResourceProperties.Kms,
       },
       function (
@@ -158,26 +206,73 @@ function updatePrivaterKey(event: Event): Promise<Event> {
   });
 }
 
-function updatePrivaterKeyAddTags(event: Event): Promise<Event> {
-  logger.info(
-    `Attempting to update tags for EC2 private key ${event.ResourceProperties.Name}`
-  );
+function updatePublicKeySecret(event: Event): Promise<Event> {
+  return new Promise(function (resolve, reject) {
+    const arn = `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}/public`;
+    secretExists(arn).then((exists) => {
+      if (!exists) {
+        // no public key stored. nothing to do
+        return resolve(event);
+      }
+      secretsmanager.updateSecret(
+        {
+          SecretId: arn,
+          Description: `${event.ResourceProperties.Description} (Public Key)`,
+          KmsKeyId: event.ResourceProperties.Kms,
+        },
+        function (
+          err: AWS.AWSError,
+          data: AWS.SecretsManager.UpdateSecretResponse
+        ) {
+          if (err) return reject(err);
+          event.addResponseValue('PublicKeyARN', data.ARN);
+          resolve(event);
+        }
+      );
+    });
+  });
+}
+
+function updateSecretsAddTags(event: Event): Promise<Event> {
+  const secretPrivateKey = `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}/private`;
+  const secretPublicKey = `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}/public`;
+  return new Promise(function (resolve, reject) {
+    updateSecretAddTags(secretPrivateKey, event).then((event) => {
+      secretExists(secretPublicKey).then((exists) => {
+        if (!exists) {
+          // no public key stored. nothing to do
+          return resolve(event);
+        }
+        updateSecretAddTags(secretPublicKey, event)
+          .then((event) => {
+            resolve(event);
+          })
+          .catch((err) => {
+            reject(err);
+          });
+      });
+    });
+  });
+}
+
+function updateSecretAddTags(secretId: string, event: Event): Promise<Event> {
+  logger.info(`Attempting to update tags for secret ${secretId}`);
   return new Promise(function (resolve, reject) {
     const oldTags = makeTags(event, event.OldResourceProperties);
     const newTags = makeTags(event, event.ResourceProperties);
     if (JSON.stringify(oldTags) == JSON.stringify(newTags)) {
       logger.info(
-        `No changes of tags detected for EC2 private key ${event.ResourceProperties.Name}. Not attempting any update`
+        `No changes of tags detected for secret ${secretId}. Not attempting any update`
       );
       return resolve(event);
     }
 
     secretsmanager.tagResource(
       {
-        SecretId: `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}`,
+        SecretId: secretId,
         Tags: newTags,
       },
-      function (err: AWS.AWSError, data: {}) {
+      function (err: AWS.AWSError, _: {}) {
         if (err) return reject(err);
         resolve(event);
       }
@@ -185,10 +280,33 @@ function updatePrivaterKeyAddTags(event: Event): Promise<Event> {
   });
 }
 
-function updatePrivaterKeyRemoveTags(event: Event): Promise<Event> {
-  logger.info(
-    `Attempting to remove some tags for EC2 private key ${event.ResourceProperties.Name}`
-  );
+function updateSecretsRemoveTags(event: Event): Promise<Event> {
+  const secretPrivateKey = `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}/private`;
+  const secretPublicKey = `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}/public`;
+  return new Promise(function (resolve, reject) {
+    updateSecretRemoveTags(secretPrivateKey, event).then((event) => {
+      secretExists(secretPublicKey).then((exists) => {
+        if (!exists) {
+          // no public key stored. nothing to do
+          return resolve(event);
+        }
+        updateSecretRemoveTags(secretPublicKey, event)
+          .then((event) => {
+            resolve(event);
+          })
+          .catch((err) => {
+            reject(err);
+          });
+      });
+    });
+  });
+}
+
+function updateSecretRemoveTags(
+  secretId: string,
+  event: Event
+): Promise<Event> {
+  logger.info(`Attempting to remove some tags for secret ${secretId}`);
   return new Promise(function (resolve, reject) {
     const oldTags = makeTags(event, event.OldResourceProperties);
     const newTags = makeTags(event, event.ResourceProperties);
@@ -198,7 +316,7 @@ function updatePrivaterKeyRemoveTags(event: Event): Promise<Event> {
       !tagsToRemove.length
     ) {
       logger.info(
-        `No changes of tags detected for EC2 private key ${event.ResourceProperties.Name}. Not attempting any update`
+        `No changes of tags detected for secret ${secretId}. Not attempting any update`
       );
       return resolve(event);
     }
@@ -208,10 +326,10 @@ function updatePrivaterKeyRemoveTags(event: Event): Promise<Event> {
     );
     secretsmanager.untagResource(
       {
-        SecretId: `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}`,
+        SecretId: secretId,
         TagKeys: tagsToRemove,
       },
-      function (err: AWS.AWSError, data: {}) {
+      function (err: AWS.AWSError, _: {}) {
         if (err) reject(err);
         else resolve(event);
       }
@@ -219,31 +337,85 @@ function updatePrivaterKeyRemoveTags(event: Event): Promise<Event> {
   });
 }
 
-function deletePrivaterKey(event: Event): Promise<Event> {
-  return new Promise(function (resolve, reject) {
-    const options: any = {
-      SecretId: `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}`,
-    };
-
-    const removePrivateKeyAfterDays = event.ResourceProperties
-      .RemovePrivateKeyAfterDays as number;
-
-    if (removePrivateKeyAfterDays > 0) {
-      options.RecoveryWindowInDays =
-        event.ResourceProperties.RemovePrivateKeyAfterDays;
-    } else {
-      options.ForceDeleteWithoutRecovery = true;
-    }
-
-    secretsmanager.deleteSecret(options, function (
-      err: AWS.AWSError,
-      data: AWS.SecretsManager.DeleteSecretResponse
-    ) {
-      if (err) return reject(err);
-      event.addResponseValue('PrivateKeyARN', data.ARN);
-      resolve(event);
-    });
+function deletePrivateKeySecret(event: Event): Promise<Event> {
+  return new Promise(async function (resolve, reject) {
+    deleteSecret(
+      `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}/private`,
+      event
+    )
+      .then((data) => {
+        event.addResponseValue('PrivateKeyARN', data.ARN);
+        resolve(event);
+      })
+      .catch((err) => {
+        reject(err);
+      });
   });
+}
+
+function deletePublicKeySecret(event: Event): Promise<Event> {
+  return new Promise(async function (resolve, reject) {
+    const arn = `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}/public`;
+    secretExists(arn)
+      .then((exists) => {
+        if (!exists) {
+          // no public key stored. nothing to do
+          return resolve(event);
+        }
+        deleteSecret(arn, event)
+          .then((data) => {
+            event.addResponseValue('PublicKeyARN', data.ARN);
+            resolve(event);
+          })
+          .catch((err) => {
+            reject(err);
+          });
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
+
+async function secretExists(name: string): Promise<boolean> {
+  return new Promise(async function (resolve, reject) {
+    const params: AWS.SecretsManager.ListSecretsRequest = {
+      Filters: [
+        {
+          Key: 'name',
+          Values: [name],
+        },
+      ],
+    };
+    return secretsmanager.listSecrets(
+      params,
+      (err: AWS.AWSError, data: AWS.SecretsManager.ListSecretsResponse) => {
+        if (err) return reject(err);
+        resolve(data.SecretList.length > 0);
+      }
+    );
+  });
+}
+
+function deleteSecret(
+  secretId: string,
+  event: Event
+): Promise<AWS.SecretsManager.DeleteSecretResponse> {
+  const options: any = {
+    SecretId: secretId,
+  };
+
+  const removeKeySecretsAfterDays = event.ResourceProperties
+    .RemoveKeySecretsAfterDays as number;
+
+  if (removeKeySecretsAfterDays > 0) {
+    options.RecoveryWindowInDays =
+      event.ResourceProperties.RemoveKeySecretsAfterDays;
+  } else {
+    options.ForceDeleteWithoutRecovery = true;
+  }
+
+  return secretsmanager.deleteSecret(options).promise();
 }
 
 function makeTags(

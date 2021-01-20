@@ -23,7 +23,7 @@ export interface KeyPairProps extends cdk.ResourceProps {
   /**
    * Name of the Key Pair
    *
-   * In AWS Secrets Manager the key will be prefixed with `ec2-private-key/`.
+   * In AWS Secrets Manager the key will be prefixed with `ec2-ssh-key/`.
    *
    * The name can be up to 255 characters long. Valid characters include _, -, a-z, A-Z, and 0-9.
    */
@@ -52,29 +52,25 @@ export interface KeyPairProps extends cdk.ResourceProps {
   readonly kms?: kms.Key;
 
   /**
-   * Tags that will be applied to the private key in the AWS Secrets Manager
+   * Store the public key as a secret
    *
-   * EC2 Key Pairs themselves don't support tags
-   *
-   * @default - None
+   * @default - false
    */
-  readonly tags?: {
-    [key: string]: string;
-  };
+  readonly storePublicKey?: boolean;
 
   /**
-   * When the resource is destroyed, after how many days the private key in the AWS Secrets Manager should be deleted.
+   * When the resource is destroyed, after how many days the private and public key in the AWS Secrets Manager should be deleted.
    *
    * Valid values are 0 and 7 to 30
    *
    * @default 0
    */
-  readonly removePrivateKeyAfterDays?: number;
+  readonly removeKeySecretsAfterDays?: number;
 
   /**
    * Prefix for the secret in AWS Secrets Manager.
    *
-   * @default `ec2-private-key/`
+   * @default `ec2-ssh-key/`
    */
   readonly secretPrefix?: string;
 
@@ -100,7 +96,12 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
   /**
    * ARN of the private key in AWS Secrets Manager
    */
-  public readonly arn: string = '';
+  public readonly privateKeyArn: string = '';
+
+  /**
+   * ARN of the public key in AWS Secrets Manager
+   */
+  public readonly publicKeyArn: string = '';
 
   /**
    * Name of the Key Pair
@@ -121,14 +122,14 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
     super(scope, id);
 
     if (
-      props.removePrivateKeyAfterDays &&
-      (props.removePrivateKeyAfterDays < 0 ||
-        (props.removePrivateKeyAfterDays > 0 &&
-          props.removePrivateKeyAfterDays < 7) ||
-        props.removePrivateKeyAfterDays > 30)
+      props.removeKeySecretsAfterDays &&
+      (props.removeKeySecretsAfterDays < 0 ||
+        (props.removeKeySecretsAfterDays > 0 &&
+          props.removeKeySecretsAfterDays < 7) ||
+        props.removeKeySecretsAfterDays > 30)
     ) {
       scope.node.addError(
-        `Parameter removePrivateKeyAfterDays must be 0 or between 7 and 30. Got ${props.removePrivateKeyAfterDays}`
+        `Parameter removeKeySecretsAfterDays must be 0 or between 7 and 30. Got ${props.removeKeySecretsAfterDays}`
       );
     }
 
@@ -138,13 +139,7 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
     this.lambda = this.ensureLambda();
 
     this.tags = new cdk.TagManager(cdk.TagType.MAP, 'Custom::EC2-Key-Pair');
-    this.tags.setTag('CreatedBy', ID);
-
-    if (props.tags) {
-      for (const [key, value] of Object.entries(props.tags!)) {
-        this.tags.setTag(key, value);
-      }
-    }
+    this.tags.setTag('CreatedByCfnCustomResource', ID);
 
     const key = new cfn.CustomResource(this, `EC2-Key-Pair-${props.name}`, {
       provider: cfn.CustomResourceProvider.fromLambda(this.lambda),
@@ -154,8 +149,9 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
         Description: props.description || '',
         KeyLength: props.keyLength || KeyLength.L2048,
         Kms: props.kms?.keyArn || 'alias/aws/secretsmanager',
-        RemovePrivateKeyAfterDays: props.removePrivateKeyAfterDays || 0,
-        SecretPrefix: props.secretPrefix || 'ec2-private-key/',
+        StorePublicKey: props.storePublicKey || false,
+        RemoveKeySecretsAfterDays: props.removeKeySecretsAfterDays || 0,
+        SecretPrefix: props.secretPrefix || 'ec2-ssh-key/',
         StackName: stack,
         Tags: cdk.Lazy.anyValue({
           produce: () => this.tags.renderTags(),
@@ -169,7 +165,8 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
       key.node.addDependency(this.lambda.role!);
     }
 
-    this.arn = key.getAttString('PrivateKeyARN');
+    this.privateKeyArn = key.getAttString('PrivateKeyARN');
+    this.publicKeyArn = key.getAttString('PublicKeyARN');
     this.name = key.getAttString('KeyPairName');
   }
 
@@ -195,7 +192,7 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
           .allow()
           .toCreateSecret()
           .toTagResource()
-          .ifAwsRequestTag('CreatedBy', ID),
+          .ifAwsRequestTag('CreatedByCfnCustomResource', ID),
         new statement.Secretsmanager()
           .allow()
           .allMatchingActions('/^(Describe|Delete|Put|Update)/')
@@ -203,7 +200,7 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
           .toRestoreSecret()
           .toListSecretVersionIds()
           .toUntagResource()
-          .ifResourceTag('CreatedBy', ID),
+          .ifResourceTag('CreatedByCfnCustomResource', ID),
       ],
     });
 
@@ -235,7 +232,18 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
   /**
    * Grants read access to the private key in AWS Secrets Manager
    */
-  grantRead(grantee: iam.IGrantable) {
+  grantReadOnPrivateKey(grantee: iam.IGrantable) {
+    return this.grantRead(this.privateKeyArn, grantee);
+  }
+
+  /**
+   * Grants read access to the public key in AWS Secrets Manager
+   */
+  grantReadOnPublicKey(grantee: iam.IGrantable) {
+    return this.grantRead(this.publicKeyArn, grantee);
+  }
+
+  private grantRead(arn: string, grantee: iam.IGrantable) {
     const result = iam.Grant.addToPrincipal({
       grantee,
       actions: [
@@ -244,7 +252,7 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
         'secretsmanager:GetSecretValue',
         'secretsmanager:ListSecretVersionIds',
       ],
-      resourceArns: [this.arn],
+      resourceArns: [arn],
       scope: this,
     });
     return result;

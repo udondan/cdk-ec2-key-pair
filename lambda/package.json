@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "aws-cloudformation-custom-resource": "^3.0.0"
+    "aws-cloudformation-custom-resource": "^3.0.0",
+    "node-forge": "0.10.0"
   }
 }
