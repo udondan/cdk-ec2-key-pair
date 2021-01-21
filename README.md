@@ -80,15 +80,49 @@ aws secretsmanager get-secret-value \
 
 ### Tag support
 
-The construct supports tagging. Tags though are only applied to the secrets, since EC2 KeyPairs don't support tags.
+The construct supports tagging:
 
 ```typescript
 cdk.Tags.of(key).add('someTag', 'some value');
 ```
 
-## Roadmap
+We also use tags to restrict update/delete actions to those, the construct created itself. The Lambda function, which backs the custom CFN resource, is not able to manipulate other keys/secrets. The tag we use for identifying these resources is `CreatedByCfnCustomResource` with value `CFN::Resource::Custom::EC2-Key-Pair`.
 
-- Name should be optional
+### Updates
+
+Since an EC2 KeyPair cannot be updated, you cannot change any property related to the KeyPair. The code has checks in place which will prevent any attempt to do so. If you try, the stack will end in a failed state. In that case you can safely continue the rollback in the AWS console and ignore the key resource.
+
+You can, however, change properties that only relate to the secrets. These are the KMS keys used for encryption, the `secretPrefix`, `description` and `removeKeySecretsAfterDays`.
+
+### Encryption
+
+Secrets in the AWS Secrets Manager by default are encrypted with the key `alias/aws/secretsmanager`.
+
+To use a custom KMS key you can pass it to the Key Pair:
+
+```typescript
+const kmsKey = new kms.Key(this, 'KMS-key');
+
+const keyPair = new KeyPair(this, 'A-Key-Pair', {
+    name: 'a-key-pair',
+    kms: kmsKey,
+});
+```
+
+This KMS key needs to be created in the same stack. You cannot use a key imported via ARN, because the keys access policy will need to be modified.
+
+To use different KMS keys for the private and public key, use the `kmsPrivateKey` and `kmsPublicKey` instead:
+
+```typescript
+const kmsKeyPrivate = new kms.Key(this, 'KMS-key-private');
+const kmsKeyPublic = new kms.Key(this, 'KMS-key-public');
+
+const keyPair = new KeyPair(this, 'A-Key-Pair', {
+    name: 'a-key-pair',
+    kmsPrivateKey: kmsKeyPrivate,
+    kmsPublicKey: kmsKeyPublic
+});
+```
 
    [AWS CDK]: https://aws.amazon.com/cdk/
    [custom CloudFormation resource]: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-custom-resources.html

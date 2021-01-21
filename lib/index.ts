@@ -8,13 +8,9 @@ import path = require('path');
 
 const resourceType = 'Custom::EC2-Key-Pair';
 const ID = `CFN::Resource::${resourceType}`;
+const createdByTag = 'CreatedByCfnCustomResource';
 const cleanID = ID.replace(/:+/g, '-');
 const lambdaTimeout = 3; // minutes
-
-export enum KeyLength {
-  L2048 = 2048,
-  L4096 = 4096,
-}
 
 /**
  * Definition of EC2 Key Pair
@@ -36,20 +32,35 @@ export interface KeyPairProps extends cdk.ResourceProps {
   readonly description?: string;
 
   /**
-   * Number of bits in the key. Valid options are 2048 and 4096
+   * The KMS key used to encrypt the Secrets Manager secrets with
    *
-   * @default - 2048
-   */
-  readonly keyLength?: KeyLength;
-
-  /**
-   * The KMS key to use to encrypt the private key with
-   *
-   * This needs to be a key created in the same stack. You cannot use a key imported via ARN.
+   * This needs to be a key created in the same stack. You cannot use a key imported via ARN, because the keys access policy will need to be modified.
    *
    * @default - `alias/aws/secretsmanager`
    */
   readonly kms?: kms.Key;
+
+  /**
+   * The KMS key to use to encrypt the private key with
+   *
+   * This needs to be a key created in the same stack. You cannot use a key imported via ARN, because the keys access policy will need to be modified.
+   *
+   * If no value is provided, the property `kms` will be used instead.
+   *
+   * @default - `this.kms`
+   */
+  readonly kmsPrivateKey?: kms.Key;
+
+  /**
+   * The KMS key to use to encrypt the public key with
+   *
+   * This needs to be a key created in the same stack. You cannot use a key imported via ARN, because the keys access policy will need to be modified.
+   *
+   * If no value is provided, the property `kms` will be used instead.
+   *
+   * @default - `this.kms`
+   */
+  readonly kmsPublicKey?: kms.Key;
 
   /**
    * Store the public key as a secret
@@ -106,7 +117,12 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
   /**
    * Name of the Key Pair
    */
-  public readonly name: string = '';
+  public readonly keyPairName: string = '';
+
+  /**
+   * ID of the Key Pair
+   */
+  public readonly keyPairID: string = '';
 
   /**
    * Resource tags
@@ -141,14 +157,17 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
     this.tags = new cdk.TagManager(cdk.TagType.MAP, 'Custom::EC2-Key-Pair');
     this.tags.setTag('CreatedByCfnCustomResource', ID);
 
+    const kmsPrivate = props.kmsPrivateKey || props.kms;
+    const kmsPublic = props.kmsPublicKey || props.kms;
+
     const key = new cfn.CustomResource(this, `EC2-Key-Pair-${props.name}`, {
       provider: cfn.CustomResourceProvider.fromLambda(this.lambda),
       resourceType: resourceType,
       properties: {
         Name: props.name,
         Description: props.description || '',
-        KeyLength: props.keyLength || KeyLength.L2048,
-        Kms: props.kms?.keyArn || 'alias/aws/secretsmanager',
+        KmsPrivate: kmsPrivate?.keyArn || 'alias/aws/secretsmanager',
+        KmsPublic: kmsPublic?.keyArn || 'alias/aws/secretsmanager',
         StorePublicKey: props.storePublicKey || false,
         RemoveKeySecretsAfterDays: props.removeKeySecretsAfterDays || 0,
         SecretPrefix: props.secretPrefix || 'ec2-ssh-key/',
@@ -165,9 +184,22 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
       key.node.addDependency(this.lambda.role!);
     }
 
+    if (typeof props.kmsPrivateKey !== 'undefined') {
+      props.kmsPrivateKey.grantEncryptDecrypt(this.lambda.role!);
+      key.node.addDependency(props.kmsPrivateKey);
+      key.node.addDependency(this.lambda.role!);
+    }
+
+    if (typeof props.kmsPublicKey !== 'undefined') {
+      props.kmsPublicKey.grantEncryptDecrypt(this.lambda.role!);
+      key.node.addDependency(props.kmsPublicKey);
+      key.node.addDependency(this.lambda.role!);
+    }
+
     this.privateKeyArn = key.getAttString('PrivateKeyARN');
     this.publicKeyArn = key.getAttString('PublicKeyARN');
-    this.name = key.getAttString('KeyPairName');
+    this.keyPairName = key.getAttString('KeyPairName');
+    this.keyPairID = key.getAttString('KeyPairID');
   }
 
   private ensureLambda(): lambda.Function {
@@ -182,25 +214,38 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
       managedPolicyName: `${this.prefix}-${cleanID}`,
       description: `Used by Lambda ${cleanID}, which is a custom CFN resource, managing EC2 Key Pairs`,
       statements: [
-        new statement.Ec2()
+        new statement.Ec2() // generally allow to inspect key pairs
           .allow()
-          .toDescribeKeyPairs()
+          .toDescribeKeyPairs(),
+        new statement.Ec2() // allow creation, only if createdByTag is set
+          .allow()
           .toCreateKeyPair()
-          .toDeleteKeyPair(),
-        new statement.Secretsmanager().allow().toListSecrets(),
-        new statement.Secretsmanager()
+          .toCreateTags()
+          .onKeyPair('*')
+          .ifAwsRequestTag(createdByTag, ID),
+        new statement.Ec2() // allow delete/update, only if createdByTag is set
+          .allow()
+          .toDeleteKeyPair()
+          .toCreateTags()
+          .toDeleteTags()
+          .onKeyPair('*')
+          .ifResourceTag(createdByTag, ID),
+        new statement.Secretsmanager() // generally allow to list secrets. we need this to check if a secret exists before attempting to delete it
+          .allow()
+          .toListSecrets(),
+        new statement.Secretsmanager() // allow creation, only if createdByTag is set
           .allow()
           .toCreateSecret()
           .toTagResource()
-          .ifAwsRequestTag('CreatedByCfnCustomResource', ID),
-        new statement.Secretsmanager()
+          .ifAwsRequestTag(createdByTag, ID),
+        new statement.Secretsmanager() // allow delete/update, only if createdByTag is set
           .allow()
           .allMatchingActions('/^(Describe|Delete|Put|Update)/')
           .toGetResourcePolicy()
           .toRestoreSecret()
           .toListSecretVersionIds()
           .toUntagResource()
-          .ifResourceTag('CreatedByCfnCustomResource', ID),
+          .ifResourceTag(createdByTag, ID),
       ],
     });
 
