@@ -12,10 +12,16 @@ export class TestStack extends cdk.Stack {
       name: 'test-key-pair',
       description: 'A test Key Pair',
       removeKeySecretsAfterDays: 0,
-      storePublicKey: true,
+      storePublicKey: false,
+      exposePublicKey: true,
     });
 
     cdk.Tags.of(keyPair).add('a', 'b');
     cdk.Tags.of(keyPair).add('c', 'd');
+
+    new cdk.CfnOutput(this, 'TestPublicKey', {
+      exportName: 'TestPublicKey',
+      value: keyPair.publicKeyValue,
+    });
   }
 }

@@ -69,6 +69,13 @@ export interface KeyPairProps extends cdk.ResourceProps {
   readonly storePublicKey?: boolean;
 
   /**
+   * Expose the public key as property `publicKeyValue`
+   *
+   * @default - false
+   */
+  readonly exposePublicKey?: boolean;
+
+  /**
    * When the resource is destroyed, after how many days the private and public key in the AWS Secrets Manager should be deleted.
    *
    * Valid values are 0 and 7 to 30
@@ -112,6 +119,13 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
    * ARN of the public key in AWS Secrets Manager
    */
   public readonly publicKeyArn: string = '';
+
+  /**
+   * The public key.
+   *
+   * Only filled, when `exposePublicKey = true`
+   */
+  public readonly publicKeyValue: string = '';
 
   /**
    * Name of the Key Pair
@@ -168,6 +182,7 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
         KmsPrivate: kmsPrivate?.keyArn || 'alias/aws/secretsmanager',
         KmsPublic: kmsPublic?.keyArn || 'alias/aws/secretsmanager',
         StorePublicKey: props.storePublicKey || false,
+        ExposePublicKey: props.exposePublicKey || false,
         RemoveKeySecretsAfterDays: props.removeKeySecretsAfterDays || 0,
         SecretPrefix: props.secretPrefix || 'ec2-ssh-key/',
         StackName: stack,
@@ -197,6 +212,7 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
 
     this.privateKeyArn = key.getAttString('PrivateKeyARN');
     this.publicKeyArn = key.getAttString('PublicKeyARN');
+    this.publicKeyValue = key.getAttString('PublicKeyValue');
     this.keyPairName = key.getAttString('KeyPairName');
     this.keyPairID = key.getAttString('KeyPairID');
   }
@@ -240,6 +256,7 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
         new statement.Secretsmanager() // allow delete/update, only if createdByTag is set
           .allow()
           .allMatchingActions('/^(Describe|Delete|Put|Update)/')
+          .toGetSecretValue()
           .toGetResourcePolicy()
           .toRestoreSecret()
           .toListSecretVersionIds()

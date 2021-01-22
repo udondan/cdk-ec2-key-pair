@@ -27,6 +27,7 @@ function Create(event: Event): Promise<Event | AWS.AWSError> {
     createKeyPair(event)
       .then(createPrivateKeySecret)
       .then(createPublicKeySecret)
+      .then(exposePublicKey)
       .then(function (data) {
         resolve(data);
       })
@@ -67,6 +68,7 @@ function Update(event: Event): Promise<Event | AWS.AWSError> {
       .then(updatePublicKeySecret)
       .then(updateSecretsAddTags)
       .then(updateSecretsRemoveTags)
+      .then(exposePublicKey)
       .then(function (data) {
         resolve(data);
       })
@@ -253,17 +255,17 @@ function createPrivateKeySecret(event: Event): Promise<Event> {
 }
 
 function createPublicKeySecret(event: Event): Promise<Event> {
-  return new Promise(function (resolve, reject) {
+  return new Promise(async function (resolve, reject) {
+    let publicKey: string;
+    try {
+      publicKey = await makePublicKey(event);
+    } catch (err) {
+      return reject(err);
+    }
+
     if (event.ResourceProperties.StorePublicKey !== 'true') {
       return resolve(event);
     }
-
-    const privateKey = forge.pki.privateKeyFromPem(event.KeyMaterial);
-    const forgePublicKey = forge.pki.rsa.setPublicKey(
-      privateKey.n,
-      privateKey.e
-    );
-    const publicKey = forge.ssh.publicKeyToOpenSSH(forgePublicKey);
 
     const params: AWS.SecretsManager.CreateSecretRequest = {
       Name: `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}/public`,
@@ -402,6 +404,64 @@ function updateSecretsRemoveTags(event: Event): Promise<Event> {
           });
       });
     });
+  });
+}
+
+function getPrivateKey(event: Event): Promise<string> {
+  return new Promise(function (resolve, reject) {
+    const params: AWS.SecretsManager.GetSecretValueRequest = {
+      SecretId: `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}/private`,
+    };
+    logger.debug(`secretsmanager.getSecretValue: ${JSON.stringify(params)}`);
+    secretsmanager.getSecretValue(
+      params,
+      function (
+        err: AWS.AWSError,
+        data: AWS.SecretsManager.GetSecretValueResponse
+      ) {
+        if (err) return reject(err);
+        resolve(data.SecretString!);
+      }
+    );
+  });
+}
+
+function makePublicKey(event: Event): Promise<string> {
+  return new Promise(async function (resolve, reject) {
+    if (typeof event.KeyMaterial == 'undefined') {
+      try {
+        event.KeyMaterial = await getPrivateKey(event);
+      } catch (err) {
+        return reject(err);
+      }
+    }
+
+    const privateKey = forge.pki.privateKeyFromPem(event.KeyMaterial);
+    const forgePublicKey = forge.pki.rsa.setPublicKey(
+      privateKey.n,
+      privateKey.e
+    );
+    const publicKey = forge.ssh.publicKeyToOpenSSH(forgePublicKey) as string;
+    resolve(publicKey);
+  });
+}
+
+function exposePublicKey(event: Event): Promise<Event> {
+  return new Promise(async function (resolve, reject) {
+    if (event.ResourceProperties.ExposePublicKey == 'true') {
+      try {
+        const publicKey = await makePublicKey(event);
+        event.addResponseValue('PublicKeyValue', publicKey);
+      } catch (err) {
+        return reject(err);
+      }
+    } else {
+      event.addResponseValue(
+        'PublicKeyValue',
+        'Not requested - Set ExposePublicKey to true'
+      );
+    }
+    resolve(event);
   });
 }
 
