@@ -155,7 +155,7 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
     this.lambda = this.ensureLambda();
 
     this.tags = new cdk.TagManager(cdk.TagType.MAP, 'Custom::EC2-Key-Pair');
-    this.tags.setTag('CreatedByCfnCustomResource', ID);
+    this.tags.setTag(createdByTag, ID);
 
     const kmsPrivate = props.kmsPrivateKey || props.kms;
     const kmsPublic = props.kmsPublicKey || props.kms;
