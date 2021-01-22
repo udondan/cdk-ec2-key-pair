@@ -1,4 +1,3 @@
-import cfn = require('@aws-cdk/aws-cloudformation');
 import iam = require('@aws-cdk/aws-iam');
 import kms = require('@aws-cdk/aws-kms');
 import lambda = require('@aws-cdk/aws-lambda');
@@ -144,7 +143,7 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
           props.removeKeySecretsAfterDays < 7) ||
         props.removeKeySecretsAfterDays > 30)
     ) {
-      scope.node.addError(
+      cdk.Annotations.of(this).addError(
         `Parameter removeKeySecretsAfterDays must be 0 or between 7 and 30. Got ${props.removeKeySecretsAfterDays}`
       );
     }
@@ -160,8 +159,8 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
     const kmsPrivate = props.kmsPrivateKey || props.kms;
     const kmsPublic = props.kmsPublicKey || props.kms;
 
-    const key = new cfn.CustomResource(this, `EC2-Key-Pair-${props.name}`, {
-      provider: cfn.CustomResourceProvider.fromLambda(this.lambda),
+    const key = new cdk.CustomResource(this, `EC2-Key-Pair-${props.name}`, {
+      serviceToken: this.lambda.functionArn,
       resourceType: resourceType,
       properties: {
         Name: props.name,
@@ -172,7 +171,7 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
         RemoveKeySecretsAfterDays: props.removeKeySecretsAfterDays || 0,
         SecretPrefix: props.secretPrefix || 'ec2-ssh-key/',
         StackName: stack,
-        Tags: cdk.Lazy.anyValue({
+        Tags: cdk.Lazy.any({
           produce: () => this.tags.renderTags(),
         }),
       },

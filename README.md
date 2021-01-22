@@ -25,7 +25,6 @@ This package has peer dependencies, which need to be installed along in the expe
 For TypeScript/NodeJS, add these to your `dependencies` in `package.json`:
 
 - cdk-ec2-key-pair
-- @aws-cdk/aws-cloudformation
 - @aws-cdk/aws-ec2
 - @aws-cdk/aws-iam
 - @aws-cdk/aws-kms
@@ -34,7 +33,6 @@ For TypeScript/NodeJS, add these to your `dependencies` in `package.json`:
 For Python, add these to your `requirements.txt`:
 
 - cdk-ec2-key-pair
-- aws-cdk.aws-cloudformation
 - aws-cdk.aws-ec2
 - aws-cdk.aws-iam
 - aws-cdk.aws-kms
