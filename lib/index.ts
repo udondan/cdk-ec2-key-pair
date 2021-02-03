@@ -236,14 +236,14 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
           .allow()
           .toCreateKeyPair()
           .toCreateTags()
-          .onKeyPair('*')
+          .onKeyPair('*', undefined, undefined, stack.partition)
           .ifAwsRequestTag(createdByTag, ID),
         new statement.Ec2() // allow delete/update, only if createdByTag is set
           .allow()
           .toDeleteKeyPair()
           .toCreateTags()
           .toDeleteTags()
-          .onKeyPair('*')
+          .onKeyPair('*', undefined, undefined, stack.partition)
           .ifResourceTag(createdByTag, ID),
         new statement.Secretsmanager() // generally allow to list secrets. we need this to check if a secret exists before attempting to delete it
           .allow()
