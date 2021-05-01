@@ -281,7 +281,7 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
       functionName: `${this.prefix}-${cleanID}`,
       role: role,
       description: 'Custom CFN resource: Manage EC2 Key Pairs',
-      runtime: lambda.Runtime.NODEJS_10_X,
+      runtime: lambda.Runtime.NODEJS_14_X,
       handler: 'index.handler',
       code: lambda.Code.fromAsset(path.join(__dirname, '../lambda/code.zip')),
       timeout: cdk.Duration.minutes(lambdaTimeout),
