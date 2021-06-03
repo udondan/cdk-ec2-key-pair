@@ -164,7 +164,12 @@ export class KeyPair extends cdk.Construct implements cdk.ITaggable {
 
     const stack = cdk.Stack.of(this).stackName;
     this.prefix = props.resourcePrefix || stack;
-
+     if (this.prefix.length + cleanID.length > 62)
+            // Cloudformation limits names to 63 characters.
+            cdk.Annotations.of(this).addError(
+                `Cloudformation limits names to 63 characters.
+                 Prefix ${this.prefix} is too long to be used as a prefix for your roleName. Define parameter resourcePrefix?:`
+            );
     this.lambda = this.ensureLambda();
 
     this.tags = new cdk.TagManager(cdk.TagType.MAP, 'Custom::EC2-Key-Pair');
