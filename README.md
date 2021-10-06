@@ -60,7 +60,7 @@ key.grantReadOnPublicKey(anotherRole)
 
 // Use Key Pair on an EC2 instance
 new ec2.Instance(this, 'An-Instance', {
-    keyName: key.name,
+    keyName: key.keyPairName,
     // ...
 })
 ```
