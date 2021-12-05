@@ -1,9 +1,10 @@
-import * as cdk from '@aws-cdk/core';
+import cdk = require('aws-cdk-lib');
+import { Construct } from 'constructs';
 
 import { KeyPair } from '../../lib';
 
 export class TestStack extends cdk.Stack {
-  constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
+  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
     cdk.Tags.of(scope).add('Hello', 'World');
