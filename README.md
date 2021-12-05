@@ -3,7 +3,7 @@
 [![Source](https://img.shields.io/badge/Source-GitHub-blue?logo=github)][source]
 [![Test](https://github.com/udondan/cdk-ec2-key-pair/workflows/Test/badge.svg)](https://github.com/udondan/cdk-ec2-key-pair/actions?query=workflow%3ATest)
 [![GitHub](https://img.shields.io/github/license/udondan/cdk-ec2-key-pair)][license]
-[![Docs](https://img.shields.io/badge/awscdk.io-cdk--ec2--key--pair-orange)][docs]
+[![Docs](https://img.shields.io/badge/Construct%20Hub-cdk--ec2--key--pair-orange)][docs]
 
 [![npm package](https://img.shields.io/npm/v/cdk-ec2-key-pair?color=brightgreen)][npm]
 [![PyPI package](https://img.shields.io/pypi/v/cdk-ec2-key-pair?color=brightgreen)][PyPI]
@@ -126,7 +126,6 @@ const keyPair = new KeyPair(this, 'A-Key-Pair', {
    [AWS Secrets Manager]: https://aws.amazon.com/secrets-manager/
    [npm]: https://www.npmjs.com/package/cdk-ec2-key-pair
    [PyPI]: https://pypi.org/project/cdk-ec2-key-pair/
-   [NuGet]: https://www.nuget.org/packages/CDK.EC2.KeyPair/
-   [docs]: https://awscdk.io/packages/cdk-ec2-key-pair@3.0.0
+   [docs]: https://constructs.dev/packages/cdk-ec2-key-pair
    [source]: https://github.com/udondan/cdk-ec2-key-pair
    [license]: https://github.com/udondan/cdk-ec2-key-pair/blob/master/LICENSE
