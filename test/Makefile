@@ -11,7 +11,7 @@ build: install lambda
 	@echo Building application...
 	@npm run build
 
-deploy:
+deploy: build
 	@echo Deploying application...
 	@npm run cdk -- deploy --require-approval never
 
