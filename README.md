@@ -22,28 +22,26 @@ CloudFormation doesn't directly support creation of EC2 Key Pairs. This construc
 
 This package has peer dependencies, which need to be installed along in the expected version.
 
-For TypeScript/NodeJS, add these to your `dependencies` in `package.json`:
+For TypeScript/NodeJS, add these to your `dependencies` in `package.json`. For Python, add these to your `requirements.txt`:
 
 - cdk-ec2-key-pair
-- @aws-cdk/aws-ec2
-- @aws-cdk/aws-iam
-- @aws-cdk/aws-kms
-- @aws-cdk/aws-lambda
+- aws-cdk-lib (^2.0.0)
+- cdk-iam-floyd (^0.300.0)
+- constructs (^10.0.0)
 
-For Python, add these to your `requirements.txt`:
+## CDK compatibility
 
-- cdk-ec2-key-pair
-- aws-cdk.aws-ec2
-- aws-cdk.aws-iam
-- aws-cdk.aws-kms
-- aws-cdk.aws-lambda
+- Version 3.x is compatible with the CDK v2.
+- Version 2.x is compatible with the CDK v1. There won't be regular updates for this.
 
 ## Usage
 
 ```typescript
-import cdk = require('@aws-cdk/core');
-import ec2 = require('@aws-cdk/aws-ec2');
+import cdk = require('aws-cdk-lib');
+import { Construct } from 'constructs';
 import { KeyPair } from 'cdk-ec2-key-pair';
+
+// ...
 
 // Create the Key Pair
 const key = new KeyPair(this, 'A-Key-Pair', {
@@ -129,6 +127,6 @@ const keyPair = new KeyPair(this, 'A-Key-Pair', {
    [npm]: https://www.npmjs.com/package/cdk-ec2-key-pair
    [PyPI]: https://pypi.org/project/cdk-ec2-key-pair/
    [NuGet]: https://www.nuget.org/packages/CDK.EC2.KeyPair/
-   [docs]: https://awscdk.io/packages/cdk-ec2-key-pair@2.2.1
+   [docs]: https://awscdk.io/packages/cdk-ec2-key-pair@3.0.0
    [source]: https://github.com/udondan/cdk-ec2-key-pair
    [license]: https://github.com/udondan/cdk-ec2-key-pair/blob/master/LICENSE
