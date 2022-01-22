@@ -1,11 +1,11 @@
-import { CustomResource, Event, LambdaEvent, StandardLogger } from 'aws-cloudformation-custom-resource';
+import { CustomResource, Event, LambdaEvent, LogLevel, StandardLogger } from 'aws-cloudformation-custom-resource';
 import { Callback, Context } from 'aws-lambda';
 import AWS = require('aws-sdk');
 import forge = require('node-forge');
 
 const ec2 = new AWS.EC2();
 const secretsmanager = new AWS.SecretsManager();
-const logger = new StandardLogger();
+const logger = new StandardLogger(LogLevel.DEBUG); // @TODO: reset when complete
 
 export const handler = function (
   event: LambdaEvent,
@@ -61,6 +61,15 @@ function Update(event: Event): Promise<Event | AWS.AWSError> {
       );
     }
 
+    const oldKeyType = event.OldResourceProperties.KeyType || 'rsa'; // we added this feature later, so there might be keys w/o a stored type
+    if (event.ResourceProperties.KeyType !== oldKeyType) {
+      reject(
+        new Error(
+          'The type of a Key Pair cannot be changed. Please create a new Key Pair instead'
+        )
+      );
+    }
+
     updateKeyPair(event)
       .then(updateKeyPairAddTags)
       .then(updateKeyPairRemoveTags)
@@ -99,6 +108,7 @@ function createKeyPair(event: Event): Promise<Event> {
   return new Promise(function (resolve, reject) {
     const params: AWS.EC2.CreateKeyPairRequest = {
       KeyName: event.ResourceProperties.Name,
+      KeyType: event.ResourceProperties.KeyType,
       TagSpecifications: [
         {
           ResourceType: 'key-pair',
@@ -112,6 +122,7 @@ function createKeyPair(event: Event): Promise<Event> {
       function (err: AWS.AWSError, data: AWS.EC2.KeyPair) {
         if (err) return reject(err);
         event.addResponseValue('KeyPairName', data.KeyName);
+        event.addResponseValue('KeyType', event.ResourceProperties.KeyType);
         event.addResponseValue('KeyPairID', data.KeyPairId);
         event.KeyFingerprint = data.KeyFingerprint;
         event.KeyMaterial = data.KeyMaterial;
@@ -125,7 +136,7 @@ function createKeyPair(event: Event): Promise<Event> {
 function updateKeyPair(event: Event): Promise<Event> {
   return new Promise(function (resolve, reject) {
     // there is nothing to update. a key cannot be changed
-    // though we use this step to enrich the event with the keyId
+    // though we use this step to enrich the event with the name, ID and type
     const params: AWS.EC2.DescribeKeyPairsRequest = {
       KeyNames: [event.ResourceProperties.Name],
     };
@@ -139,12 +150,14 @@ function updateKeyPair(event: Event): Promise<Event> {
 
         const id = data.KeyPairs![0].KeyPairId!;
         const name = data.KeyPairs![0].KeyName!;
+        const type = data.KeyPairs![0].KeyType!;
         event.KeyID = id;
 
         console.log(`the KEY ID IS ${event.KeyID}`);
 
         event.addResponseValue('KeyPairName', name);
         event.addResponseValue('KeyPairID', id);
+        event.addResponseValue('KeyType', type);
         resolve(event);
       }
     );
@@ -435,14 +448,23 @@ function makePublicKey(event: Event): Promise<string> {
         return reject(err);
       }
     }
+    if (event.ResourceProperties.KeyType == 'rsa') {
+      const privateKey = forge.pki.privateKeyFromPem(event.KeyMaterial);
+      const forgePublicKey = forge.pki.rsa.setPublicKey(
+        privateKey.n,
+        privateKey.e
+      );
 
-    const privateKey = forge.pki.privateKeyFromPem(event.KeyMaterial);
-    const forgePublicKey = forge.pki.rsa.setPublicKey(
-      privateKey.n,
-      privateKey.e
-    );
-    const publicKey = forge.ssh.publicKeyToOpenSSH(forgePublicKey) as string;
-    resolve(publicKey);
+      const publicKey = forge.ssh.publicKeyToOpenSSH(forgePublicKey) as string;
+
+      resolve(publicKey);
+    } else if (event.ResourceProperties.KeyType == 'ed25519') {
+      // @TODO: ??? haven"t found a way to do this for ed25519
+    } else {
+      reject(
+        new Error(`Unsupported key type ${event.ResourceProperties.KeyType}`)
+      );
+    }
   });
 }
 

@@ -12,6 +12,15 @@ const createdByTag = 'CreatedByCfnCustomResource';
 const cleanID = ID.replace(/:+/g, '-');
 const lambdaTimeout = 3; // minutes
 
+export enum KeyType {
+  RSA = 'rsa',
+
+  /**
+   * Note that ED25519 keys are not supported for Windows instances, EC2 Instance Connect, and EC2 Serial Console.
+   */
+  ED25519 = 'ed25519',
+}
+
 /**
  * Definition of EC2 Key Pair
  */
@@ -100,6 +109,15 @@ export interface KeyPairProps extends cdk.ResourceProps {
    * @default Name of the stack
    */
   readonly resourcePrefix?: string;
+
+  /**
+   * The type of key pair.
+   *
+   * Note that ED25519 keys are not supported for Windows instances, EC2 Instance Connect, and EC2 Serial Console
+   *
+   * @default `rsa`
+   */
+  readonly keyType?: KeyType;
 }
 
 /**
@@ -144,6 +162,11 @@ export class KeyPair extends Construct implements cdk.ITaggable {
   public readonly tags: cdk.TagManager;
 
   public readonly prefix: string = '';
+
+  /**
+   * The type of key pair
+   */
+  public readonly keyType: KeyType;
 
   /**
    * Defines a new EC2 Key Pair. The private key will be stored in AWS Secrets Manager
@@ -191,6 +214,7 @@ export class KeyPair extends Construct implements cdk.ITaggable {
         ExposePublicKey: props.exposePublicKey || false,
         RemoveKeySecretsAfterDays: props.removeKeySecretsAfterDays || 0,
         SecretPrefix: props.secretPrefix || 'ec2-ssh-key/',
+        KeyType: props.keyType || KeyType.RSA,
         StackName: stack,
         Tags: cdk.Lazy.any({
           produce: () => this.tags.renderTags(),
@@ -221,6 +245,7 @@ export class KeyPair extends Construct implements cdk.ITaggable {
     this.publicKeyValue = key.getAttString('PublicKeyValue');
     this.keyPairName = key.getAttString('KeyPairName');
     this.keyPairID = key.getAttString('KeyPairID');
+    this.keyType = key.getAttString('KeyType') as KeyType;
   }
 
   private ensureLambda(): lambda.Function {

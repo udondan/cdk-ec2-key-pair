@@ -1,7 +1,7 @@
 import cdk = require('aws-cdk-lib');
 import { Construct } from 'constructs';
 
-import { KeyPair } from '../../lib';
+import { KeyPair, KeyType } from '../../lib';
 
 export class TestStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -15,6 +15,15 @@ export class TestStack extends cdk.Stack {
       removeKeySecretsAfterDays: 0,
       storePublicKey: false,
       exposePublicKey: true,
+    });
+
+    new KeyPair(this, 'Test-Key-Pair-ED25519', {
+      name: 'test-key-pair-2',
+      description: 'A test Key Pair',
+      removeKeySecretsAfterDays: 0,
+      storePublicKey: false,
+      exposePublicKey: true,
+      keyType: KeyType.ED25519,
     });
 
     cdk.Tags.of(keyPair).add('a', 'b');
