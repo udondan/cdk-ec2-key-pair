@@ -9,16 +9,13 @@
     "cdk": "cdk"
   },
   "devDependencies": {
-    "@types/node": "14.14.16",
-    "@types/node-forge": "^0.9.6",
     "aws-cdk": "^2.0.0",
-    "node-forge": "0.10.0",
-    "ts-node": "^9.1.1",
-    "typescript": "~4.1.3"
+    "ts-node": "^10.4.0",
+    "typescript": "^4.5.5"
   },
   "dependencies": {
     "aws-cdk-lib": "2.x",
-    "cdk-iam-floyd": "0.301.0",
+    "cdk-iam-floyd": "0.313.0",
     "cdk-ssm-document": "file:.."
   }
 }
