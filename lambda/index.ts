@@ -450,7 +450,7 @@ function makePublicKey(event: Event): Promise<string> {
     } else {
       reject(
         new Error(
-          `Unsupported public key format ${event.ResourceProperties.publicKeyFormat}`
+          `Unsupported public key format ${event.ResourceProperties.PublicKeyFormat}`
         )
       );
     }
