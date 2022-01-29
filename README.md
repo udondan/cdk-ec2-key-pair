@@ -133,10 +133,10 @@ You also have to set `exposePublicKey` to `true` so you can actually get the pub
       publicKeyFormat: PublicKeyFormat.PEM
   });
 
-  const pubKey = new cloudfront.PublicKey(this, 'Signing Public Key', {
+  const pubKey = new cloudfront.PublicKey(this, 'Signing-Public-Key', {
     encodedKey: key.publicKeyValue,
   });
-  const trustedKeyGroupForCF = new cloudfront.KeyGroup(this, 'Signing Key Group', {
+  const trustedKeyGroupForCF = new cloudfront.KeyGroup(this, 'Signing-Key-Group', {
     items: [ pubKey ]
   });
 ```
