@@ -120,7 +120,7 @@ const keyPair = new KeyPair(this, 'A-Key-Pair', {
 
 ### Importing public key
 
-You can create a key pair by importing the public key. Obviously, in this case the secret key won't be available in secrets manager.
+You can create a key pair by importing the public key. Obviously, in this case the private key won't be available in secrets manager.
 
 The public key has to be in OpenSSH format.
 
