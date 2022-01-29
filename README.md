@@ -118,6 +118,28 @@ const keyPair = new KeyPair(this, 'A-Key-Pair', {
 });
 ```
 
+### Using the key pair for CloudFront signed url/cookies
+
+You can use this library for generating keys for CloudFront signed url/cookies.
+
+Make sure to set `usePEMForPublicKey` to `true` as that is the format required for CF.
+You also have to set `exposePublicKey` to `true` so you can actually get the public key.
+```typescript
+  const key = new KeyPair(this, 'Signing-Key-Pair', {
+      name: 'CFN-signing-key',
+      exposePublicKey: true,
+      storePublicKey: true, 
+      usePEMForPublicKey: true
+  });
+
+  const pubKey = new cloudfront.PublicKey(this, 'Signing Public Key', {
+    encodedKey: key.publicKeyValue,
+  });
+  const trustedKeyGroupForCF = new cloudfront.KeyGroup(this, 'Signing Key Group', {
+    items: [ pubKey ]
+  });
+```
+
    [AWS CDK]: https://aws.amazon.com/cdk/
    [custom CloudFormation resource]: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-custom-resources.html
    [EC2 Key Pairs]: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html
