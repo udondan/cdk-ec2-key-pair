@@ -78,7 +78,7 @@ export interface KeyPairProps extends cdk.ResourceProps {
 
   /**
    * Use PEM format for public key.
-   * 
+   *
    * Relevant only if the public key is stored and/or exposed.
    *
    * @default - false

@@ -128,7 +128,7 @@ You also have to set `exposePublicKey` to `true` so you can actually get the pub
   const key = new KeyPair(this, 'Signing-Key-Pair', {
       name: 'CFN-signing-key',
       exposePublicKey: true,
-      storePublicKey: true, 
+      storePublicKey: true,
       usePEMForPublicKey: true
   });
 

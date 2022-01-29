@@ -442,7 +442,7 @@ function makePublicKey(event: Event): Promise<string> {
       privateKey.e
     );
 
-    let publicKey
+    let publicKey;
     if (event.ResourceProperties.UsePEMForPublicKey === 'true') {
       publicKey = forge.pki.publicKeyToPem(forgePublicKey) as string;
     } else {
