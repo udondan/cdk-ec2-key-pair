@@ -28,15 +28,20 @@ export class TestStack extends cdk.Stack {
 
     // PEM && CloudFront
 
-    const key = new KeyPair(this, 'Test-Key-Pair-PEM', {
+    const keyPairPem = new KeyPair(this, 'Test-Key-Pair-PEM', {
       name: 'CFN-signing-key',
       exposePublicKey: true,
       storePublicKey: true,
       publicKeyFormat: PublicKeyFormat.PEM,
     });
 
+    new cdk.CfnOutput(this, 'Test-Public-Key-PEM', {
+      exportName: 'TestPublicKeyPEM',
+      value: keyPairPem.publicKeyValue,
+    });
+
     const pubKey = new cloudfront.PublicKey(this, 'Signing-Public-Key', {
-      encodedKey: key.publicKeyValue,
+      encodedKey: keyPairPem.publicKeyValue,
     });
 
     new cloudfront.KeyGroup(this, 'Signing-Key-Group', {
