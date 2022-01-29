@@ -442,11 +442,17 @@ function makePublicKey(event: Event): Promise<string> {
       privateKey.e
     );
 
-    let publicKey
-    if (event.ResourceProperties.UsePEMForPublicKey === 'true') {
-      publicKey = forge.pki.publicKeyToPem(forgePublicKey) as string;
+    let publicKey: string;
+    if (event.ResourceProperties.PublicKeyFormat === 'PEM') {
+      publicKey = forge.pki.publicKeyToPem(forgePublicKey);
+    } else if (event.ResourceProperties.PublicKeyFormat === 'OPENSSH') {
+      publicKey = forge.ssh.publicKeyToOpenSSH(forgePublicKey);
     } else {
-      publicKey = forge.ssh.publicKeyToOpenSSH(forgePublicKey) as string;
+      reject(
+        new Error(
+          `Unsupported public key format ${event.ResourceProperties.PublicKeyFormat}`
+        )
+      );
     }
     resolve(publicKey);
   });

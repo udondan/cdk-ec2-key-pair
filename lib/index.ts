@@ -12,6 +12,11 @@ const createdByTag = 'CreatedByCfnCustomResource';
 const cleanID = ID.replace(/:+/g, '-');
 const lambdaTimeout = 3; // minutes
 
+export enum PublicKeyFormat {
+  OPENSSH = 'OPENSSH',
+  PEM = 'PEM',
+}
+
 /**
  * Definition of EC2 Key Pair
  */
@@ -77,13 +82,13 @@ export interface KeyPairProps extends cdk.ResourceProps {
   readonly exposePublicKey?: boolean;
 
   /**
-   * Use PEM format for public key.
-   * 
+   * Format for public key.
+   *
    * Relevant only if the public key is stored and/or exposed.
    *
-   * @default - false
+   * @default - OPENSSH
    */
-  readonly usePEMForPublicKey?: boolean;
+  readonly publicKeyFormat?: PublicKeyFormat;
 
   /**
    * When the resource is destroyed, after how many days the private and public key in the AWS Secrets Manager should be deleted.
@@ -198,7 +203,7 @@ export class KeyPair extends Construct implements cdk.ITaggable {
         KmsPublic: kmsPublic?.keyArn || 'alias/aws/secretsmanager',
         StorePublicKey: props.storePublicKey || false,
         ExposePublicKey: props.exposePublicKey || false,
-        UsePEMForPublicKey: props.usePEMForPublicKey || false,
+        PublicKeyFormat: props.publicKeyFormat || PublicKeyFormat.OPENSSH,
         RemoveKeySecretsAfterDays: props.removeKeySecretsAfterDays || 0,
         SecretPrefix: props.secretPrefix || 'ec2-ssh-key/',
         StackName: stack,

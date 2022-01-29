@@ -1,7 +1,8 @@
 import cdk = require('aws-cdk-lib');
+import cloudfront = require('aws-cdk-lib/aws-cloudfront');
 import { Construct } from 'constructs';
 
-import { KeyPair } from '../../lib';
+import { KeyPair, PublicKeyFormat } from '../../lib';
 
 export class TestStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -20,9 +21,31 @@ export class TestStack extends cdk.Stack {
     cdk.Tags.of(keyPair).add('a', 'b');
     cdk.Tags.of(keyPair).add('c', 'd');
 
-    new cdk.CfnOutput(this, 'TestPublicKey', {
+    new cdk.CfnOutput(this, 'Test-Public-Key', {
       exportName: 'TestPublicKey',
       value: keyPair.publicKeyValue,
+    });
+
+    // PEM && CloudFront
+
+    const keyPairPem = new KeyPair(this, 'Test-Key-Pair-PEM', {
+      name: 'CFN-signing-key',
+      exposePublicKey: true,
+      storePublicKey: true,
+      publicKeyFormat: PublicKeyFormat.PEM,
+    });
+
+    new cdk.CfnOutput(this, 'Test-Public-Key-PEM', {
+      exportName: 'TestPublicKeyPEM',
+      value: keyPairPem.publicKeyValue,
+    });
+
+    const pubKey = new cloudfront.PublicKey(this, 'Signing-Public-Key', {
+      encodedKey: keyPairPem.publicKeyValue,
+    });
+
+    new cloudfront.KeyGroup(this, 'Signing-Key-Group', {
+      items: [pubKey],
     });
   }
 }
