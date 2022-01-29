@@ -203,7 +203,7 @@ export class KeyPair extends Construct implements cdk.ITaggable {
         KmsPublic: kmsPublic?.keyArn || 'alias/aws/secretsmanager',
         StorePublicKey: props.storePublicKey || false,
         ExposePublicKey: props.exposePublicKey || false,
-        UsePEMForPublicKey: props.publicKeyFormat || PublicKeyFormat.OPENSSH,
+        PublicKeyFormat: props.publicKeyFormat || PublicKeyFormat.OPENSSH,
         RemoveKeySecretsAfterDays: props.removeKeySecretsAfterDays || 0,
         SecretPrefix: props.secretPrefix || 'ec2-ssh-key/',
         StackName: stack,

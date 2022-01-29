@@ -443,9 +443,9 @@ function makePublicKey(event: Event): Promise<string> {
     );
 
     let publicKey: string;
-    if (event.ResourceProperties.publicKeyFormat === 'PEM') {
+    if (event.ResourceProperties.PublicKeyFormat === 'PEM') {
       publicKey = forge.pki.publicKeyToPem(forgePublicKey) as string;
-    } else if (event.ResourceProperties.publicKeyFormat === 'OPENSSH') {
+    } else if (event.ResourceProperties.PublicKeyFormat === 'OPENSSH') {
       publicKey = forge.ssh.publicKeyToOpenSSH(forgePublicKey) as string;
     } else {
       reject(
