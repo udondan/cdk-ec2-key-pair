@@ -118,6 +118,19 @@ const keyPair = new KeyPair(this, 'A-Key-Pair', {
 });
 ```
 
+### Importing public key
+
+You can create a key pair by importing the public key. Obviously, in this case the secret key won't be available in secrets manager.
+
+The public key has to be in OpenSSH format.
+
+```typescript
+new KeyPair(this, 'Test-Key-Pair', {
+  name: 'imported-key-pair',
+  publicKey: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCuMmbK...'
+});
+```
+
 ### Using the key pair for CloudFront signed url/cookies
 
 You can use this library for generating keys for CloudFront signed url/cookies.
