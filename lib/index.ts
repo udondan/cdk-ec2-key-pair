@@ -77,6 +77,15 @@ export interface KeyPairProps extends cdk.ResourceProps {
   readonly exposePublicKey?: boolean;
 
   /**
+   * Use PEM format for public key.
+   * 
+   * Relevant only if the public key is stored and/or exposed.
+   *
+   * @default - false
+   */
+  readonly usePEMForPublicKey?: boolean;
+
+  /**
    * When the resource is destroyed, after how many days the private and public key in the AWS Secrets Manager should be deleted.
    *
    * Valid values are 0 and 7 to 30
@@ -189,6 +198,7 @@ export class KeyPair extends Construct implements cdk.ITaggable {
         KmsPublic: kmsPublic?.keyArn || 'alias/aws/secretsmanager',
         StorePublicKey: props.storePublicKey || false,
         ExposePublicKey: props.exposePublicKey || false,
+        UsePEMForPublicKey: props.usePEMForPublicKey || false,
         RemoveKeySecretsAfterDays: props.removeKeySecretsAfterDays || 0,
         SecretPrefix: props.secretPrefix || 'ec2-ssh-key/',
         StackName: stack,
