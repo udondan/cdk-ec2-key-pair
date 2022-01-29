@@ -26,6 +26,22 @@ export class TestStack extends cdk.Stack {
       value: keyPair.publicKeyValue,
     });
 
+    // import public key
+
+    const keyPairImport = new KeyPair(this, 'Test-Key-Pair-Import', {
+      name: 'test-key-pair-import',
+      description: 'A test Key Pair, imported via public key',
+      removeKeySecretsAfterDays: 0,
+      storePublicKey: false,
+      exposePublicKey: true,
+      publicKey: keyPair.publicKeyValue,
+    });
+
+    new cdk.CfnOutput(this, 'Test-Public-Key-Import', {
+      exportName: 'TestPublicKeyImport',
+      value: keyPairImport.publicKeyValue,
+    });
+
     // PEM && CloudFront
 
     const keyPairPem = new KeyPair(this, 'Test-Key-Pair-PEM', {

@@ -68,6 +68,13 @@ export interface KeyPairProps extends cdk.ResourceProps {
   readonly kmsPublicKey?: kms.Key;
 
   /**
+   * Import a public key instead of creating it
+   *
+   * If no public key is provided, a new key pair will be created.
+   */
+  readonly publicKey?: string;
+
+  /**
    * Store the public key as a secret
    *
    * @default - false
@@ -177,6 +184,16 @@ export class KeyPair extends Construct implements cdk.ITaggable {
       );
     }
 
+    if (
+      props.publicKey?.length &&
+      props.publicKeyFormat !== undefined &&
+      props.publicKeyFormat !== PublicKeyFormat.OPENSSH
+    ) {
+      cdk.Annotations.of(this).addError(
+        'When importing a key, the format has to be of type OpenSSH'
+      );
+    }
+
     const stack = cdk.Stack.of(this).stackName;
     this.prefix = props.resourcePrefix || stack;
     if (this.prefix.length + cleanID.length > 62)
@@ -201,6 +218,7 @@ export class KeyPair extends Construct implements cdk.ITaggable {
         Description: props.description || '',
         KmsPrivate: kmsPrivate?.keyArn || 'alias/aws/secretsmanager',
         KmsPublic: kmsPublic?.keyArn || 'alias/aws/secretsmanager',
+        PublicKey: props.publicKey || '',
         StorePublicKey: props.storePublicKey || false,
         ExposePublicKey: props.exposePublicKey || false,
         PublicKeyFormat: props.publicKeyFormat || PublicKeyFormat.OPENSSH,
@@ -253,9 +271,10 @@ export class KeyPair extends Construct implements cdk.ITaggable {
         new statement.Ec2() // generally allow to inspect key pairs
           .allow()
           .toDescribeKeyPairs(),
-        new statement.Ec2() // allow creation, only if createdByTag is set
+        new statement.Ec2() // allow creation/import, only if createdByTag is set
           .allow()
           .toCreateKeyPair()
+          .toImportKeyPair()
           .toCreateTags()
           .onKeyPair('*', undefined, undefined, stack.partition)
           .ifAwsRequestTag(createdByTag, ID),

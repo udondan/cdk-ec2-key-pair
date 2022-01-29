@@ -48,15 +48,22 @@ function Update(event: Event): Promise<Event | AWS.AWSError> {
           'A Key Pair cannot be renamed. Please create a new Key Pair instead'
         )
       );
-    }
-
-    if (
+    } else if (
       event.ResourceProperties.StorePublicKey !==
       event.OldResourceProperties.StorePublicKey
     ) {
       reject(
         new Error(
           'Once created, a key cannot be modified or accessed. Therefore the public key can only be stored, when the key is created.'
+        )
+      );
+    } else if (
+      event.ResourceProperties.PublicKey !==
+      (event.OldResourceProperties.PublicKey || '')
+    ) {
+      reject(
+        new Error(
+          'You cannot change the public key of an exiting key pair. Please delete the key pair and create a new one.'
         )
       );
     }
@@ -97,28 +104,59 @@ function Delete(event: any): Promise<Event | AWS.AWSError> {
 
 function createKeyPair(event: Event): Promise<Event> {
   return new Promise(function (resolve, reject) {
-    const params: AWS.EC2.CreateKeyPairRequest = {
-      KeyName: event.ResourceProperties.Name,
-      TagSpecifications: [
-        {
-          ResourceType: 'key-pair',
-          Tags: makeTags(event, event.ResourceProperties) as AWS.EC2.TagList,
-        },
-      ],
-    };
-    logger.debug(`ec2.createKeyPair: ${JSON.stringify(params)}`);
-    ec2.createKeyPair(
-      params,
-      function (err: AWS.AWSError, data: AWS.EC2.KeyPair) {
-        if (err) return reject(err);
-        event.addResponseValue('KeyPairName', data.KeyName);
-        event.addResponseValue('KeyPairID', data.KeyPairId);
-        event.KeyFingerprint = data.KeyFingerprint;
-        event.KeyMaterial = data.KeyMaterial;
-        event.KeyID = data.KeyPairId;
-        resolve(event);
-      }
-    );
+    if (
+      // public key provided, let's import
+      event.ResourceProperties.PublicKey &&
+      event.ResourceProperties.PublicKey.length
+    ) {
+      const params: AWS.EC2.ImportKeyPairRequest = {
+        KeyName: event.ResourceProperties.Name,
+        PublicKeyMaterial: event.ResourceProperties.PublicKey,
+        TagSpecifications: [
+          {
+            ResourceType: 'key-pair',
+            Tags: makeTags(event, event.ResourceProperties) as AWS.EC2.TagList,
+          },
+        ],
+      };
+      logger.debug(`ec2.importKeyPair: ${JSON.stringify(params)}`);
+      ec2.importKeyPair(
+        params,
+        function (err: AWS.AWSError, data: AWS.EC2.KeyPair) {
+          if (err) return reject(err);
+          event.addResponseValue('KeyPairName', data.KeyName);
+          event.addResponseValue('KeyPairID', data.KeyPairId);
+          event.KeyFingerprint = data.KeyFingerprint;
+          event.KeyMaterial = data.KeyMaterial;
+          event.KeyID = data.KeyPairId;
+          resolve(event);
+        }
+      );
+    } else {
+      // no public key provided. create new key
+      const params: AWS.EC2.CreateKeyPairRequest = {
+        KeyName: event.ResourceProperties.Name,
+        TagSpecifications: [
+          {
+            ResourceType: 'key-pair',
+            Tags: makeTags(event, event.ResourceProperties) as AWS.EC2.TagList,
+          },
+        ],
+      };
+      logger.debug(`ec2.createKeyPair: ${JSON.stringify(params)}`);
+      ec2.createKeyPair(
+        params,
+        function (err: AWS.AWSError, data: AWS.EC2.KeyPair) {
+          if (err) return reject(err);
+          event.addResponseValue('KeyPairName', data.KeyName);
+          event.addResponseValue('KeyPairID', data.KeyPairId);
+          event.KeyFingerprint = data.KeyFingerprint;
+          event.KeyMaterial = data.KeyMaterial;
+          event.KeyID = data.KeyPairId;
+          resolve(event);
+        }
+      );
+    }
   });
 }
 
@@ -232,6 +270,10 @@ function deleteKeyPair(event: Event): Promise<Event> {
 
 function createPrivateKeySecret(event: Event): Promise<Event> {
   return new Promise(function (resolve, reject) {
+    if (event.ResourceProperties.PublicKey) {
+      event.addResponseValue('PrivateKeyARN', null);
+      return resolve(event);
+    }
     const params: AWS.SecretsManager.CreateSecretRequest = {
       Name: `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}/private`,
       Description: `${event.ResourceProperties.Description} (Private Key)`,
@@ -257,10 +299,14 @@ function createPrivateKeySecret(event: Event): Promise<Event> {
 function createPublicKeySecret(event: Event): Promise<Event> {
   return new Promise(async function (resolve, reject) {
     let publicKey: string;
-    try {
-      publicKey = await makePublicKey(event);
-    } catch (err) {
-      return reject(err);
+    if (event.ResourceProperties.PublicKey.length)
+      publicKey = event.ResourceProperties.PublicKey;
+    else {
+      try {
+        publicKey = await makePublicKey(event);
+      } catch (err) {
+        return reject(err);
+      }
     }
 
     if (event.ResourceProperties.StorePublicKey !== 'true') {
@@ -462,7 +508,12 @@ function exposePublicKey(event: Event): Promise<Event> {
   return new Promise(async function (resolve, reject) {
     if (event.ResourceProperties.ExposePublicKey == 'true') {
       try {
-        const publicKey = await makePublicKey(event);
+        let publicKey: string;
+        if (event.ResourceProperties.PublicKey.length) {
+          publicKey = event.ResourceProperties.PublicKey;
+        } else {
+          publicKey = await makePublicKey(event);
+        }
         event.addResponseValue('PublicKeyValue', publicKey);
       } catch (err) {
         return reject(err);
@@ -513,13 +564,21 @@ function updateSecretRemoveTags(
 
 function deletePrivateKeySecret(event: Event): Promise<Event> {
   return new Promise(async function (resolve, reject) {
-    deleteSecret(
-      `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}/private`,
-      event
-    )
-      .then((data) => {
-        event.addResponseValue('PrivateKeyARN', data.ARN);
-        resolve(event);
+    const arn = `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}/private`;
+    secretExists(arn)
+      .then((exists) => {
+        if (!exists) {
+          // no private key stored. nothing to do
+          return resolve(event);
+        }
+        deleteSecret(arn, event)
+          .then((data) => {
+            event.addResponseValue('PrivateKeyARN', data.ARN);
+            resolve(event);
+          })
+          .catch((err) => {
+            reject(err);
+          });
       })
       .catch((err) => {
         reject(err);
