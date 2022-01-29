@@ -564,13 +564,21 @@ function updateSecretRemoveTags(
 
 function deletePrivateKeySecret(event: Event): Promise<Event> {
   return new Promise(async function (resolve, reject) {
-    deleteSecret(
-      `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}/private`,
-      event
-    )
-      .then((data) => {
-        event.addResponseValue('PrivateKeyARN', data.ARN);
-        resolve(event);
+    const arn = `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}/private`;
+    secretExists(arn)
+      .then((exists) => {
+        if (!exists) {
+          // no private key stored. nothing to do
+          return resolve(event);
+        }
+        deleteSecret(arn, event)
+          .then((data) => {
+            event.addResponseValue('PrivateKeyARN', data.ARN);
+            resolve(event);
+          })
+          .catch((err) => {
+            reject(err);
+          });
       })
       .catch((err) => {
         reject(err);
