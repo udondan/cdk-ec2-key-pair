@@ -273,6 +273,19 @@ export class KeyPair extends Construct implements ITaggable {
       return existing as aws_lambda.Function;
     }
 
+    const theTag = 'CFN::Resource::Custom::EC2-Key-Pair';
+    const ec2conditions = {
+      StringLike: {
+        'ec2:ResourceTag/CreatedByCfnCustomResource': theTag,
+      },
+    };
+    const smConditions = {
+      StringLike: {
+        'aws:RequestTag/CreatedByCfnCustomResource': theTag,
+      },
+    };
+    const resources = [`arn:${stack.partition}::ec2:key-pair/*`];
+
     const policy = new aws_iam.ManagedPolicy(
       stack,
       'EC2-Key-Pair-Manager-Policy',
@@ -280,34 +293,63 @@ export class KeyPair extends Construct implements ITaggable {
         managedPolicyName: `${this.prefix}-${cleanID}`,
         description: `Used by Lambda ${cleanID}, which is a custom CFN resource, managing EC2 Key Pairs`,
         statements: [
-          new statement.Ec2() // generally allow to inspect key pairs
-            .toDescribeKeyPairs(),
-          new statement.Ec2() // allow creation/import, only if createdByTag is set
-            .toCreateKeyPair()
-            .toImportKeyPair()
-            .toCreateTags()
-            .onKeyPair('*', undefined, undefined, stack.partition)
-            .ifAwsRequestTag(createdByTag, ID),
-          new statement.Ec2() // allow delete/update, only if createdByTag is set
-            .toDeleteKeyPair()
-            .toCreateTags()
-            .toDeleteTags()
-            .onKeyPair('*', undefined, undefined, stack.partition)
-            .ifResourceTag(createdByTag, ID),
-          new statement.Secretsmanager() // generally allow to list secrets. we need this to check if a secret exists before attempting to delete it
-            .toListSecrets(),
-          new statement.Secretsmanager() // allow creation, only if createdByTag is set
-            .toCreateSecret()
-            .toTagResource()
-            .ifAwsRequestTag(createdByTag, ID),
-          new statement.Secretsmanager() // allow delete/update, only if createdByTag is set
-            .allMatchingActions('/^(Describe|Delete|Put|Update)/')
-            .toGetSecretValue()
-            .toGetResourcePolicy()
-            .toRestoreSecret()
-            .toListSecretVersionIds()
-            .toUntagResource()
-            .ifResourceTag(createdByTag, ID),
+          new aws_iam.PolicyStatement({
+            sid: 'Allow-to-inspect-key-pairs',
+            actions: [
+              'ec2:DescribeKeyPairs',
+              'ec2:DescribeKeyPair',
+              'ec2:DescribeTags',
+            ],
+            resources: ['*'],
+          }),
+          new aws_iam.PolicyStatement({
+            sid: 'Allow-to-create-or-key-pairs-if-createdByTag-is-set',
+            actions: [
+              'ec2:CreateKeyPair',
+              'ec2:CreateTags',
+              'ec2:ImportKeyPair',
+            ],
+            conditions: ec2conditions,
+            resources,
+          }),
+          new aws_iam.PolicyStatement({
+            // allow delete/update, only if createdByTag is set
+            sid: 'Allow-to-delete-or-update-key-pairs-if-createdByTag-is-set',
+            actions: ['ec2:CreateTags', 'ec2:DeleteKeyPair', 'ec2:DeleteTags'],
+            conditions: ec2conditions,
+            resources,
+          }),
+
+          new aws_iam.PolicyStatement({
+            // we need this to check if a secret exists before attempting to delete it
+            sid: 'Allow-to-list-secrets',
+            actions: ['secretsmanager:ListSecrets'],
+            resources: ['*'],
+          }),
+          new aws_iam.PolicyStatement({
+            sid: 'Allow-to-create-secrets-if-createdByTag-is-set',
+            actions: [
+              'secretsmanager:CreateSecret',
+              'secretsmanager:TagResource',
+            ],
+            conditions: smConditions,
+          }),
+          new aws_iam.PolicyStatement({
+            // allow delete/update, only if createdByTag is set
+            sid: 'Allow-to-delete-or-update-secrets-if-createdByTag-is-set',
+            actions: [
+              'secretsmanager:Describe*',
+              'secretsmanager:Delete*',
+              'secretsmanager:Put*',
+              'secretsmanager:Update*',
+              'secretsmanager:GetResourcePolicy',
+              'secretsmanager:GetSecretValue',
+              'secretsmanager:RestoreSecret',
+              'secretsmanager:ListSecretVersionIds',
+              'secretsmanager:UntagResource',
+            ],
+            conditions: smConditions,
+          }),
         ],
       }
     );
