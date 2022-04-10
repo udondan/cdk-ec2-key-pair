@@ -281,32 +281,26 @@ export class KeyPair extends Construct implements ITaggable {
         description: `Used by Lambda ${cleanID}, which is a custom CFN resource, managing EC2 Key Pairs`,
         statements: [
           new statement.Ec2() // generally allow to inspect key pairs
-            .allow()
             .toDescribeKeyPairs(),
           new statement.Ec2() // allow creation/import, only if createdByTag is set
-            .allow()
             .toCreateKeyPair()
             .toImportKeyPair()
             .toCreateTags()
             .onKeyPair('*', undefined, undefined, stack.partition)
             .ifAwsRequestTag(createdByTag, ID),
           new statement.Ec2() // allow delete/update, only if createdByTag is set
-            .allow()
             .toDeleteKeyPair()
             .toCreateTags()
             .toDeleteTags()
             .onKeyPair('*', undefined, undefined, stack.partition)
             .ifResourceTag(createdByTag, ID),
           new statement.Secretsmanager() // generally allow to list secrets. we need this to check if a secret exists before attempting to delete it
-            .allow()
             .toListSecrets(),
           new statement.Secretsmanager() // allow creation, only if createdByTag is set
-            .allow()
             .toCreateSecret()
             .toTagResource()
             .ifAwsRequestTag(createdByTag, ID),
           new statement.Secretsmanager() // allow delete/update, only if createdByTag is set
-            .allow()
             .allMatchingActions('/^(Describe|Delete|Put|Update)/')
             .toGetSecretValue()
             .toGetResourcePolicy()
