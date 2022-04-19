@@ -13,7 +13,7 @@ import {
   TagType,
 } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
-import path from 'path';
+import path = require('path');
 
 const resourceType = 'Custom::EC2-Key-Pair';
 const ID = `CFN::Resource::${resourceType}`;
@@ -273,18 +273,7 @@ export class KeyPair extends Construct implements ITaggable {
       return existing as aws_lambda.Function;
     }
 
-    const theTag = 'CFN::Resource::Custom::EC2-Key-Pair';
-    const ec2conditions = {
-      StringLike: {
-        'ec2:ResourceTag/CreatedByCfnCustomResource': theTag,
-      },
-    };
-    const smConditions = {
-      StringLike: {
-        'aws:RequestTag/CreatedByCfnCustomResource': theTag,
-      },
-    };
-    const resources = [`arn:${stack.partition}::ec2:key-pair/*`];
+    const resources = [`arn:${stack.partition}:ec2:*:*:key-pair/*`];
 
     const policy = new aws_iam.ManagedPolicy(
       stack,
@@ -294,61 +283,72 @@ export class KeyPair extends Construct implements ITaggable {
         description: `Used by Lambda ${cleanID}, which is a custom CFN resource, managing EC2 Key Pairs`,
         statements: [
           new aws_iam.PolicyStatement({
-            sid: 'Allow-to-inspect-key-pairs',
-            actions: [
-              'ec2:DescribeKeyPairs',
-              'ec2:DescribeKeyPair',
-              'ec2:DescribeTags',
-            ],
+            actions: ['ec2:DescribeKeyPairs'],
             resources: ['*'],
           }),
           new aws_iam.PolicyStatement({
-            sid: 'Allow-to-create-or-key-pairs-if-createdByTag-is-set',
             actions: [
               'ec2:CreateKeyPair',
               'ec2:CreateTags',
               'ec2:ImportKeyPair',
             ],
-            conditions: ec2conditions,
+            conditions: {
+              StringLike: {
+                'aws:RequestTag/CreatedByCfnCustomResource': ID,
+              },
+            },
             resources,
           }),
           new aws_iam.PolicyStatement({
             // allow delete/update, only if createdByTag is set
-            sid: 'Allow-to-delete-or-update-key-pairs-if-createdByTag-is-set',
             actions: ['ec2:CreateTags', 'ec2:DeleteKeyPair', 'ec2:DeleteTags'],
-            conditions: ec2conditions,
+            conditions: {
+              StringLike: {
+                'ec2:ResourceTag/CreatedByCfnCustomResource': ID,
+              },
+            },
             resources,
           }),
 
           new aws_iam.PolicyStatement({
             // we need this to check if a secret exists before attempting to delete it
-            sid: 'Allow-to-list-secrets',
             actions: ['secretsmanager:ListSecrets'],
             resources: ['*'],
           }),
           new aws_iam.PolicyStatement({
-            sid: 'Allow-to-create-secrets-if-createdByTag-is-set',
             actions: [
               'secretsmanager:CreateSecret',
               'secretsmanager:TagResource',
             ],
-            conditions: smConditions,
+            conditions: {
+              StringLike: {
+                'aws:RequestTag/CreatedByCfnCustomResource': ID,
+              },
+            },
+            resources: ['*'],
           }),
           new aws_iam.PolicyStatement({
             // allow delete/update, only if createdByTag is set
-            sid: 'Allow-to-delete-or-update-secrets-if-createdByTag-is-set',
             actions: [
-              'secretsmanager:Describe*',
-              'secretsmanager:Delete*',
-              'secretsmanager:Put*',
-              'secretsmanager:Update*',
+              'secretsmanager:DeleteResourcePolicy',
+              'secretsmanager:DeleteSecret',
+              'secretsmanager:DescribeSecret',
               'secretsmanager:GetResourcePolicy',
               'secretsmanager:GetSecretValue',
-              'secretsmanager:RestoreSecret',
               'secretsmanager:ListSecretVersionIds',
+              'secretsmanager:PutResourcePolicy',
+              'secretsmanager:PutSecretValue',
+              'secretsmanager:RestoreSecret',
               'secretsmanager:UntagResource',
+              'secretsmanager:UpdateSecret',
+              'secretsmanager:UpdateSecretVersionStage',
             ],
-            conditions: smConditions,
+            conditions: {
+              StringLike: {
+                'secretsmanager:ResourceTag/CreatedByCfnCustomResource': ID,
+              },
+            },
+            resources: ['*'],
           }),
         ],
       }
