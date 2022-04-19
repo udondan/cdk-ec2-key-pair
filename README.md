@@ -24,7 +24,6 @@ For TypeScript/NodeJS, add these to your `dependencies` in `package.json`. For P
 
 - cdk-ec2-key-pair
 - aws-cdk-lib (^2.0.0)
-- cdk-iam-floyd (^0.300.0)
 - constructs (^10.0.0)
 
 ## CDK compatibility

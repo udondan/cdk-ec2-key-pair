@@ -1,8 +1,17 @@
-import cdk = require('aws-cdk-lib');
-import iam = require('aws-cdk-lib/aws-iam');
-import kms = require('aws-cdk-lib/aws-kms');
-import lambda = require('aws-cdk-lib/aws-lambda');
-import * as statement from 'cdk-iam-floyd';
+import {
+  Annotations,
+  aws_iam,
+  aws_kms,
+  aws_lambda,
+  CustomResource,
+  Duration,
+  ITaggable,
+  Lazy,
+  ResourceProps,
+  Stack,
+  TagManager,
+  TagType,
+} from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import path = require('path');
 
@@ -20,7 +29,7 @@ export enum PublicKeyFormat {
 /**
  * Definition of EC2 Key Pair
  */
-export interface KeyPairProps extends cdk.ResourceProps {
+export interface KeyPairProps extends ResourceProps {
   /**
    * Name of the Key Pair
    *
@@ -43,7 +52,7 @@ export interface KeyPairProps extends cdk.ResourceProps {
    *
    * @default - `alias/aws/secretsmanager`
    */
-  readonly kms?: kms.Key;
+  readonly kms?: aws_kms.Key;
 
   /**
    * The KMS key to use to encrypt the private key with
@@ -54,7 +63,7 @@ export interface KeyPairProps extends cdk.ResourceProps {
    *
    * @default - `this.kms`
    */
-  readonly kmsPrivateKey?: kms.Key;
+  readonly kmsPrivateKey?: aws_kms.Key;
 
   /**
    * The KMS key to use to encrypt the public key with
@@ -65,7 +74,7 @@ export interface KeyPairProps extends cdk.ResourceProps {
    *
    * @default - `this.kms`
    */
-  readonly kmsPublicKey?: kms.Key;
+  readonly kmsPublicKey?: aws_kms.Key;
 
   /**
    * Import a public key instead of creating it
@@ -126,11 +135,11 @@ export interface KeyPairProps extends cdk.ResourceProps {
 /**
  * An EC2 Key Pair
  */
-export class KeyPair extends Construct implements cdk.ITaggable {
+export class KeyPair extends Construct implements ITaggable {
   /**
    * The lambda function that is created
    */
-  public readonly lambda: lambda.IFunction;
+  public readonly lambda: aws_lambda.IFunction;
 
   /**
    * ARN of the private key in AWS Secrets Manager
@@ -162,7 +171,7 @@ export class KeyPair extends Construct implements cdk.ITaggable {
   /**
    * Resource tags
    */
-  public readonly tags: cdk.TagManager;
+  public readonly tags: TagManager;
 
   public readonly prefix: string = '';
 
@@ -179,7 +188,7 @@ export class KeyPair extends Construct implements cdk.ITaggable {
           props.removeKeySecretsAfterDays < 7) ||
         props.removeKeySecretsAfterDays > 30)
     ) {
-      cdk.Annotations.of(this).addError(
+      Annotations.of(this).addError(
         `Parameter removeKeySecretsAfterDays must be 0 or between 7 and 30. Got ${props.removeKeySecretsAfterDays}`
       );
     }
@@ -189,28 +198,28 @@ export class KeyPair extends Construct implements cdk.ITaggable {
       props.publicKeyFormat !== undefined &&
       props.publicKeyFormat !== PublicKeyFormat.OPENSSH
     ) {
-      cdk.Annotations.of(this).addError(
+      Annotations.of(this).addError(
         'When importing a key, the format has to be of type OpenSSH'
       );
     }
 
-    const stack = cdk.Stack.of(this).stackName;
+    const stack = Stack.of(this).stackName;
     this.prefix = props.resourcePrefix || stack;
     if (this.prefix.length + cleanID.length > 62)
       // Cloudformation limits names to 63 characters.
-      cdk.Annotations.of(this).addError(
+      Annotations.of(this).addError(
         `Cloudformation limits names to 63 characters.
          Prefix ${this.prefix} is too long to be used as a prefix for your roleName. Define parameter resourcePrefix?:`
       );
     this.lambda = this.ensureLambda();
 
-    this.tags = new cdk.TagManager(cdk.TagType.MAP, 'Custom::EC2-Key-Pair');
+    this.tags = new TagManager(TagType.MAP, 'Custom::EC2-Key-Pair');
     this.tags.setTag(createdByTag, ID);
 
     const kmsPrivate = props.kmsPrivateKey || props.kms;
     const kmsPublic = props.kmsPublicKey || props.kms;
 
-    const key = new cdk.CustomResource(this, `EC2-Key-Pair-${props.name}`, {
+    const key = new CustomResource(this, `EC2-Key-Pair-${props.name}`, {
       serviceToken: this.lambda.functionArn,
       resourceType: resourceType,
       properties: {
@@ -225,7 +234,7 @@ export class KeyPair extends Construct implements cdk.ITaggable {
         RemoveKeySecretsAfterDays: props.removeKeySecretsAfterDays || 0,
         SecretPrefix: props.secretPrefix || 'ec2-ssh-key/',
         StackName: stack,
-        Tags: cdk.Lazy.any({
+        Tags: Lazy.any({
           produce: () => this.tags.renderTags(),
         }),
       },
@@ -256,75 +265,117 @@ export class KeyPair extends Construct implements cdk.ITaggable {
     this.keyPairID = key.getAttString('KeyPairID');
   }
 
-  private ensureLambda(): lambda.Function {
-    const stack = cdk.Stack.of(this);
+  private ensureLambda(): aws_lambda.Function {
+    const stack = Stack.of(this);
     const constructName = 'EC2-Key-Name-Manager-Lambda';
     const existing = stack.node.tryFindChild(constructName);
     if (existing) {
-      return existing as lambda.Function;
+      return existing as aws_lambda.Function;
     }
 
-    const policy = new iam.ManagedPolicy(stack, 'EC2-Key-Pair-Manager-Policy', {
-      managedPolicyName: `${this.prefix}-${cleanID}`,
-      description: `Used by Lambda ${cleanID}, which is a custom CFN resource, managing EC2 Key Pairs`,
-      statements: [
-        new statement.Ec2() // generally allow to inspect key pairs
-          .allow()
-          .toDescribeKeyPairs(),
-        new statement.Ec2() // allow creation/import, only if createdByTag is set
-          .allow()
-          .toCreateKeyPair()
-          .toImportKeyPair()
-          .toCreateTags()
-          .onKeyPair('*', undefined, undefined, stack.partition)
-          .ifAwsRequestTag(createdByTag, ID),
-        new statement.Ec2() // allow delete/update, only if createdByTag is set
-          .allow()
-          .toDeleteKeyPair()
-          .toCreateTags()
-          .toDeleteTags()
-          .onKeyPair('*', undefined, undefined, stack.partition)
-          .ifResourceTag(createdByTag, ID),
-        new statement.Secretsmanager() // generally allow to list secrets. we need this to check if a secret exists before attempting to delete it
-          .allow()
-          .toListSecrets(),
-        new statement.Secretsmanager() // allow creation, only if createdByTag is set
-          .allow()
-          .toCreateSecret()
-          .toTagResource()
-          .ifAwsRequestTag(createdByTag, ID),
-        new statement.Secretsmanager() // allow delete/update, only if createdByTag is set
-          .allow()
-          .allMatchingActions('/^(Describe|Delete|Put|Update)/')
-          .toGetSecretValue()
-          .toGetResourcePolicy()
-          .toRestoreSecret()
-          .toListSecretVersionIds()
-          .toUntagResource()
-          .ifResourceTag(createdByTag, ID),
-      ],
-    });
+    const resources = [`arn:${stack.partition}:ec2:*:*:key-pair/*`];
 
-    const role = new iam.Role(stack, 'EC2-Key-Pair-Manager-Role', {
+    const policy = new aws_iam.ManagedPolicy(
+      stack,
+      'EC2-Key-Pair-Manager-Policy',
+      {
+        managedPolicyName: `${this.prefix}-${cleanID}`,
+        description: `Used by Lambda ${cleanID}, which is a custom CFN resource, managing EC2 Key Pairs`,
+        statements: [
+          new aws_iam.PolicyStatement({
+            actions: ['ec2:DescribeKeyPairs'],
+            resources: ['*'],
+          }),
+          new aws_iam.PolicyStatement({
+            actions: [
+              'ec2:CreateKeyPair',
+              'ec2:CreateTags',
+              'ec2:ImportKeyPair',
+            ],
+            conditions: {
+              StringLike: {
+                'aws:RequestTag/CreatedByCfnCustomResource': ID,
+              },
+            },
+            resources,
+          }),
+          new aws_iam.PolicyStatement({
+            // allow delete/update, only if createdByTag is set
+            actions: ['ec2:CreateTags', 'ec2:DeleteKeyPair', 'ec2:DeleteTags'],
+            conditions: {
+              StringLike: {
+                'ec2:ResourceTag/CreatedByCfnCustomResource': ID,
+              },
+            },
+            resources,
+          }),
+
+          new aws_iam.PolicyStatement({
+            // we need this to check if a secret exists before attempting to delete it
+            actions: ['secretsmanager:ListSecrets'],
+            resources: ['*'],
+          }),
+          new aws_iam.PolicyStatement({
+            actions: [
+              'secretsmanager:CreateSecret',
+              'secretsmanager:TagResource',
+            ],
+            conditions: {
+              StringLike: {
+                'aws:RequestTag/CreatedByCfnCustomResource': ID,
+              },
+            },
+            resources: ['*'],
+          }),
+          new aws_iam.PolicyStatement({
+            // allow delete/update, only if createdByTag is set
+            actions: [
+              'secretsmanager:DeleteResourcePolicy',
+              'secretsmanager:DeleteSecret',
+              'secretsmanager:DescribeSecret',
+              'secretsmanager:GetResourcePolicy',
+              'secretsmanager:GetSecretValue',
+              'secretsmanager:ListSecretVersionIds',
+              'secretsmanager:PutResourcePolicy',
+              'secretsmanager:PutSecretValue',
+              'secretsmanager:RestoreSecret',
+              'secretsmanager:UntagResource',
+              'secretsmanager:UpdateSecret',
+              'secretsmanager:UpdateSecretVersionStage',
+            ],
+            conditions: {
+              StringLike: {
+                'secretsmanager:ResourceTag/CreatedByCfnCustomResource': ID,
+              },
+            },
+            resources: ['*'],
+          }),
+        ],
+      }
+    );
+
+    const role = new aws_iam.Role(stack, 'EC2-Key-Pair-Manager-Role', {
       roleName: `${this.prefix}-${cleanID}`,
       description: `Used by Lambda ${cleanID}, which is a custom CFN resource, managing EC2 Key Pairs`,
-      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
+      assumedBy: new aws_iam.ServicePrincipal('lambda.amazonaws.com'),
       managedPolicies: [
         policy,
-        iam.ManagedPolicy.fromAwsManagedPolicyName(
+        aws_iam.ManagedPolicy.fromAwsManagedPolicyName(
           'service-role/AWSLambdaBasicExecutionRole'
         ),
       ],
     });
 
-    const fn = new lambda.Function(stack, constructName, {
+    const fn = new aws_lambda.Function(stack, constructName, {
       functionName: `${this.prefix}-${cleanID}`,
       role: role,
       description: 'Custom CFN resource: Manage EC2 Key Pairs',
-      runtime: lambda.Runtime.NODEJS_14_X,
+      runtime: aws_lambda.Runtime.NODEJS_14_X,
       handler: 'index.handler',
-      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda/code.zip')),
-      timeout: cdk.Duration.minutes(lambdaTimeout),
+      code: aws_lambda.Code.fromAsset(
+        path.join(__dirname, '../lambda/code.zip')
+      ),
+      timeout: Duration.minutes(lambdaTimeout),
     });
 
     return fn;
@@ -333,19 +384,19 @@ export class KeyPair extends Construct implements cdk.ITaggable {
   /**
    * Grants read access to the private key in AWS Secrets Manager
    */
-  grantReadOnPrivateKey(grantee: iam.IGrantable) {
+  grantReadOnPrivateKey(grantee: aws_iam.IGrantable) {
     return this.grantRead(this.privateKeyArn, grantee);
   }
 
   /**
    * Grants read access to the public key in AWS Secrets Manager
    */
-  grantReadOnPublicKey(grantee: iam.IGrantable) {
+  grantReadOnPublicKey(grantee: aws_iam.IGrantable) {
     return this.grantRead(this.publicKeyArn, grantee);
   }
 
-  private grantRead(arn: string, grantee: iam.IGrantable) {
-    const result = iam.Grant.addToPrincipal({
+  private grantRead(arn: string, grantee: aws_iam.IGrantable) {
+    const result = aws_iam.Grant.addToPrincipal({
       grantee,
       actions: [
         'secretsmanager:DescribeSecret',
