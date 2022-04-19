@@ -15,7 +15,6 @@
   },
   "dependencies": {
     "aws-cdk-lib": "2.x",
-    "cdk-iam-floyd": "0.313.0",
     "cdk-ssm-document": "file:.."
   }
 }
