@@ -47,6 +47,10 @@
       "python": {
         "distName": "cdk-ec2-key-pair",
         "module": "cdk_ec2_key_pair"
+      },
+      "dotnet": {
+        "namespace": "CDK.EC2.KeyPair",
+        "packageId": "CDK.EC2.KeyPair"
       }
     }
   },

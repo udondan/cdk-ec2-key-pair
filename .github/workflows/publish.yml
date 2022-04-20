@@ -41,11 +41,11 @@ jobs:
         uses: udondan/jsii-publish@v0.12.0
         with:
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
-#
-#      - name: Publish to NuGet
-#        uses: udondan/jsii-publish@v0.12.0
-#        with:
-#          NUGET_TOKEN: ${{ secrets.NUGET_TOKEN }}
+
+      - name: Publish to NuGet
+        uses: udondan/jsii-publish@v0.12.0
+        with:
+          NUGET_TOKEN: ${{ secrets.NUGET_TOKEN }}
 #
 #      - name: Publish to Maven GitHub
 #        uses: udondan/jsii-publish@v0.12.0
