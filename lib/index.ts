@@ -204,13 +204,6 @@ export class KeyPair extends Construct implements ITaggable {
     }
 
     const stack = Stack.of(this).stackName;
-    this.prefix = props.resourcePrefix || stack;
-    if (this.prefix.length + cleanID.length > 62)
-      // Cloudformation limits names to 63 characters.
-      Annotations.of(this).addError(
-        `Cloudformation limits names to 63 characters.
-         Prefix ${this.prefix} is too long to be used as a prefix for your roleName. Define parameter resourcePrefix?:`
-      );
     this.lambda = this.ensureLambda();
 
     this.tags = new TagManager(TagType.MAP, 'Custom::EC2-Key-Pair');
@@ -279,7 +272,6 @@ export class KeyPair extends Construct implements ITaggable {
       stack,
       'EC2-Key-Pair-Manager-Policy',
       {
-        managedPolicyName: `${this.prefix}-${cleanID}`,
         description: `Used by Lambda ${cleanID}, which is a custom CFN resource, managing EC2 Key Pairs`,
         statements: [
           new aws_iam.PolicyStatement({
