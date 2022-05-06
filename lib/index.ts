@@ -13,7 +13,7 @@ import {
   TagType,
 } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
-import path = require('path');
+import * as path from 'path';
 
 const resourceType = 'Custom::EC2-Key-Pair';
 const ID = `CFN::Resource::${resourceType}`;
