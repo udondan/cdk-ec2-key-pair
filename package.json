@@ -55,7 +55,7 @@
     }
   },
   "devDependencies": {
-    "@types/node": "^17.0.13",
+    "@types/node": "^18.8.1",
     "@types/aws-lambda": "^8.10.92",
     "@types/node-forge": "^1.0.0",
     "aws-cdk-lib": "^2.0.0",
