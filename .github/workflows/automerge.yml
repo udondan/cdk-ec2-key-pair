@@ -4,6 +4,8 @@ name: Automerge
 on:
   pull_request_target:
     types: [labeled]
+  pull_request:
+    types: [synchronize]
 
 jobs:
   automerge_dependabot:
