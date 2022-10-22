@@ -1,11 +1,11 @@
 ---
 name: Automerge
 
+concurrency: automerge
+
 on:
   pull_request_target:
-    types: [labeled]
-  pull_request:
-    types: [synchronize]
+    types: [labeled, synchronize]
 
 jobs:
   automerge_dependabot:
@@ -31,5 +31,5 @@ jobs:
         env:
           MERGE_LABELS: dependencies
           UPDATE_LABELS: dependencies
-          GITHUB_TOKEN: ${{ secrets.OVERRIDE_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MERGE_DELETE_BRANCH: true
