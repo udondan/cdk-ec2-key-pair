@@ -370,7 +370,7 @@ export class KeyPair extends Construct implements ITaggable {
       functionName: `${this.prefix}-${cleanID}`,
       role: role,
       description: 'Custom CFN resource: Manage EC2 Key Pairs',
-      runtime: aws_lambda.Runtime.NODEJS_14_X,
+      runtime: aws_lambda.Runtime.NODEJS_18_X,
       handler: 'index.handler',
       code: aws_lambda.Code.fromAsset(
         path.join(__dirname, '../lambda/code.zip')
