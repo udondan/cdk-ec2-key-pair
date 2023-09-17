@@ -1,10 +1,49 @@
-import { CustomResource, Event, LambdaEvent, StandardLogger } from 'aws-cloudformation-custom-resource';
+import {
+  CreateKeyPairCommand,
+  CreateKeyPairCommandInput,
+  CreateTagsCommand,
+  CreateTagsCommandInput,
+  DeleteKeyPairCommand,
+  DeleteKeyPairCommandInput,
+  DeleteTagsCommand,
+  DeleteTagsCommandInput,
+  DescribeKeyPairsCommand,
+  DescribeKeyPairsCommandInput,
+  EC2Client,
+  ImportKeyPairCommand,
+  ImportKeyPairCommandInput,
+  Tag as Ec2Tag,
+} from '@aws-sdk/client-ec2';
+import {
+  CreateSecretCommand,
+  CreateSecretCommandInput,
+  DeleteSecretCommand,
+  DeleteSecretCommandInput,
+  DeleteSecretCommandOutput,
+  GetSecretValueCommand,
+  GetSecretValueCommandInput,
+  ListSecretsCommand,
+  ListSecretsCommandInput,
+  SecretsManagerClient,
+  Tag as SecretManagerTag,
+  TagResourceCommand,
+  TagResourceCommandInput,
+  UntagResourceCommand,
+  UntagResourceCommandInput,
+  UpdateSecretCommand,
+  UpdateSecretCommandInput,
+} from '@aws-sdk/client-secrets-manager';
+import {
+  CustomResource,
+  Event,
+  LambdaEvent,
+  StandardLogger,
+} from 'aws-cloudformation-custom-resource';
 import { Callback, Context } from 'aws-lambda';
-import AWS = require('aws-sdk');
-import forge = require('node-forge');
+import * as forge from 'node-forge';
 
-const ec2 = new AWS.EC2();
-const secretsmanager = new AWS.SecretsManager();
+const ec2Client = new EC2Client({});
+const secretsManagerClient = new SecretsManagerClient({});
 const logger = new StandardLogger();
 
 export const handler = function (
@@ -19,7 +58,7 @@ export const handler = function (
     .handle(event);
 };
 
-function Create(event: Event): Promise<Event | AWS.AWSError> {
+function Create(event: Event): Promise<Event> {
   logger.info(
     `Attempting to create EC2 Key Pair ${event.ResourceProperties.Name}`
   );
@@ -37,7 +76,7 @@ function Create(event: Event): Promise<Event | AWS.AWSError> {
   });
 }
 
-function Update(event: Event): Promise<Event | AWS.AWSError> {
+function Update(event: Event): Promise<Event> {
   logger.info(
     `Attempting to update EC2 Key Pair ${event.OldResourceProperties.Name}`
   );
@@ -85,7 +124,7 @@ function Update(event: Event): Promise<Event | AWS.AWSError> {
   });
 }
 
-function Delete(event: any): Promise<Event | AWS.AWSError> {
+function Delete(event: any): Promise<Event> {
   logger.info(
     `Attempting to delete EC2 Key Pair ${event.ResourceProperties.Name}`
   );
@@ -109,53 +148,56 @@ function createKeyPair(event: Event): Promise<Event> {
       event.ResourceProperties.PublicKey &&
       event.ResourceProperties.PublicKey.length
     ) {
-      const params: AWS.EC2.ImportKeyPairRequest = {
+      const params: ImportKeyPairCommandInput = {
         KeyName: event.ResourceProperties.Name,
         PublicKeyMaterial: event.ResourceProperties.PublicKey,
         TagSpecifications: [
           {
             ResourceType: 'key-pair',
-            Tags: makeTags(event, event.ResourceProperties) as AWS.EC2.TagList,
+            Tags: makeTags(event, event.ResourceProperties) as Ec2Tag[],
           },
         ],
       };
       logger.debug(`ec2.importKeyPair: ${JSON.stringify(params)}`);
-      ec2.importKeyPair(
-        params,
-        function (err: AWS.AWSError, data: AWS.EC2.KeyPair) {
-          if (err) return reject(err);
+      ec2Client
+        .send(new ImportKeyPairCommand(params))
+        .then((data) => {
           event.addResponseValue('KeyPairName', data.KeyName);
           event.addResponseValue('KeyPairID', data.KeyPairId);
           event.KeyFingerprint = data.KeyFingerprint;
-          event.KeyMaterial = data.KeyMaterial;
+          event.KeyMaterial = '';
           event.KeyID = data.KeyPairId;
           resolve(event);
-        }
-      );
+        })
+        .catch((err) => {
+          reject(err);
+        });
     } else {
       // no public key provided. create new key
-      const params: AWS.EC2.CreateKeyPairRequest = {
+      const params: CreateKeyPairCommandInput = {
         KeyName: event.ResourceProperties.Name,
         TagSpecifications: [
           {
             ResourceType: 'key-pair',
-            Tags: makeTags(event, event.ResourceProperties) as AWS.EC2.TagList,
+            Tags: makeTags(event, event.ResourceProperties) as Ec2Tag[],
           },
         ],
       };
       logger.debug(`ec2.createKeyPair: ${JSON.stringify(params)}`);
-      ec2.createKeyPair(
-        params,
-        function (err: AWS.AWSError, data: AWS.EC2.KeyPair) {
-          if (err) return reject(err);
+
+      ec2Client
+        .send(new CreateKeyPairCommand(params))
+        .then((data) => {
           event.addResponseValue('KeyPairName', data.KeyName);
           event.addResponseValue('KeyPairID', data.KeyPairId);
           event.KeyFingerprint = data.KeyFingerprint;
           event.KeyMaterial = data.KeyMaterial;
           event.KeyID = data.KeyPairId;
           resolve(event);
-        }
-      );
+        })
+        .catch((err) => {
+          reject(err);
+        });
     }
   });
 }
@@ -164,14 +206,13 @@ function updateKeyPair(event: Event): Promise<Event> {
   return new Promise(function (resolve, reject) {
     // there is nothing to update. a key cannot be changed
     // though we use this step to enrich the event with the keyId
-    const params: AWS.EC2.DescribeKeyPairsRequest = {
+    const params: DescribeKeyPairsCommandInput = {
       KeyNames: [event.ResourceProperties.Name],
     };
     logger.debug(`ec2.describeKeyPairs: ${JSON.stringify(params)}`);
-    ec2.describeKeyPairs(
-      params,
-      (err: any, data: AWS.EC2.DescribeKeyPairsResult) => {
-        if (err) return reject(err);
+    ec2Client
+      .send(new DescribeKeyPairsCommand(params))
+      .then((data) => {
         if (data.KeyPairs?.length != 1)
           return reject(new Error('Key pair was not found'));
 
@@ -184,8 +225,10 @@ function updateKeyPair(event: Event): Promise<Event> {
         event.addResponseValue('KeyPairName', name);
         event.addResponseValue('KeyPairID', id);
         resolve(event);
-      }
-    );
+      })
+      .catch((err) => {
+        reject(err);
+      });
   });
 }
 
@@ -203,15 +246,19 @@ function updateKeyPairAddTags(event: Event): Promise<Event> {
       return resolve(event);
     }
 
-    const params: AWS.EC2.CreateTagsRequest = {
+    const params: CreateTagsCommandInput = {
       Resources: [event.KeyID],
       Tags: newTags,
     };
     logger.debug(`ec2.createTags: ${JSON.stringify(params)}`);
-    ec2.createTags(params, function (err: AWS.AWSError, _: {}) {
-      if (err) return reject(err);
-      resolve(event);
-    });
+    ec2Client
+      .send(new CreateTagsCommand(params))
+      .then((data) => {
+        resolve(event);
+      })
+      .catch((err) => {
+        reject(err);
+      });
   });
 }
 
@@ -237,34 +284,42 @@ function updateKeyPairRemoveTags(event: Event): Promise<Event> {
     logger.info(
       `Will remove the following tags: ${JSON.stringify(tagsToRemove)}`
     );
-    const params: AWS.EC2.DeleteTagsRequest = {
+    const params: DeleteTagsCommandInput = {
       Resources: [event.KeyID],
       Tags: tagsToRemove.map((key) => {
         return {
           Key: key,
           Value: event.OldResourceProperties.Tags[key],
-        } as AWS.EC2.Tag;
+        } as Ec2Tag;
       }),
     };
     logger.debug(`ec2.deleteTags: ${JSON.stringify(params)}`);
-    ec2.deleteTags(params, function (err: AWS.AWSError, _: {}) {
-      if (err) reject(err);
-      else resolve(event);
-    });
+    ec2Client
+      .send(new DeleteTagsCommand(params))
+      .then((data) => {
+        resolve(event);
+      })
+      .catch((err) => {
+        reject(err);
+      });
   });
 }
 
 function deleteKeyPair(event: Event): Promise<Event> {
   return new Promise(function (resolve, reject) {
-    const params: AWS.EC2.DeleteKeyPairRequest = {
+    const params: DeleteKeyPairCommandInput = {
       KeyName: event.ResourceProperties.Name,
     };
     logger.debug(`ec2.deleteKeyPair: ${JSON.stringify(params)}`);
-    ec2.deleteKeyPair(params, function (err: AWS.AWSError, data: {}) {
-      if (err) return reject(err);
-      event.addResponseValue('KeyPairName', event.ResourceProperties.Name);
-      resolve(event);
-    });
+    ec2Client
+      .send(new DeleteKeyPairCommand(params))
+      .then((data) => {
+        event.addResponseValue('KeyPairName', event.ResourceProperties.Name);
+        resolve(event);
+      })
+      .catch((err) => {
+        reject(err);
+      });
   });
 }
 
@@ -274,7 +329,7 @@ function createPrivateKeySecret(event: Event): Promise<Event> {
       event.addResponseValue('PrivateKeyARN', null);
       return resolve(event);
     }
-    const params: AWS.SecretsManager.CreateSecretRequest = {
+    const params: CreateSecretCommandInput = {
       Name: `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}/private`,
       Description: `${event.ResourceProperties.Description} (Private Key)`,
       SecretString: event.KeyMaterial,
@@ -282,17 +337,15 @@ function createPrivateKeySecret(event: Event): Promise<Event> {
       Tags: makeTags(event, event.ResourceProperties),
     };
     logger.debug(`secretsmanager.createSecret: ${JSON.stringify(params)}`);
-    secretsmanager.createSecret(
-      params,
-      function (
-        err: AWS.AWSError,
-        data: AWS.SecretsManager.CreateSecretResponse
-      ) {
-        if (err) return reject(err);
+    secretsManagerClient
+      .send(new CreateSecretCommand(params))
+      .then((data) => {
         event.addResponseValue('PrivateKeyARN', data.ARN);
         resolve(event);
-      }
-    );
+      })
+      .catch((err) => {
+        reject(err);
+      });
   });
 }
 
@@ -313,7 +366,7 @@ function createPublicKeySecret(event: Event): Promise<Event> {
       return resolve(event);
     }
 
-    const params: AWS.SecretsManager.CreateSecretRequest = {
+    const params: CreateSecretCommandInput = {
       Name: `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}/public`,
       Description: `${event.ResourceProperties.Description} (Public Key)`,
       SecretString: publicKey,
@@ -321,39 +374,35 @@ function createPublicKeySecret(event: Event): Promise<Event> {
       Tags: makeTags(event, event.ResourceProperties),
     };
     logger.debug(`secretsmanager.createSecret: ${JSON.stringify(params)}`);
-    secretsmanager.createSecret(
-      params,
-      function (
-        err: AWS.AWSError,
-        data: AWS.SecretsManager.CreateSecretResponse
-      ) {
-        if (err) return reject(err);
+    secretsManagerClient
+      .send(new CreateSecretCommand(params))
+      .then((data) => {
         event.addResponseValue('PublicKeyARN', data.ARN);
         resolve(event);
-      }
-    );
+      })
+      .catch((err) => {
+        reject(err);
+      });
   });
 }
 
 function updatePrivateKeySecret(event: Event): Promise<Event> {
   return new Promise(function (resolve, reject) {
-    const params: AWS.SecretsManager.UpdateSecretRequest = {
+    const params: UpdateSecretCommandInput = {
       SecretId: `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}/private`,
       Description: `${event.ResourceProperties.Description} (Private key)`,
       KmsKeyId: event.ResourceProperties.KmsPrivate,
     };
     logger.debug(`secretsmanager.updateSecret: ${JSON.stringify(params)}`);
-    secretsmanager.updateSecret(
-      params,
-      function (
-        err: AWS.AWSError,
-        data: AWS.SecretsManager.UpdateSecretResponse
-      ) {
-        if (err) return reject(err);
+    secretsManagerClient
+      .send(new UpdateSecretCommand(params))
+      .then((data) => {
         event.addResponseValue('PrivateKeyARN', data.ARN);
         resolve(event);
-      }
-    );
+      })
+      .catch((err) => {
+        reject(err);
+      });
   });
 }
 
@@ -365,23 +414,21 @@ function updatePublicKeySecret(event: Event): Promise<Event> {
         // no public key stored. nothing to do
         return resolve(event);
       }
-      const params: AWS.SecretsManager.UpdateSecretRequest = {
+      const params: UpdateSecretCommandInput = {
         SecretId: arn,
         Description: `${event.ResourceProperties.Description} (Public Key)`,
         KmsKeyId: event.ResourceProperties.KmsPublic,
       };
       logger.debug(`secretsmanager.updateSecret: ${JSON.stringify(params)}`);
-      secretsmanager.updateSecret(
-        params,
-        function (
-          err: AWS.AWSError,
-          data: AWS.SecretsManager.UpdateSecretResponse
-        ) {
-          if (err) return reject(err);
+      secretsManagerClient
+        .send(new UpdateSecretCommand(params))
+        .then((data) => {
           event.addResponseValue('PublicKeyARN', data.ARN);
           resolve(event);
-        }
-      );
+        })
+        .catch((err) => {
+          reject(err);
+        });
     });
   });
 }
@@ -419,15 +466,19 @@ function updateSecretAddTags(secretId: string, event: Event): Promise<Event> {
       );
       return resolve(event);
     }
-    const params: AWS.SecretsManager.TagResourceRequest = {
+    const params: TagResourceCommandInput = {
       SecretId: secretId,
       Tags: newTags,
     };
     logger.debug(`secretsmanager.tagResource: ${JSON.stringify(params)}`);
-    secretsmanager.tagResource(params, function (err: AWS.AWSError, _: {}) {
-      if (err) return reject(err);
-      resolve(event);
-    });
+    secretsManagerClient
+      .send(new TagResourceCommand(params))
+      .then((data) => {
+        resolve(event);
+      })
+      .catch((err) => {
+        reject(err);
+      });
   });
 }
 
@@ -455,20 +506,18 @@ function updateSecretsRemoveTags(event: Event): Promise<Event> {
 
 function getPrivateKey(event: Event): Promise<string> {
   return new Promise(function (resolve, reject) {
-    const params: AWS.SecretsManager.GetSecretValueRequest = {
+    const params: GetSecretValueCommandInput = {
       SecretId: `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}/private`,
     };
     logger.debug(`secretsmanager.getSecretValue: ${JSON.stringify(params)}`);
-    secretsmanager.getSecretValue(
-      params,
-      function (
-        err: AWS.AWSError,
-        data: AWS.SecretsManager.GetSecretValueResponse
-      ) {
-        if (err) return reject(err);
+    secretsManagerClient
+      .send(new GetSecretValueCommand(params))
+      .then((data) => {
         resolve(data.SecretString!);
-      }
-    );
+      })
+      .catch((err) => {
+        reject(err);
+      });
   });
 }
 
@@ -488,7 +537,7 @@ function makePublicKey(event: Event): Promise<string> {
       privateKey.e
     );
 
-    let publicKey: string;
+    let publicKey = '';
     if (event.ResourceProperties.PublicKeyFormat === 'PEM') {
       publicKey = forge.pki.publicKeyToPem(forgePublicKey);
     } else if (event.ResourceProperties.PublicKeyFormat === 'OPENSSH') {
@@ -550,15 +599,19 @@ function updateSecretRemoveTags(
     logger.info(
       `Will remove the following tags: ${JSON.stringify(tagsToRemove)}`
     );
-    const params: AWS.SecretsManager.UntagResourceRequest = {
+    const params: UntagResourceCommandInput = {
       SecretId: secretId,
       TagKeys: tagsToRemove,
     };
     logger.debug(`secretsmanager.untagResource: ${JSON.stringify(params)}`);
-    secretsmanager.untagResource(params, function (err: AWS.AWSError, _: {}) {
-      if (err) reject(err);
-      else resolve(event);
-    });
+    secretsManagerClient
+      .send(new UntagResourceCommand(params))
+      .then((data) => {
+        resolve(event);
+      })
+      .catch((err) => {
+        reject(err);
+      });
   });
 }
 
@@ -612,7 +665,7 @@ function deletePublicKeySecret(event: Event): Promise<Event> {
 
 async function secretExists(name: string): Promise<boolean> {
   return new Promise(async function (resolve, reject) {
-    const params: AWS.SecretsManager.ListSecretsRequest = {
+    const params: ListSecretsCommandInput = {
       Filters: [
         {
           Key: 'name',
@@ -621,21 +674,22 @@ async function secretExists(name: string): Promise<boolean> {
       ],
     };
     logger.debug(`secretsmanager.listSecrets: ${JSON.stringify(params)}`);
-    return secretsmanager.listSecrets(
-      params,
-      (err: AWS.AWSError, data: AWS.SecretsManager.ListSecretsResponse) => {
-        if (err) return reject(err);
-        resolve(data.SecretList.length > 0);
-      }
-    );
+    return secretsManagerClient
+      .send(new ListSecretsCommand(params))
+      .then((data) => {
+        resolve((data.SecretList?.length || 0) > 0);
+      })
+      .catch((err) => {
+        reject(err);
+      });
   });
 }
 
 function deleteSecret(
   secretId: string,
   event: Event
-): Promise<AWS.SecretsManager.DeleteSecretResponse> {
-  const params: any = {
+): Promise<DeleteSecretCommandOutput> {
+  const params: DeleteSecretCommandInput = {
     SecretId: secretId,
   };
 
@@ -650,14 +704,11 @@ function deleteSecret(
   }
 
   logger.debug(`secretsmanager.deleteSecret: ${JSON.stringify(params)}`);
-  return secretsmanager.deleteSecret(params).promise();
+  return secretsManagerClient.send(new DeleteSecretCommand(params));
 }
 
-function makeTags(
-  event: Event,
-  properties: any
-): AWS.SecretsManager.TagListType {
-  const tags: AWS.SecretsManager.TagListType = [
+function makeTags(event: Event, properties: any): SecretManagerTag[] {
+  const tags: SecretManagerTag[] = [
     {
       Key: 'aws-cloudformation:stack-id',
       Value: event.StackId,
@@ -683,19 +734,19 @@ function makeTags(
 }
 
 function getMissingTags(
-  oldTags: AWS.SecretsManager.TagListType,
-  newTags: AWS.SecretsManager.TagListType
+  oldTags: SecretManagerTag[],
+  newTags: SecretManagerTag[]
 ): string[] {
   var missing = oldTags.filter(missingTags(newTags));
-  return missing.map(function (tag: AWS.SecretsManager.Tag) {
-    return tag.Key;
+  return missing.map(function (tag: SecretManagerTag) {
+    return tag.Key!;
   });
 }
 
-function missingTags(newTags: AWS.SecretsManager.TagListType) {
-  return (currentTag: AWS.SecretsManager.Tag) => {
+function missingTags(newTags: SecretManagerTag[]) {
+  return (currentTag: SecretManagerTag) => {
     return (
-      newTags.filter((newTag: any) => {
+      newTags.filter((newTag: SecretManagerTag) => {
         return newTag.Key == currentTag.Key;
       }).length == 0
     );
