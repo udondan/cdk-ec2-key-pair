@@ -204,7 +204,8 @@ export class KeyPair extends Construct implements ITaggable {
     }
 
     const stack = Stack.of(this).stackName;
-    this.prefix = props.resourcePrefix ?? stack;
+    this.prefix =
+      props.resourcePrefix !== undefined ? props.resourcePrefix : stack;
     if (this.prefix.length + cleanID.length > 62)
       // Cloudformation limits names to 63 characters.
       Annotations.of(this).addError(
