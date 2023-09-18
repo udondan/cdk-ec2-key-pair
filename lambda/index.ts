@@ -163,6 +163,7 @@ function createKeyPair(event: Event): Promise<Event> {
       ec2Client
         .send(new ImportKeyPairCommand(params))
         .then((data) => {
+          logger.debug(`ec2.importKeyPair result: ${JSON.stringify(data)}`);
           event.addResponseValue('KeyPairName', data.KeyName);
           event.addResponseValue('KeyPairID', data.KeyPairId);
           event.KeyFingerprint = data.KeyFingerprint;
