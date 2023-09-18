@@ -39,6 +39,17 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
+      - name: Build source w/ jsii
+        uses: udondan/jsii-publish@v0.14.0
+        with:
+          VERSION: ${{ steps.get_version.outputs.VERSION }}
+          BUILD_SOURCE: true
+
+      - name: Build packages w/ jsii
+        uses: udondan/jsii-publish@v0.14.0
+        with:
+          BUILD_PACKAGES: true
+
   report-status:
     name: success
     runs-on: ubuntu-latest
