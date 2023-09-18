@@ -161,4 +161,4 @@ You also have to set `exposePublicKey` to `true` so you can actually get the pub
    [PyPI]: https://pypi.org/project/cdk-ec2-key-pair/
    [docs]: https://constructs.dev/packages/cdk-ec2-key-pair
    [source]: https://github.com/udondan/cdk-ec2-key-pair
-   [license]: https://github.com/udondan/cdk-ec2-key-pair/blob/master/LICENSE
+   [license]: https://github.com/udondan/cdk-ec2-key-pair/blob/main/LICENSE
