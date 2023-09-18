@@ -63,7 +63,7 @@
     "@aws-sdk/client-ec2": "^3.398.0",
     "@aws-sdk/client-secrets-manager": "^3.398.0",
     "jsii": "1.71.0",
-    "jsii-pacmak": "1.71.0",
+    "jsii-pacmak": "1.88.0",
     "ts-node": "^10.4.0",
     "typescript": "^4.5.5",
     "constructs": "^10.0.0"
