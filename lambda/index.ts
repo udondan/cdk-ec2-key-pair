@@ -37,7 +37,6 @@ import {
   CustomResource,
   Event,
   LambdaEvent,
-  LogLevel,
   StandardLogger,
 } from 'aws-cloudformation-custom-resource';
 import { Callback, Context } from 'aws-lambda';
@@ -45,7 +44,7 @@ import * as forge from 'node-forge';
 
 const ec2Client = new EC2Client({});
 const secretsManagerClient = new SecretsManagerClient({});
-const logger = new StandardLogger(LogLevel.DEBUG);
+const logger = new StandardLogger();
 
 export const handler = function (
   event: LambdaEvent,
