@@ -172,7 +172,6 @@ function createKeyPair(event: Event): Promise<Event> {
           resolve(event);
         })
         .catch((err) => {
-          console.error(err);
           reject(err);
         });
     } else {
