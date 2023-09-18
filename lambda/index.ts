@@ -186,7 +186,6 @@ function createKeyPair(event: Event): Promise<Event> {
         ],
       };
       logger.debug(`ec2.createKeyPair: ${JSON.stringify(params)}`);
-
       ec2Client
         .send(new CreateKeyPairCommand(params))
         .then((data) => {
