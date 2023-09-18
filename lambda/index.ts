@@ -151,7 +151,9 @@ function createKeyPair(event: Event): Promise<Event> {
     ) {
       const params: ImportKeyPairCommandInput = {
         KeyName: event.ResourceProperties.Name,
-        PublicKeyMaterial: event.ResourceProperties.PublicKey,
+        PublicKeyMaterial: Buffer.from(
+          event.ResourceProperties.PublicKey as string
+        ),
         TagSpecifications: [
           {
             ResourceType: 'key-pair',
@@ -163,7 +165,6 @@ function createKeyPair(event: Event): Promise<Event> {
       ec2Client
         .send(new ImportKeyPairCommand(params))
         .then((data) => {
-          logger.debug(`ec2.importKeyPair result: ${JSON.stringify(data)}`);
           event.addResponseValue('KeyPairName', data.KeyName);
           event.addResponseValue('KeyPairID', data.KeyPairId);
           event.KeyFingerprint = data.KeyFingerprint;
