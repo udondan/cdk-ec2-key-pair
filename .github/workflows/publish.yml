@@ -17,33 +17,33 @@ jobs:
         run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\/v/}
 
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
       - name: Build source
-        uses: udondan/jsii-publish@v0.14.0
+        uses: udondan/jsii-publish@v0.15.0
         with:
           VERSION: ${{ steps.get_version.outputs.VERSION }}
           BUILD_SOURCE: true
 
       - name: Build packages
-        uses: udondan/jsii-publish@v0.14.0
+        uses: udondan/jsii-publish@v0.15.0
         with:
           BUILD_PACKAGES: true
 
       - name: Publish to npm
-        uses: udondan/jsii-publish@v0.14.0
+        uses: udondan/jsii-publish@v0.15.0
         with:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish to PyPI
-        uses: udondan/jsii-publish@v0.14.0
+        uses: udondan/jsii-publish@v0.15.0
         with:
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
 
       - name: Publish to NuGet
-        uses: udondan/jsii-publish@v0.14.0
+        uses: udondan/jsii-publish@v0.15.0
         with:
           NUGET_TOKEN: ${{ secrets.NUGET_TOKEN }}
 #
