@@ -28,11 +28,11 @@ lambda:
 	@../lambda/build
 
 get-secret-values:
-	@aws secretsmanager get-secret-value \
+	@AWS_REGION=us-east-1 aws secretsmanager get-secret-value \
 		--secret-id ec2-ssh-key/CFN-signing-key/private \
 		--query SecretString \
 		--output text
-	@aws secretsmanager get-secret-value \
+	@AWS_REGION=us-east-1 aws secretsmanager get-secret-value \
 		--secret-id ec2-ssh-key/CFN-signing-key/public \
 		--query SecretString \
 		--output text
