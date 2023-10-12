@@ -33,6 +33,6 @@ get-secret-values:
 		--query SecretString \
 		--output text
 	@aws secretsmanager get-secret-value \
-		--secret-id ec2-ssh-key/CFN-signing-key/private \
+		--secret-id ec2-ssh-key/CFN-signing-key/public \
 		--query SecretString \
-		--output public
+		--output text
