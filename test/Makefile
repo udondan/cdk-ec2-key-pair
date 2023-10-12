@@ -26,3 +26,13 @@ DESTROY: build
 lambda:
 	@echo Building Lambda...
 	@../lambda/build
+
+get-secret-values:
+	@AWS_REGION=us-east-1 aws secretsmanager get-secret-value \
+		--secret-id ec2-ssh-key/CFN-signing-key/private \
+		--query SecretString \
+		--output text
+	@AWS_REGION=us-east-1 aws secretsmanager get-secret-value \
+		--secret-id ec2-ssh-key/CFN-signing-key/public \
+		--query SecretString \
+		--output text

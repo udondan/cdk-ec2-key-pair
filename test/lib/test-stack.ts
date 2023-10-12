@@ -4,8 +4,12 @@ import { Construct } from 'constructs';
 
 import { KeyPair, PublicKeyFormat } from '../../lib';
 
+interface Props extends cdk.StackProps {
+  currentUserName: string;
+}
+
 export class TestStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+  constructor(scope: Construct, id: string, props: Props) {
     super(scope, id, props);
 
     cdk.Tags.of(scope).add('Hello', 'World');
@@ -50,6 +54,15 @@ export class TestStack extends cdk.Stack {
       storePublicKey: true,
       publicKeyFormat: PublicKeyFormat.PEM,
     });
+
+    const currentUser = cdk.aws_iam.User.fromUserName(
+      this,
+      'Current-User',
+      props.currentUserName
+    );
+
+    keyPairPem.grantReadOnPrivateKey(currentUser);
+    keyPairPem.grantReadOnPublicKey(currentUser);
 
     new cdk.CfnOutput(this, 'Test-Public-Key-PEM', {
       exportName: 'TestPublicKeyPEM',
