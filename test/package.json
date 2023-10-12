@@ -8,12 +8,11 @@
     "build": "tsc",
     "cdk": "cdk"
   },
-  "devDependencies": {
+  "dependencies": {
     "aws-cdk": "^2.0.0",
     "ts-node": "^10.4.0",
-    "typescript": "^5.2.2"
-  },
-  "dependencies": {
+    "typescript": "^5.2.2",
+    "@aws-sdk/client-sts": "^3.427.0",
     "aws-cdk-lib": "2.x",
     "cdk-ssm-document": "file:.."
   }
