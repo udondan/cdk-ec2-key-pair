@@ -265,6 +265,7 @@ export class KeyPair extends Construct implements ITaggable {
     this.keyPairID = key.getAttString('KeyPairID');
   }
 
+  // test
   private ensureLambda(): aws_lambda.Function {
     const stack = Stack.of(this);
     const constructName = 'EC2-Key-Name-Manager-Lambda';
