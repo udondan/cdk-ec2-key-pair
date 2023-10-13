@@ -279,7 +279,6 @@ export class KeyPair extends Construct implements ITaggable {
       stack,
       'EC2-Key-Pair-Manager-Policy',
       {
-        //managedPolicyName: `${this.prefix}-${cleanID}`,
         description: `Used by Lambda ${cleanID}, which is a custom CFN resource, managing EC2 Key Pairs`,
         statements: [
           new aws_iam.PolicyStatement({
@@ -355,7 +354,6 @@ export class KeyPair extends Construct implements ITaggable {
     );
 
     const role = new aws_iam.Role(stack, 'EC2-Key-Pair-Manager-Role', {
-      //roleName: `${this.prefix}-${cleanID}`,
       description: `Used by Lambda ${cleanID}, which is a custom CFN resource, managing EC2 Key Pairs`,
       assumedBy: new aws_iam.ServicePrincipal('lambda.amazonaws.com'),
       managedPolicies: [
