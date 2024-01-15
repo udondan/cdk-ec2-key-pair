@@ -62,7 +62,7 @@
     "aws-lambda": "^1.0.7",
     "@aws-sdk/client-ec2": "^3.398.0",
     "@aws-sdk/client-secrets-manager": "^3.398.0",
-    "jsii": "5.3.3",
+    "jsii": "5.3.4",
     "jsii-pacmak": "1.91.0",
     "ts-node": "^10.4.0",
     "typescript": "^5.2.2",
