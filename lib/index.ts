@@ -132,13 +132,15 @@ export interface KeyPairProps extends ResourceProps {
   readonly resourcePrefix?: string;
 
   /**
-   * Whether to use the legacy resource names
+   * Whether to use the legacy name for the Lambda function, which backs the custom resource.
    *
-   * Starting with v4 of this package, the Lambda function and its role by default have no longer a fixed name. To use the legacy names, set this to `true`.
+   * Starting with v4 of this package, the Lambda function by default has no longer a fixed name.
+   *
+   * If you migrate from v3 to v4, you need to set this to `true` as CloudFormation does not allow to change the name of the Lambda function used by custom resource.
    *
    * @default false
    */
-  readonly legacyResourceNames?: boolean;
+  readonly legacyLambdaName?: boolean;
 }
 
 /**
@@ -214,7 +216,7 @@ export class KeyPair extends Construct implements ITaggable {
 
     const stack = Stack.of(this).stackName;
 
-    if (props.legacyResourceNames) {
+    if (props.legacyLambdaName) {
       this.prefix = props.resourcePrefix ?? stack;
       if (this.prefix.length + cleanID.length > 62) {
         // Cloudformation limits names to 63 characters.
@@ -224,7 +226,7 @@ export class KeyPair extends Construct implements ITaggable {
         );
       }
     }
-    this.lambda = this.ensureLambda(props.legacyResourceNames || false);
+    this.lambda = this.ensureLambda(props.legacyLambdaName || false);
 
     this.tags = new TagManager(TagType.MAP, 'Custom::EC2-Key-Pair');
     this.tags.setTag(createdByTag, ID);
@@ -278,9 +280,9 @@ export class KeyPair extends Construct implements ITaggable {
     this.keyPairID = key.getAttString('KeyPairID');
   }
 
-  private ensureLambda(legacyResourceNames: boolean): aws_lambda.Function {
+  private ensureLambda(legacyLambdaName: boolean): aws_lambda.Function {
     const stack = Stack.of(this);
-    const constructName = legacyResourceNames
+    const constructName = legacyLambdaName
       ? 'EC2-Key-Name-Manager-Lambda' // this name was not intentional but we keep it for legacy resources
       : 'EC2-Key-Pair-Manager-Lambda';
     const existing = stack.node.tryFindChild(constructName);
@@ -354,11 +356,11 @@ export class KeyPair extends Construct implements ITaggable {
       }),
     ];
 
-    const functionName = legacyResourceNames
+    const functionName = legacyLambdaName
       ? `${this.prefix}-${cleanID}`
       : undefined;
     const description =
-      (legacyResourceNames ? `${this.prefix}-${cleanID} ` : '') +
+      (legacyLambdaName ? `${this.prefix}-${cleanID} ` : '') +
       'Custom CFN resource: Manage EC2 Key Pairs';
 
     const fn = new aws_lambda.Function(stack, constructName, {
