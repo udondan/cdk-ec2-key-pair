@@ -19,10 +19,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Setup node
-        uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: 20.x
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -57,7 +56,6 @@ jobs:
       - name: Build source w/ jsii
         uses: udondan/jsii-publish@v0.15.0
         with:
-          VERSION: ${{ steps.get_version.outputs.VERSION }}
           BUILD_SOURCE: true
 
       - name: Build packages w/ jsii
