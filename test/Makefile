@@ -11,7 +11,7 @@ clean:
 install:
 	@echo -e "$(TARGET_COLOR)Running install$(NO_COLOR)"
 	@cd .. && make install
-	@npm clean-install --prefer-offline --cache .npm
+	@npm clean-install --prefer-offline --cache ../.npm
 	@npm list
 
 build: install lambda
