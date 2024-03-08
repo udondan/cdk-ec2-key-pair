@@ -15,3 +15,14 @@ dist
 
 test
 .npm
+.github
+.release-please-manifest.json
+CHANGELOG.md
+Makefile
+release-please-config.json
+renovate.json
+tsconfig.tsbuildinfo
+*.tgz
+
+lambda/*
+!lambda/code.zip
