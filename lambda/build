@@ -2,7 +2,7 @@
 
 set -e
 cd "$( dirname "${BASH_SOURCE[0]}" )"
-npm i
+npm clean-install --prefer-offline --cache ../.npm
 npx tsc ./*.ts
 zip -r code.zip ./*.js node_modules
 rm ./*.js
