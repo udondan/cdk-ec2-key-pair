@@ -53,6 +53,7 @@ export class TestStack extends cdk.Stack {
       exposePublicKey: true,
       storePublicKey: true,
       publicKeyFormat: PublicKeyFormat.PEM,
+      legacyResourceNames: true,
     });
 
     const currentUser = cdk.aws_iam.User.fromUserName(

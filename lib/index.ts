@@ -13,7 +13,7 @@ import {
   TagType,
 } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
-import path = require('path');
+import * as path from 'path';
 
 const resourceType = 'Custom::EC2-Key-Pair';
 const ID = `CFN::Resource::${resourceType}`;
@@ -130,6 +130,15 @@ export interface KeyPairProps extends ResourceProps {
    * @default Name of the stack
    */
   readonly resourcePrefix?: string;
+
+  /**
+   * Whether to use the legacy resource names
+   *
+   * Starting with v4 of this package, the Lambda function and its role by default have no longer a fixed name. To use the legacy names, set this to `true`.
+   *
+   * @default false
+   */
+  readonly legacyResourceNames?: boolean;
 }
 
 /**
@@ -204,14 +213,18 @@ export class KeyPair extends Construct implements ITaggable {
     }
 
     const stack = Stack.of(this).stackName;
-    this.prefix = props.resourcePrefix ?? stack;
-    if (this.prefix.length + cleanID.length > 62)
-      // Cloudformation limits names to 63 characters.
-      Annotations.of(this).addError(
-        `Cloudformation limits names to 63 characters.
-         Prefix ${this.prefix} is too long to be used as a prefix for your roleName. Define parameter resourcePrefix?:`
-      );
-    this.lambda = this.ensureLambda();
+
+    if (props.legacyResourceNames) {
+      this.prefix = props.resourcePrefix ?? stack;
+      if (this.prefix.length + cleanID.length > 62) {
+        // Cloudformation limits names to 63 characters.
+        Annotations.of(this).addError(
+          `Cloudformation limits names to 63 characters.
+           Prefix ${this.prefix} is too long to be used as a prefix for your roleName. Define parameter resourcePrefix?:`
+        );
+      }
+    }
+    this.lambda = this.ensureLambda(props.legacyResourceNames || false);
 
     this.tags = new TagManager(TagType.MAP, 'Custom::EC2-Key-Pair');
     this.tags.setTag(createdByTag, ID);
@@ -265,9 +278,11 @@ export class KeyPair extends Construct implements ITaggable {
     this.keyPairID = key.getAttString('KeyPairID');
   }
 
-  private ensureLambda(): aws_lambda.Function {
+  private ensureLambda(legacyResourceNames: boolean): aws_lambda.Function {
     const stack = Stack.of(this);
-    const constructName = 'EC2-Key-Name-Manager-Lambda';
+    const constructName = legacyResourceNames
+      ? 'EC2-Key-Name-Manager-Lambda' // this name was not intentional but we keep it for legacy resources
+      : 'EC2-Key-Pair-Manager-Lambda';
     const existing = stack.node.tryFindChild(constructName);
     if (existing) {
       return existing as aws_lambda.Function;
@@ -275,105 +290,89 @@ export class KeyPair extends Construct implements ITaggable {
 
     const resources = [`arn:${stack.partition}:ec2:*:*:key-pair/*`];
 
-    const policy = new aws_iam.ManagedPolicy(
-      stack,
-      'EC2-Key-Pair-Manager-Policy',
-      {
-        description: `Used by Lambda ${cleanID}, which is a custom CFN resource, managing EC2 Key Pairs`,
-        statements: [
-          new aws_iam.PolicyStatement({
-            actions: ['ec2:DescribeKeyPairs'],
-            resources: ['*'],
-          }),
-          new aws_iam.PolicyStatement({
-            actions: [
-              'ec2:CreateKeyPair',
-              'ec2:CreateTags',
-              'ec2:ImportKeyPair',
-            ],
-            conditions: {
-              StringLike: {
-                'aws:RequestTag/CreatedByCfnCustomResource': ID,
-              },
-            },
-            resources,
-          }),
-          new aws_iam.PolicyStatement({
-            // allow delete/update, only if createdByTag is set
-            actions: ['ec2:CreateTags', 'ec2:DeleteKeyPair', 'ec2:DeleteTags'],
-            conditions: {
-              StringLike: {
-                'ec2:ResourceTag/CreatedByCfnCustomResource': ID,
-              },
-            },
-            resources,
-          }),
+    const statements = [
+      new aws_iam.PolicyStatement({
+        actions: ['ec2:DescribeKeyPairs'],
+        resources: ['*'],
+      }),
+      new aws_iam.PolicyStatement({
+        actions: ['ec2:CreateKeyPair', 'ec2:CreateTags', 'ec2:ImportKeyPair'],
+        conditions: {
+          StringLike: {
+            'aws:RequestTag/CreatedByCfnCustomResource': ID,
+          },
+        },
+        resources,
+      }),
+      new aws_iam.PolicyStatement({
+        // allow delete/update, only if createdByTag is set
+        actions: ['ec2:CreateTags', 'ec2:DeleteKeyPair', 'ec2:DeleteTags'],
+        conditions: {
+          StringLike: {
+            'ec2:ResourceTag/CreatedByCfnCustomResource': ID,
+          },
+        },
+        resources,
+      }),
 
-          new aws_iam.PolicyStatement({
-            // we need this to check if a secret exists before attempting to delete it
-            actions: ['secretsmanager:ListSecrets'],
-            resources: ['*'],
-          }),
-          new aws_iam.PolicyStatement({
-            actions: [
-              'secretsmanager:CreateSecret',
-              'secretsmanager:TagResource',
-            ],
-            conditions: {
-              StringLike: {
-                'aws:RequestTag/CreatedByCfnCustomResource': ID,
-              },
-            },
-            resources: ['*'],
-          }),
-          new aws_iam.PolicyStatement({
-            // allow delete/update, only if createdByTag is set
-            actions: [
-              'secretsmanager:DeleteResourcePolicy',
-              'secretsmanager:DeleteSecret',
-              'secretsmanager:DescribeSecret',
-              'secretsmanager:GetResourcePolicy',
-              'secretsmanager:GetSecretValue',
-              'secretsmanager:ListSecretVersionIds',
-              'secretsmanager:PutResourcePolicy',
-              'secretsmanager:PutSecretValue',
-              'secretsmanager:RestoreSecret',
-              'secretsmanager:UntagResource',
-              'secretsmanager:UpdateSecret',
-              'secretsmanager:UpdateSecretVersionStage',
-            ],
-            conditions: {
-              StringLike: {
-                'secretsmanager:ResourceTag/CreatedByCfnCustomResource': ID,
-              },
-            },
-            resources: ['*'],
-          }),
+      new aws_iam.PolicyStatement({
+        // we need this to check if a secret exists before attempting to delete it
+        actions: ['secretsmanager:ListSecrets'],
+        resources: ['*'],
+      }),
+      new aws_iam.PolicyStatement({
+        actions: ['secretsmanager:CreateSecret', 'secretsmanager:TagResource'],
+        conditions: {
+          StringLike: {
+            'aws:RequestTag/CreatedByCfnCustomResource': ID,
+          },
+        },
+        resources: ['*'],
+      }),
+      new aws_iam.PolicyStatement({
+        // allow delete/update, only if createdByTag is set
+        actions: [
+          'secretsmanager:DeleteResourcePolicy',
+          'secretsmanager:DeleteSecret',
+          'secretsmanager:DescribeSecret',
+          'secretsmanager:GetResourcePolicy',
+          'secretsmanager:GetSecretValue',
+          'secretsmanager:ListSecretVersionIds',
+          'secretsmanager:PutResourcePolicy',
+          'secretsmanager:PutSecretValue',
+          'secretsmanager:RestoreSecret',
+          'secretsmanager:UntagResource',
+          'secretsmanager:UpdateSecret',
+          'secretsmanager:UpdateSecretVersionStage',
         ],
-      }
-    );
+        conditions: {
+          StringLike: {
+            'secretsmanager:ResourceTag/CreatedByCfnCustomResource': ID,
+          },
+        },
+        resources: ['*'],
+      }),
+    ];
 
-    const role = new aws_iam.Role(stack, 'EC2-Key-Pair-Manager-Role', {
-      description: `Used by Lambda ${cleanID}, which is a custom CFN resource, managing EC2 Key Pairs`,
-      assumedBy: new aws_iam.ServicePrincipal('lambda.amazonaws.com'),
-      managedPolicies: [
-        policy,
-        aws_iam.ManagedPolicy.fromAwsManagedPolicyName(
-          'service-role/AWSLambdaBasicExecutionRole'
-        ),
-      ],
-    });
+    const functionName = legacyResourceNames
+      ? `${this.prefix}-${cleanID}`
+      : undefined;
+    const description =
+      (legacyResourceNames ? `${this.prefix}-${cleanID} ` : '') +
+      'Custom CFN resource: Manage EC2 Key Pairs';
 
     const fn = new aws_lambda.Function(stack, constructName, {
-      functionName: `${this.prefix}-${cleanID}`,
-      role: role,
-      description: 'Custom CFN resource: Manage EC2 Key Pairs',
+      functionName,
+      description,
       runtime: aws_lambda.Runtime.NODEJS_18_X,
       handler: 'index.handler',
       code: aws_lambda.Code.fromAsset(
         path.join(__dirname, '../lambda/code.zip')
       ),
       timeout: Duration.minutes(lambdaTimeout),
+    });
+    statements.forEach((statement) => {
+      fn.role?.addToPrincipalPolicy(statement);
     });
 
     return fn;
