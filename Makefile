@@ -1,32 +1,29 @@
-SHELL := /bin/bash
-VERSION := $(shell cat VERSION)
+SHELL := /bin/bash -euo pipefail
+
+NO_COLOR=\x1b[0m
+TARGET_COLOR=\x1b[96m
 
 build:
+	@echo -e "$(TARGET_COLOR)Running build$(NO_COLOR)"
 	@npm run build
 
 package: build
+	@echo -e "$(TARGET_COLOR)Running package$(NO_COLOR)"
 	@npm run package
 
 clean:
+	@echo -e "$(TARGET_COLOR)Running clean$(NO_COLOR)"
 	@rm -rf node_modules package-lock.json
 
-install: clean
-	@npm i
+install:
+	@echo -e "$(TARGET_COLOR)Running install$(NO_COLOR)"
+	@npm clean-install --prefer-offline --cache .npm
+	@npm list
 
 test: build
-	npm run test
+	@echo -e "$(TARGET_COLOR)Running test$(NO_COLOR)"
+	@npm run test
 
 test-update:
-	npm run test -- -u
-
-tag:
-	@git tag -a "v$(VERSION)" -m 'Creates tag "v$(VERSION)"'
-	@git push --tags
-
-untag:
-	@git push --delete origin "v$(VERSION)"
-	@git tag --delete "v$(VERSION)"
-
-release: tag
-
-re-release: untag tag
+	@echo -e "$(TARGET_COLOR)Running test-update$(NO_COLOR)"
+	@npm run test -- -u

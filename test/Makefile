@@ -1,11 +1,18 @@
+SHELL := /bin/bash -euo pipefail
+
+NO_COLOR=\x1b[0m
+TARGET_COLOR=\x1b[96m
+
 clean:
+	@echo -e "$(TARGET_COLOR)Running clean$(NO_COLOR)"
 	@rm -rf ../node_modules ../package-lock.json
 	@rm -rf node_modules package-lock.json
 
-install: clean
-	@echo Installing dependencies...
-	@cd .. && npm i
-	@npm i
+install:
+	@echo -e "$(TARGET_COLOR)Running install$(NO_COLOR)"
+	@cd .. && make install
+	@npm clean-install --prefer-offline --cache ../.npm
+	@npm list
 
 build: install lambda
 	@echo Building application...
