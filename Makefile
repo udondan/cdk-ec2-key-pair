@@ -19,11 +19,3 @@ install:
 	@echo -e "$(TARGET_COLOR)Running install$(NO_COLOR)"
 	@npm clean-install --prefer-offline --cache .npm
 	@npm list
-
-test: build
-	@echo -e "$(TARGET_COLOR)Running test$(NO_COLOR)"
-	@npm run test
-
-test-update:
-	@echo -e "$(TARGET_COLOR)Running test-update$(NO_COLOR)"
-	@npm run test -- -u
