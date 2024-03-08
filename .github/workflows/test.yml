@@ -1,7 +1,9 @@
 ---
 name: Test
 
-concurrency: test
+concurrency:
+  group: test
+  cancel-in-progress: false
 
 on:
   push:
