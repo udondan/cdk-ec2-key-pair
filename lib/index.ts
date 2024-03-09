@@ -356,12 +356,8 @@ export class KeyPair extends Construct implements ITaggable {
       }),
     ];
 
-    const functionName = legacyLambdaName
-      ? `${this.prefix}-${cleanID}`
-      : undefined;
-
     const fn = new aws_lambda.Function(stack, constructName, {
-      functionName,
+      functionName: legacyLambdaName ? `${this.prefix}-${cleanID}` : undefined,
       description: 'Custom CFN resource: Manage EC2 Key Pairs',
       runtime: aws_lambda.Runtime.NODEJS_18_X,
       handler: 'index.handler',
