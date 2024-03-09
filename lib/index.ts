@@ -37,7 +37,7 @@ export interface KeyPairProps extends ResourceProps {
    *
    * The name can be up to 255 characters long. Valid characters include _, -, a-z, A-Z, and 0-9.
    */
-  readonly name: string;
+  readonly keyPairName: string;
 
   /**
    * The description for the key in AWS Secrets Manager
@@ -234,11 +234,11 @@ export class KeyPair extends Construct implements ITaggable {
     const kmsPrivate = props.kmsPrivateKey || props.kms;
     const kmsPublic = props.kmsPublicKey || props.kms;
 
-    const key = new CustomResource(this, `EC2-Key-Pair-${props.name}`, {
+    const key = new CustomResource(this, `EC2-Key-Pair-${props.keyPairName}`, {
       serviceToken: this.lambda.functionArn,
       resourceType: resourceType,
       properties: {
-        Name: props.name,
+        Name: props.keyPairName,
         Description: props.description || '',
         KmsPrivate: kmsPrivate?.keyArn || 'alias/aws/secretsmanager',
         KmsPublic: kmsPublic?.keyArn || 'alias/aws/secretsmanager',
