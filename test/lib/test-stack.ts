@@ -15,7 +15,7 @@ export class TestStack extends cdk.Stack {
     cdk.Tags.of(scope).add('Hello', 'World');
 
     const keyPair = new KeyPair(this, 'Test-Key-Pair', {
-      name: 'test-key-pair',
+      keyPairName: 'test-key-pair',
       description: 'A test Key Pair',
       removeKeySecretsAfterDays: 0,
       storePublicKey: false,
@@ -33,7 +33,7 @@ export class TestStack extends cdk.Stack {
     // import public key
 
     const keyPairImport = new KeyPair(this, 'Test-Key-Pair-Import', {
-      name: 'test-key-pair-import',
+      keyPairName: 'test-key-pair-import',
       description: 'A test Key Pair, imported via public key',
       removeKeySecretsAfterDays: 0,
       storePublicKey: false,
@@ -49,7 +49,7 @@ export class TestStack extends cdk.Stack {
     // PEM && CloudFront
 
     const keyPairPem = new KeyPair(this, 'Test-Key-Pair-PEM', {
-      name: 'CFN-signing-key',
+      keyPairName: 'CFN-signing-key',
       exposePublicKey: true,
       storePublicKey: true,
       publicKeyFormat: PublicKeyFormat.PEM,
