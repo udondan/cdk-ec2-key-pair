@@ -13,6 +13,8 @@ import {
   ImportKeyPairCommand,
   ImportKeyPairCommandInput,
   Tag as Ec2Tag,
+  CreateKeyPairCommandOutput,
+  KeyPairInfo,
 } from '@aws-sdk/client-ec2';
 import {
   CreateSecretCommand,
@@ -34,72 +36,86 @@ import {
   UpdateSecretCommandInput,
 } from '@aws-sdk/client-secrets-manager';
 import {
+  Context,
+  Callback,
   CustomResource,
   Event,
-  LambdaEvent,
-  StandardLogger,
+  Logger,
 } from 'aws-cloudformation-custom-resource';
-import { Callback, Context } from 'aws-lambda';
 import * as forge from 'node-forge';
+import { PublicKeyFormat } from '../lib/index';
+
+export interface ResourceProperties {
+  Name: string;
+  StorePublicKey?: 'true' | 'false'; // @TODO: would be cool if we can define these as boolean
+  ExposePublicKey?: 'true' | 'false';
+  PublicKey: string;
+  SecretPrefix: string;
+  Description: string;
+  KmsPrivate: string;
+  KmsPublic: string;
+  PublicKeyFormat: PublicKeyFormat;
+  RemoveKeySecretsAfterDays: number;
+  StackName: string;
+  Tags: Record<string, string>;
+}
 
 const ec2Client = new EC2Client({});
 const secretsManagerClient = new SecretsManagerClient({});
-const logger = new StandardLogger();
-
 export const handler = function (
-  event: LambdaEvent,
+  event: Event<ResourceProperties>,
   context: Context,
   callback: Callback
 ) {
-  new CustomResource(context, callback, logger)
-    .onCreate(Create)
-    .onUpdate(Update)
-    .onDelete(Delete)
-    .handle(event);
+  new CustomResource<ResourceProperties>(
+    event,
+    context,
+    callback,
+    createResource,
+    updateResource,
+    deleteResource
+  );
 };
 
-function Create(event: Event): Promise<Event> {
-  logger.info(
-    `Attempting to create EC2 Key Pair ${event.ResourceProperties.Name}`
-  );
-  return new Promise(function (resolve, reject) {
-    createKeyPair(event)
-      .then(createPrivateKeySecret)
-      .then(createPublicKeySecret)
-      .then(exposePublicKey)
-      .then(function (data) {
-        resolve(data);
-      })
-      .catch(function (err: Error) {
-        reject(err);
-      });
+function createResource(
+  resource: CustomResource<ResourceProperties>,
+  log: Logger
+): Promise<void> {
+  log.info(`Attempting to create EC2 Key Pair ${resource.properties.Name}`);
+  return new Promise(async function (resolve, reject) {
+    try {
+      const keyPair = await createKeyPair(resource, log);
+      await createPrivateKeySecret(resource, keyPair, log);
+      await createPublicKeySecret(resource, log, keyPair);
+      await exposePublicKey(resource, log, keyPair);
+      resolve();
+    } catch (error) {
+      reject(error);
+    }
   });
 }
 
-function Update(event: Event): Promise<Event> {
-  logger.info(
-    `Attempting to update EC2 Key Pair ${event.OldResourceProperties.Name}`
+function updateResource(
+  resource: CustomResource<ResourceProperties>,
+  log: Logger
+): Promise<void> {
+  log.info(
+    `Attempting to update EC2 Key Pair ${resource.properties.Name.value}`
   );
-  return new Promise(function (resolve, reject) {
-    if (event.ResourceProperties.Name !== event.OldResourceProperties.Name) {
+  return new Promise(async function (resolve, reject) {
+    if (resource.properties.Name.changed) {
       reject(
         new Error(
           'A Key Pair cannot be renamed. Please create a new Key Pair instead'
         )
       );
-    } else if (
-      event.ResourceProperties.StorePublicKey !==
-      event.OldResourceProperties.StorePublicKey
-    ) {
+    } else if (resource.properties.StorePublicKey?.changed) {
       reject(
         new Error(
           'Once created, a key cannot be modified or accessed. Therefore the public key can only be stored, when the key is created.'
         )
       );
-    } else if (
-      event.ResourceProperties.PublicKey !==
-      (event.OldResourceProperties.PublicKey || '')
-    ) {
+    } else if (resource.properties.PublicKey.changed) {
       reject(
         new Error(
           'You cannot change the public key of an exiting key pair. Please delete the key pair and create a new one.'
@@ -107,69 +123,69 @@ function Update(event: Event): Promise<Event> {
       );
     }
 
-    updateKeyPair(event)
-      .then(updateKeyPairAddTags)
-      .then(updateKeyPairRemoveTags)
-      .then(updatePrivateKeySecret)
-      .then(updatePublicKeySecret)
-      .then(updateSecretsAddTags)
-      .then(updateSecretsRemoveTags)
-      .then(exposePublicKey)
-      .then(function (data) {
-        resolve(data);
-      })
-      .catch(function (err: Error) {
-        reject(err);
-      });
+    try {
+      const keyPair = await updateKeyPair(resource, log);
+      await updateKeyPairAddTags(resource, log, keyPair.KeyPairId!);
+      await updateKeyPairRemoveTags(resource, log, keyPair.KeyPairId!);
+      await updatePrivateKeySecret(resource, log);
+      await updatePublicKeySecret(resource, log);
+      await updateSecretsAddTags(resource, log);
+      await updateSecretsRemoveTags(resource, log);
+      await exposePublicKey(resource, log, keyPair);
+      resolve();
+    } catch (error) {
+      reject(error);
+    }
   });
 }
 
-function Delete(event: any): Promise<Event> {
-  logger.info(
-    `Attempting to delete EC2 Key Pair ${event.ResourceProperties.Name}`
-  );
-  return new Promise(function (resolve, reject) {
-    deleteKeyPair(event)
-      .then(deletePrivateKeySecret)
-      .then(deletePublicKeySecret)
-      .then(function (data) {
-        resolve(data);
-      })
-      .catch(function (err: Error) {
-        reject(err);
-      });
+function deleteResource(
+  resource: CustomResource<ResourceProperties>,
+  log: Logger
+): Promise<void> {
+  log.info(`Attempting to delete EC2 Key Pair ${resource.properties.Name}`);
+  return new Promise(async function (resolve, reject) {
+    try {
+      await deleteKeyPair(resource, log);
+      await deletePrivateKeySecret(resource, log);
+      await deletePublicKeySecret(resource, log);
+      resolve();
+    } catch (err) {
+      reject(err);
+    }
   });
 }
 
-function createKeyPair(event: Event): Promise<Event> {
+function createKeyPair(
+  resource: CustomResource<ResourceProperties>,
+  log: Logger
+): Promise<CreateKeyPairCommandOutput> {
   return new Promise(function (resolve, reject) {
     if (
       // public key provided, let's import
-      event.ResourceProperties.PublicKey &&
-      event.ResourceProperties.PublicKey.length
+      resource.properties.PublicKey &&
+      resource.properties.PublicKey.value.length
     ) {
       const params: ImportKeyPairCommandInput = {
-        KeyName: event.ResourceProperties.Name,
-        PublicKeyMaterial: Buffer.from(
-          event.ResourceProperties.PublicKey as string
-        ),
+        KeyName: resource.properties.Name.value,
+        PublicKeyMaterial: Buffer.from(resource.properties.PublicKey.value),
         TagSpecifications: [
           {
             ResourceType: 'key-pair',
-            Tags: makeTags(event, event.ResourceProperties) as Ec2Tag[],
+            Tags: makeTags(
+              resource,
+              resource.properties.Tags?.value
+            ) as Ec2Tag[],
           },
         ],
       };
-      logger.debug(`ec2.importKeyPair: ${JSON.stringify(params)}`);
+      log.debug(`ec2.importKeyPair: ${JSON.stringify(params)}`);
       ec2Client
         .send(new ImportKeyPairCommand(params))
         .then((data) => {
-          event.addResponseValue('KeyPairName', data.KeyName);
-          event.addResponseValue('KeyPairID', data.KeyPairId);
-          event.KeyFingerprint = data.KeyFingerprint;
-          event.KeyMaterial = '';
-          event.KeyID = data.KeyPairId;
-          resolve(event);
+          resource.addResponseValue('KeyPairName', data.KeyName!);
+          resource.addResponseValue('KeyPairID', data.KeyPairId!);
+          resolve(data);
         })
         .catch((err) => {
           reject(err);
@@ -177,24 +193,24 @@ function createKeyPair(event: Event): Promise<Event> {
     } else {
       // no public key provided. create new key
       const params: CreateKeyPairCommandInput = {
-        KeyName: event.ResourceProperties.Name,
+        KeyName: resource.properties.Name.value,
         TagSpecifications: [
           {
             ResourceType: 'key-pair',
-            Tags: makeTags(event, event.ResourceProperties) as Ec2Tag[],
+            Tags: makeTags(
+              resource,
+              resource.properties.Tags?.value
+            ) as Ec2Tag[],
           },
         ],
       };
-      logger.debug(`ec2.createKeyPair: ${JSON.stringify(params)}`);
+      log.debug(`ec2.createKeyPair: ${JSON.stringify(params)}`);
       ec2Client
         .send(new CreateKeyPairCommand(params))
         .then((data) => {
-          event.addResponseValue('KeyPairName', data.KeyName);
-          event.addResponseValue('KeyPairID', data.KeyPairId);
-          event.KeyFingerprint = data.KeyFingerprint;
-          event.KeyMaterial = data.KeyMaterial;
-          event.KeyID = data.KeyPairId;
-          resolve(event);
+          resource.addResponseValue('KeyPairName', data.KeyName!);
+          resource.addResponseValue('KeyPairID', data.KeyPairId!);
+          resolve(data);
         })
         .catch((err) => {
           reject(err);
@@ -203,29 +219,31 @@ function createKeyPair(event: Event): Promise<Event> {
   });
 }
 
-function updateKeyPair(event: Event): Promise<Event> {
+function updateKeyPair(
+  resource: CustomResource<ResourceProperties>,
+  log: Logger
+): Promise<KeyPairInfo> {
   return new Promise(function (resolve, reject) {
     // there is nothing to update. a key cannot be changed
     // though we use this step to enrich the event with the keyId
     const params: DescribeKeyPairsCommandInput = {
-      KeyNames: [event.ResourceProperties.Name],
+      KeyNames: [resource.properties.Name.value],
     };
-    logger.debug(`ec2.describeKeyPairs: ${JSON.stringify(params)}`);
+    log.debug(`ec2.describeKeyPairs: ${JSON.stringify(params)}`);
     ec2Client
       .send(new DescribeKeyPairsCommand(params))
       .then((data) => {
         if (data.KeyPairs?.length != 1)
           return reject(new Error('Key pair was not found'));
+        const keyPair = data.KeyPairs![0];
+        const keyPairId = keyPair.KeyPairId!;
+        const keyPairName = keyPair.KeyName!;
 
-        const id = data.KeyPairs![0].KeyPairId!;
-        const name = data.KeyPairs![0].KeyName!;
-        event.KeyID = id;
+        console.log(`the KEY ID IS ${keyPairId}`);
 
-        console.log(`the KEY ID IS ${event.KeyID}`);
-
-        event.addResponseValue('KeyPairName', name);
-        event.addResponseValue('KeyPairID', id);
-        resolve(event);
+        resource.addResponseValue('KeyPairName', keyPairName);
+        resource.addResponseValue('KeyPairID', keyPairId);
+        resolve(keyPair);
       })
       .catch((err) => {
         reject(err);
@@ -233,29 +251,33 @@ function updateKeyPair(event: Event): Promise<Event> {
   });
 }
 
-function updateKeyPairAddTags(event: Event): Promise<Event> {
-  logger.info(
-    `Attempting to update tags for Key Pair ${event.ResourceProperties.Name}`
+function updateKeyPairAddTags(
+  resource: CustomResource<ResourceProperties>,
+  log: Logger,
+  keyPairId: string
+): Promise<void> {
+  log.info(
+    `Attempting to update tags for Key Pair ${resource.properties.Name}`
   );
   return new Promise(function (resolve, reject) {
-    const oldTags = makeTags(event, event.OldResourceProperties);
-    const newTags = makeTags(event, event.ResourceProperties);
+    const oldTags = makeTags(resource, resource.properties.Tags?.before);
+    const newTags = makeTags(resource, resource.properties.Tags?.value);
     if (JSON.stringify(oldTags) == JSON.stringify(newTags)) {
-      logger.info(
-        `No changes of tags detected for Key Pair ${event.ResourceProperties.Name}. Not attempting any update`
+      log.info(
+        `No changes of tags detected for Key Pair ${resource.properties.Name}. Not attempting any update`
       );
-      return resolve(event);
+      return resolve();
     }
 
     const params: CreateTagsCommandInput = {
-      Resources: [event.KeyID],
+      Resources: [keyPairId],
       Tags: newTags,
     };
-    logger.debug(`ec2.createTags: ${JSON.stringify(params)}`);
+    log.debug(`ec2.createTags: ${JSON.stringify(params)}`);
     ec2Client
       .send(new CreateTagsCommand(params))
-      .then((data) => {
-        resolve(event);
+      .then((_data) => {
+        resolve();
       })
       .catch((err) => {
         reject(err);
@@ -263,42 +285,44 @@ function updateKeyPairAddTags(event: Event): Promise<Event> {
   });
 }
 
-function updateKeyPairRemoveTags(event: Event): Promise<Event> {
-  logger.info(
-    `Attempting to remove some tags for Key Pair ${event.ResourceProperties.Name}`
+function updateKeyPairRemoveTags(
+  resource: CustomResource<ResourceProperties>,
+  log: Logger,
+  keyPairId: string
+): Promise<void> {
+  log.info(
+    `Attempting to remove some tags for Key Pair ${resource.properties.Name}`
   );
   return new Promise(function (resolve, reject) {
-    const oldTags = makeTags(event, event.OldResourceProperties);
+    const oldTags = makeTags(resource, resource.properties.Tags?.before);
 
-    const newTags = makeTags(event, event.ResourceProperties);
+    const newTags = makeTags(resource, resource.properties.Tags?.value);
     const tagsToRemove = getMissingTags(oldTags, newTags);
     if (
       JSON.stringify(oldTags) == JSON.stringify(newTags) ||
       !tagsToRemove.length
     ) {
-      logger.info(
-        `No changes of tags detected for Key Pair ${event.ResourceProperties.Name}. Not attempting any update`
+      log.info(
+        `No changes of tags detected for Key Pair ${resource.properties.Name}. Not attempting any update`
       );
-      return resolve(event);
+      return resolve();
     }
 
-    logger.info(
-      `Will remove the following tags: ${JSON.stringify(tagsToRemove)}`
-    );
+    log.info(`Will remove the following tags: ${JSON.stringify(tagsToRemove)}`);
     const params: DeleteTagsCommandInput = {
-      Resources: [event.KeyID],
+      Resources: [keyPairId],
       Tags: tagsToRemove.map((key) => {
         return {
           Key: key,
-          Value: event.OldResourceProperties.Tags[key],
+          Value: resource.properties.Tags?.before![key],
         } as Ec2Tag;
       }),
     };
-    logger.debug(`ec2.deleteTags: ${JSON.stringify(params)}`);
+    log.debug(`ec2.deleteTags: ${JSON.stringify(params)}`);
     ec2Client
       .send(new DeleteTagsCommand(params))
-      .then((data) => {
-        resolve(event);
+      .then((_data) => {
+        resolve();
       })
       .catch((err) => {
         reject(err);
@@ -306,17 +330,23 @@ function updateKeyPairRemoveTags(event: Event): Promise<Event> {
   });
 }
 
-function deleteKeyPair(event: Event): Promise<Event> {
+function deleteKeyPair(
+  resource: CustomResource<ResourceProperties>,
+  log: Logger
+): Promise<void> {
   return new Promise(function (resolve, reject) {
     const params: DeleteKeyPairCommandInput = {
-      KeyName: event.ResourceProperties.Name,
+      KeyName: resource.properties.Name.value,
     };
-    logger.debug(`ec2.deleteKeyPair: ${JSON.stringify(params)}`);
+    log.debug(`ec2.deleteKeyPair: ${JSON.stringify(params)}`);
     ec2Client
       .send(new DeleteKeyPairCommand(params))
-      .then((data) => {
-        event.addResponseValue('KeyPairName', event.ResourceProperties.Name);
-        resolve(event);
+      .then((_data) => {
+        resource.addResponseValue(
+          'KeyPairName',
+          resource.properties.Name.value
+        );
+        resolve();
       })
       .catch((err) => {
         reject(err);
@@ -324,25 +354,29 @@ function deleteKeyPair(event: Event): Promise<Event> {
   });
 }
 
-function createPrivateKeySecret(event: Event): Promise<Event> {
+function createPrivateKeySecret(
+  resource: CustomResource<ResourceProperties>,
+  keyPair: CreateKeyPairCommandOutput,
+  log: Logger
+): Promise<void> {
   return new Promise(function (resolve, reject) {
-    if (event.ResourceProperties.PublicKey) {
-      event.addResponseValue('PrivateKeyARN', null);
-      return resolve(event);
+    if (resource.properties.PublicKey) {
+      resource.addResponseValue('PrivateKeyARN', '');
+      return resolve();
     }
     const params: CreateSecretCommandInput = {
-      Name: `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}/private`,
-      Description: `${event.ResourceProperties.Description} (Private Key)`,
-      SecretString: event.KeyMaterial,
-      KmsKeyId: event.ResourceProperties.KmsPrivate,
-      Tags: makeTags(event, event.ResourceProperties),
+      Name: `${resource.properties.SecretPrefix}${resource.properties.Name}/private`,
+      Description: `${resource.properties.Description} (Private Key)`,
+      SecretString: keyPair.KeyMaterial,
+      KmsKeyId: resource.properties.KmsPrivate.value,
+      Tags: makeTags(resource, resource.properties.Tags?.value),
     };
-    logger.debug(`secretsmanager.createSecret: ${JSON.stringify(params)}`);
+    log.debug(`secretsmanager.createSecret: ${JSON.stringify(params)}`);
     secretsManagerClient
       .send(new CreateSecretCommand(params))
       .then((data) => {
-        event.addResponseValue('PrivateKeyARN', data.ARN);
-        resolve(event);
+        resource.addResponseValue('PrivateKeyARN', data.ARN!);
+        resolve();
       })
       .catch((err) => {
         reject(err);
@@ -350,36 +384,40 @@ function createPrivateKeySecret(event: Event): Promise<Event> {
   });
 }
 
-function createPublicKeySecret(event: Event): Promise<Event> {
+function createPublicKeySecret(
+  resource: CustomResource<ResourceProperties>,
+  log: Logger,
+  keyPair: CreateKeyPairCommandOutput
+): Promise<void> {
   return new Promise(async function (resolve, reject) {
     let publicKey: string;
-    if (event.ResourceProperties.PublicKey.length)
-      publicKey = event.ResourceProperties.PublicKey;
+    if (resource.properties.PublicKey.value.length)
+      publicKey = resource.properties.PublicKey.value;
     else {
       try {
-        publicKey = await makePublicKey(event);
+        publicKey = await makePublicKey(resource, log, keyPair);
       } catch (err) {
         return reject(err);
       }
     }
 
-    if (event.ResourceProperties.StorePublicKey !== 'true') {
-      return resolve(event);
+    if (resource.properties.StorePublicKey?.value !== 'true') {
+      return resolve();
     }
 
     const params: CreateSecretCommandInput = {
-      Name: `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}/public`,
-      Description: `${event.ResourceProperties.Description} (Public Key)`,
+      Name: `${resource.properties.SecretPrefix}${resource.properties.Name}/public`,
+      Description: `${resource.properties.Description} (Public Key)`,
       SecretString: publicKey,
-      KmsKeyId: event.ResourceProperties.KmsPublic,
-      Tags: makeTags(event, event.ResourceProperties),
+      KmsKeyId: resource.properties.KmsPublic.value,
+      Tags: makeTags(resource, resource.properties.Tags?.value),
     };
-    logger.debug(`secretsmanager.createSecret: ${JSON.stringify(params)}`);
+    log.debug(`secretsmanager.createSecret: ${JSON.stringify(params)}`);
     secretsManagerClient
       .send(new CreateSecretCommand(params))
       .then((data) => {
-        event.addResponseValue('PublicKeyARN', data.ARN);
-        resolve(event);
+        resource.addResponseValue('PublicKeyARN', data.ARN!);
+        resolve();
       })
       .catch((err) => {
         reject(err);
@@ -387,19 +425,22 @@ function createPublicKeySecret(event: Event): Promise<Event> {
   });
 }
 
-function updatePrivateKeySecret(event: Event): Promise<Event> {
+function updatePrivateKeySecret(
+  resource: CustomResource<ResourceProperties>,
+  log: Logger
+): Promise<void> {
   return new Promise(function (resolve, reject) {
     const params: UpdateSecretCommandInput = {
-      SecretId: `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}/private`,
-      Description: `${event.ResourceProperties.Description} (Private key)`,
-      KmsKeyId: event.ResourceProperties.KmsPrivate,
+      SecretId: `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/private`,
+      Description: `${resource.properties.Description.value} (Private key)`,
+      KmsKeyId: resource.properties.KmsPrivate.value,
     };
-    logger.debug(`secretsmanager.updateSecret: ${JSON.stringify(params)}`);
+    log.debug('secretsmanager.updateSecret:', JSON.stringify(params));
     secretsManagerClient
       .send(new UpdateSecretCommand(params))
       .then((data) => {
-        event.addResponseValue('PrivateKeyARN', data.ARN);
-        resolve(event);
+        resource.addResponseValue('PrivateKeyARN', data.ARN!);
+        resolve();
       })
       .catch((err) => {
         reject(err);
@@ -407,25 +448,28 @@ function updatePrivateKeySecret(event: Event): Promise<Event> {
   });
 }
 
-function updatePublicKeySecret(event: Event): Promise<Event> {
+function updatePublicKeySecret(
+  resource: CustomResource<ResourceProperties>,
+  log: Logger
+): Promise<void> {
   return new Promise(function (resolve, reject) {
-    const arn = `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}/public`;
-    secretExists(arn).then((exists) => {
+    const arn = `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/public`;
+    secretExists(arn, log).then((exists) => {
       if (!exists) {
         // no public key stored. nothing to do
-        return resolve(event);
+        return resolve();
       }
       const params: UpdateSecretCommandInput = {
         SecretId: arn,
-        Description: `${event.ResourceProperties.Description} (Public Key)`,
-        KmsKeyId: event.ResourceProperties.KmsPublic,
+        Description: `${resource.properties.Description.value} (Public Key)`,
+        KmsKeyId: resource.properties.KmsPublic.value,
       };
-      logger.debug(`secretsmanager.updateSecret: ${JSON.stringify(params)}`);
+      log.debug('secretsmanager.updateSecret:', JSON.stringify(params));
       secretsManagerClient
         .send(new UpdateSecretCommand(params))
         .then((data) => {
-          event.addResponseValue('PublicKeyARN', data.ARN);
-          resolve(event);
+          resource.addResponseValue('PublicKeyARN', data.ARN!);
+          resolve();
         })
         .catch((err) => {
           reject(err);
@@ -434,48 +478,51 @@ function updatePublicKeySecret(event: Event): Promise<Event> {
   });
 }
 
-function updateSecretsAddTags(event: Event): Promise<Event> {
-  const secretPrivateKey = `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}/private`;
-  const secretPublicKey = `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}/public`;
+function updateSecretsAddTags(
+  resource: CustomResource<ResourceProperties>,
+  log: Logger
+): Promise<void> {
+  const secretPrivateKey = `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/private`;
+  const secretPublicKey = `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/public`;
   return new Promise(function (resolve, reject) {
-    updateSecretAddTags(secretPrivateKey, event).then((event) => {
-      secretExists(secretPublicKey).then((exists) => {
+    updateSecretAddTags(resource, log, secretPrivateKey).then((_event) => {
+      secretExists(secretPublicKey, log).then((exists) => {
         if (!exists) {
           // no public key stored. nothing to do
-          return resolve(event);
+          return resolve();
         }
-        updateSecretAddTags(secretPublicKey, event)
-          .then((event) => {
-            resolve(event);
-          })
-          .catch((err) => {
-            reject(err);
-          });
+        updateSecretAddTags(resource, log, secretPublicKey)
+          .then(resolve)
+          .catch(reject);
       });
     });
   });
 }
 
-function updateSecretAddTags(secretId: string, event: Event): Promise<Event> {
-  logger.info(`Attempting to update tags for secret ${secretId}`);
+function updateSecretAddTags(
+  resource: CustomResource<ResourceProperties>,
+  log: Logger,
+  secretId: string
+): Promise<void> {
+  log.info(`Attempting to update tags for secret ${secretId}`);
   return new Promise(function (resolve, reject) {
-    const oldTags = makeTags(event, event.OldResourceProperties);
-    const newTags = makeTags(event, event.ResourceProperties);
+    const oldTags = makeTags(resource, resource.properties.Tags?.before);
+    const newTags = makeTags(resource, resource.properties.Tags?.value);
     if (JSON.stringify(oldTags) == JSON.stringify(newTags)) {
-      logger.info(
+      log.info(
         `No changes of tags detected for secret ${secretId}. Not attempting any update`
       );
-      return resolve(event);
+      return resolve();
     }
     const params: TagResourceCommandInput = {
       SecretId: secretId,
       Tags: newTags,
     };
-    logger.debug(`secretsmanager.tagResource: ${JSON.stringify(params)}`);
+    log.debug(`secretsmanager.tagResource: ${JSON.stringify(params)}`);
     secretsManagerClient
       .send(new TagResourceCommand(params))
-      .then((data) => {
-        resolve(event);
+      .then((_data) => {
+        resolve();
       })
       .catch((err) => {
         reject(err);
@@ -483,34 +530,36 @@ function updateSecretAddTags(secretId: string, event: Event): Promise<Event> {
   });
 }
 
-function updateSecretsRemoveTags(event: Event): Promise<Event> {
-  const secretPrivateKey = `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}/private`;
-  const secretPublicKey = `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}/public`;
+function updateSecretsRemoveTags(
+  resource: CustomResource<ResourceProperties>,
+  log: Logger
+): Promise<void> {
+  const secretPrivateKey = `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/private`;
+  const secretPublicKey = `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/public`;
   return new Promise(function (resolve, reject) {
-    updateSecretRemoveTags(secretPrivateKey, event).then((event) => {
-      secretExists(secretPublicKey).then((exists) => {
+    updateSecretRemoveTags(resource, log, secretPrivateKey).then((_event) => {
+      secretExists(secretPublicKey, log).then((exists) => {
         if (!exists) {
           // no public key stored. nothing to do
-          return resolve(event);
+          return resolve();
         }
-        updateSecretRemoveTags(secretPublicKey, event)
-          .then((event) => {
-            resolve(event);
-          })
-          .catch((err) => {
-            reject(err);
-          });
+        updateSecretRemoveTags(resource, log, secretPublicKey)
+          .then(resolve)
+          .catch(reject);
       });
     });
   });
 }
 
-function getPrivateKey(event: Event): Promise<string> {
+function getPrivateKey(
+  resource: CustomResource<ResourceProperties>,
+  log: Logger
+): Promise<string> {
   return new Promise(function (resolve, reject) {
     const params: GetSecretValueCommandInput = {
-      SecretId: `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}/private`,
+      SecretId: `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/private`,
     };
-    logger.debug(`secretsmanager.getSecretValue: ${JSON.stringify(params)}`);
+    log.debug(`secretsmanager.getSecretValue: ${JSON.stringify(params)}`);
     secretsManagerClient
       .send(new GetSecretValueCommand(params))
       .then((data) => {
@@ -522,93 +571,104 @@ function getPrivateKey(event: Event): Promise<string> {
   });
 }
 
-function makePublicKey(event: Event): Promise<string> {
+function makePublicKey(
+  resource: CustomResource<ResourceProperties>,
+  log: Logger,
+  keyPair: CreateKeyPairCommandOutput | KeyPairInfo
+): Promise<string> {
   return new Promise(async function (resolve, reject) {
-    if (typeof event.KeyMaterial == 'undefined') {
+    if (
+      'KeyMaterial' in keyPair &&
+      typeof keyPair.KeyMaterial !== 'undefined'
+    ) {
+      const privateKey = forge.pki.privateKeyFromPem(keyPair.KeyMaterial!);
+      const forgePublicKey = forge.pki.rsa.setPublicKey(
+        privateKey.n,
+        privateKey.e
+      );
+
+      let publicKey = '';
+      if (resource.properties.PublicKeyFormat.value === 'PEM') {
+        publicKey = forge.pki.publicKeyToPem(forgePublicKey);
+      } else if (resource.properties.PublicKeyFormat.value === 'OPENSSH') {
+        publicKey = forge.ssh.publicKeyToOpenSSH(forgePublicKey);
+      } else {
+        reject(
+          new Error(
+            `Unsupported public key format ${resource.properties.PublicKeyFormat.value}`
+          )
+        );
+      }
+      resolve(publicKey);
+    } else {
       try {
-        event.KeyMaterial = await getPrivateKey(event);
+        const keyMaterial = await getPrivateKey(resource, log);
+        resolve(keyMaterial);
       } catch (err) {
         return reject(err);
       }
     }
-
-    const privateKey = forge.pki.privateKeyFromPem(event.KeyMaterial);
-    const forgePublicKey = forge.pki.rsa.setPublicKey(
-      privateKey.n,
-      privateKey.e
-    );
-
-    let publicKey = '';
-    if (event.ResourceProperties.PublicKeyFormat === 'PEM') {
-      publicKey = forge.pki.publicKeyToPem(forgePublicKey);
-    } else if (event.ResourceProperties.PublicKeyFormat === 'OPENSSH') {
-      publicKey = forge.ssh.publicKeyToOpenSSH(forgePublicKey);
-    } else {
-      reject(
-        new Error(
-          `Unsupported public key format ${event.ResourceProperties.PublicKeyFormat}`
-        )
-      );
-    }
-    resolve(publicKey);
   });
 }
 
-function exposePublicKey(event: Event): Promise<Event> {
+function exposePublicKey(
+  resource: CustomResource<ResourceProperties>,
+  log: Logger,
+  keyPair: CreateKeyPairCommandOutput | KeyPairInfo
+): Promise<void> {
   return new Promise(async function (resolve, reject) {
-    if (event.ResourceProperties.ExposePublicKey == 'true') {
+    if (resource.properties.ExposePublicKey?.value == 'true') {
       try {
         let publicKey: string;
-        if (event.ResourceProperties.PublicKey.length) {
-          publicKey = event.ResourceProperties.PublicKey;
+        if (resource.properties.PublicKey.value.length) {
+          publicKey = resource.properties.PublicKey.value;
         } else {
-          publicKey = await makePublicKey(event);
+          publicKey = await makePublicKey(resource, log, keyPair);
         }
-        event.addResponseValue('PublicKeyValue', publicKey);
+        resource.addResponseValue('PublicKeyValue', publicKey);
       } catch (err) {
         return reject(err);
       }
     } else {
-      event.addResponseValue(
+      resource.addResponseValue(
         'PublicKeyValue',
         'Not requested - Set ExposePublicKey to true'
       );
     }
-    resolve(event);
+    resolve();
   });
 }
 
 function updateSecretRemoveTags(
-  secretId: string,
-  event: Event
-): Promise<Event> {
-  logger.info(`Attempting to remove some tags for secret ${secretId}`);
+  resource: CustomResource<ResourceProperties>,
+  log: Logger,
+  secretId: string
+): Promise<void> {
+  log.info(`Attempting to remove some tags for secret ${secretId}`);
   return new Promise(function (resolve, reject) {
-    const oldTags = makeTags(event, event.OldResourceProperties);
-    const newTags = makeTags(event, event.ResourceProperties);
+    const oldTags = makeTags(resource, resource.properties.Tags?.before);
+    const newTags = makeTags(resource, resource.properties.Tags?.value);
     const tagsToRemove = getMissingTags(oldTags, newTags);
     if (
       JSON.stringify(oldTags) == JSON.stringify(newTags) ||
       !tagsToRemove.length
     ) {
-      logger.info(
+      log.info(
         `No changes of tags detected for secret ${secretId}. Not attempting any update`
       );
-      return resolve(event);
+      return resolve();
     }
 
-    logger.info(
-      `Will remove the following tags: ${JSON.stringify(tagsToRemove)}`
-    );
+    log.info(`Will remove the following tags: ${JSON.stringify(tagsToRemove)}`);
     const params: UntagResourceCommandInput = {
       SecretId: secretId,
       TagKeys: tagsToRemove,
     };
-    logger.debug(`secretsmanager.untagResource: ${JSON.stringify(params)}`);
+    log.debug(`secretsmanager.untagResource: ${JSON.stringify(params)}`);
     secretsManagerClient
       .send(new UntagResourceCommand(params))
-      .then((data) => {
-        resolve(event);
+      .then((_data) => {
+        resolve();
       })
       .catch((err) => {
         reject(err);
@@ -616,19 +676,22 @@ function updateSecretRemoveTags(
   });
 }
 
-function deletePrivateKeySecret(event: Event): Promise<Event> {
+function deletePrivateKeySecret(
+  resource: CustomResource<ResourceProperties>,
+  log: Logger
+): Promise<void> {
   return new Promise(async function (resolve, reject) {
-    const arn = `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}/private`;
-    secretExists(arn)
+    const arn = `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/private`;
+    secretExists(arn, log)
       .then((exists) => {
         if (!exists) {
           // no private key stored. nothing to do
-          return resolve(event);
+          return resolve();
         }
-        deleteSecret(arn, event)
+        deleteSecret(resource, log, arn)
           .then((data) => {
-            event.addResponseValue('PrivateKeyARN', data.ARN);
-            resolve(event);
+            resource.addResponseValue('PrivateKeyARN', data.ARN!);
+            resolve();
           })
           .catch((err) => {
             reject(err);
@@ -640,19 +703,22 @@ function deletePrivateKeySecret(event: Event): Promise<Event> {
   });
 }
 
-function deletePublicKeySecret(event: Event): Promise<Event> {
+function deletePublicKeySecret(
+  resource: CustomResource<ResourceProperties>,
+  log: Logger
+): Promise<void> {
   return new Promise(async function (resolve, reject) {
-    const arn = `${event.ResourceProperties.SecretPrefix}${event.ResourceProperties.Name}/public`;
-    secretExists(arn)
+    const arn = `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/public`;
+    secretExists(arn, log)
       .then((exists) => {
         if (!exists) {
           // no public key stored. nothing to do
-          return resolve(event);
+          return resolve();
         }
-        deleteSecret(arn, event)
+        deleteSecret(resource, log, arn)
           .then((data) => {
-            event.addResponseValue('PublicKeyARN', data.ARN);
-            resolve(event);
+            resource.addResponseValue('PublicKeyARN', data.ARN!);
+            resolve();
           })
           .catch((err) => {
             reject(err);
@@ -664,7 +730,7 @@ function deletePublicKeySecret(event: Event): Promise<Event> {
   });
 }
 
-async function secretExists(name: string): Promise<boolean> {
+async function secretExists(name: string, log: Logger): Promise<boolean> {
   return new Promise(async function (resolve, reject) {
     const params: ListSecretsCommandInput = {
       Filters: [
@@ -674,7 +740,7 @@ async function secretExists(name: string): Promise<boolean> {
         },
       ],
     };
-    logger.debug(`secretsmanager.listSecrets: ${JSON.stringify(params)}`);
+    log.debug(`secretsmanager.listSecrets: ${JSON.stringify(params)}`);
     return secretsManagerClient
       .send(new ListSecretsCommand(params))
       .then((data) => {
@@ -687,47 +753,51 @@ async function secretExists(name: string): Promise<boolean> {
 }
 
 function deleteSecret(
-  secretId: string,
-  event: Event
+  resource: CustomResource<ResourceProperties>,
+  log: Logger,
+  secretId: string
 ): Promise<DeleteSecretCommandOutput> {
   const params: DeleteSecretCommandInput = {
     SecretId: secretId,
   };
 
-  const removeKeySecretsAfterDays = event.ResourceProperties
-    .RemoveKeySecretsAfterDays as number;
+  const removeKeySecretsAfterDays = parseInt(
+    String(resource.properties.RemoveKeySecretsAfterDays.value)
+  );
 
   if (removeKeySecretsAfterDays > 0) {
-    params.RecoveryWindowInDays =
-      event.ResourceProperties.RemoveKeySecretsAfterDays;
+    params.RecoveryWindowInDays = removeKeySecretsAfterDays;
   } else {
     params.ForceDeleteWithoutRecovery = true;
   }
 
-  logger.debug(`secretsmanager.deleteSecret: ${JSON.stringify(params)}`);
+  log.debug(`secretsmanager.deleteSecret: ${JSON.stringify(params)}`);
   return secretsManagerClient.send(new DeleteSecretCommand(params));
 }
 
-function makeTags(event: Event, properties: any): SecretManagerTag[] {
+function makeTags(
+  resource: CustomResource<ResourceProperties>,
+  eventTags?: Record<string, string>
+): SecretManagerTag[] {
   const tags: SecretManagerTag[] = [
     {
       Key: 'aws-cloudformation:stack-id',
-      Value: event.StackId,
+      Value: resource.event.StackId,
     },
     {
       Key: 'aws-cloudformation:stack-name',
-      Value: properties.StackName,
+      Value: resource.properties.StackName.value,
     },
     {
       Key: 'aws-cloudformation:logical-id',
-      Value: event.LogicalResourceId,
+      Value: resource.event.LogicalResourceId,
     },
   ];
-  if ('Tags' in properties) {
-    Object.keys(properties.Tags).forEach(function (key: string) {
+  if (eventTags && Object.keys(eventTags).length) {
+    Object.keys(eventTags).forEach(function (key: string) {
       tags.push({
         Key: key,
-        Value: properties.Tags[key],
+        Value: eventTags[key],
       });
     });
   }
