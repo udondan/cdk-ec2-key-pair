@@ -81,6 +81,7 @@ function createResource(
   resource: CustomResource<ResourceProperties>,
   log: Logger
 ): Promise<void> {
+  log.debug('called function createResource');
   log.info(`Attempting to create EC2 Key Pair ${resource.properties.Name}`);
   return new Promise(async function (resolve, reject) {
     try {
@@ -99,6 +100,7 @@ function updateResource(
   resource: CustomResource<ResourceProperties>,
   log: Logger
 ): Promise<void> {
+  log.debug('called function updateResource');
   log.info(
     `Attempting to update EC2 Key Pair ${resource.properties.Name.value}`
   );
@@ -143,6 +145,7 @@ function deleteResource(
   resource: CustomResource<ResourceProperties>,
   log: Logger
 ): Promise<void> {
+  log.debug('called function deleteResource');
   log.info(`Attempting to delete EC2 Key Pair ${resource.properties.Name}`);
   return new Promise(async function (resolve, reject) {
     try {
@@ -160,6 +163,7 @@ function createKeyPair(
   resource: CustomResource<ResourceProperties>,
   log: Logger
 ): Promise<CreateKeyPairCommandOutput> {
+  log.debug('called function createKeyPair');
   return new Promise(function (resolve, reject) {
     if (
       // public key provided, let's import
@@ -223,6 +227,7 @@ function updateKeyPair(
   resource: CustomResource<ResourceProperties>,
   log: Logger
 ): Promise<KeyPairInfo> {
+  log.debug('called function updateKeyPair');
   return new Promise(function (resolve, reject) {
     // there is nothing to update. a key cannot be changed
     // though we use this step to enrich the event with the keyId
@@ -256,6 +261,7 @@ function updateKeyPairAddTags(
   log: Logger,
   keyPairId: string
 ): Promise<void> {
+  log.debug('called function updateKeyPairAddTags');
   log.info(
     `Attempting to update tags for Key Pair ${resource.properties.Name}`
   );
@@ -290,6 +296,7 @@ function updateKeyPairRemoveTags(
   log: Logger,
   keyPairId: string
 ): Promise<void> {
+  log.debug('called function updateKeyPairRemoveTags');
   log.info(
     `Attempting to remove some tags for Key Pair ${resource.properties.Name}`
   );
@@ -334,6 +341,7 @@ function deleteKeyPair(
   resource: CustomResource<ResourceProperties>,
   log: Logger
 ): Promise<void> {
+  log.debug('called function deleteKeyPair');
   return new Promise(function (resolve, reject) {
     const params: DeleteKeyPairCommandInput = {
       KeyName: resource.properties.Name.value,
@@ -359,8 +367,9 @@ function createPrivateKeySecret(
   keyPair: CreateKeyPairCommandOutput,
   log: Logger
 ): Promise<void> {
+  log.debug('called function createPrivateKeySecret');
   return new Promise(function (resolve, reject) {
-    if (resource.properties.PublicKey) {
+    if (resource.properties.PublicKey.value.length) {
       resource.addResponseValue('PrivateKeyARN', '');
       return resolve();
     }
@@ -375,10 +384,13 @@ function createPrivateKeySecret(
     secretsManagerClient
       .send(new CreateSecretCommand(params))
       .then((data) => {
+        console.log('CREATED PRIVATE KEY', JSON.stringify(data, null, 2));
         resource.addResponseValue('PrivateKeyARN', data.ARN!);
         resolve();
       })
       .catch((err) => {
+        console.error('FAILED TO CREATE PRIVATE KEY', err);
+
         reject(err);
       });
   });
@@ -389,6 +401,7 @@ function createPublicKeySecret(
   log: Logger,
   keyPair: CreateKeyPairCommandOutput
 ): Promise<void> {
+  log.debug('called function createPublicKeySecret');
   return new Promise(async function (resolve, reject) {
     let publicKey: string;
     if (resource.properties.PublicKey.value.length)
@@ -429,6 +442,7 @@ function updatePrivateKeySecret(
   resource: CustomResource<ResourceProperties>,
   log: Logger
 ): Promise<void> {
+  log.debug('called function updatePrivateKeySecret');
   return new Promise(function (resolve, reject) {
     const params: UpdateSecretCommandInput = {
       SecretId: `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/private`,
@@ -452,6 +466,7 @@ function updatePublicKeySecret(
   resource: CustomResource<ResourceProperties>,
   log: Logger
 ): Promise<void> {
+  log.debug('called function updatePublicKeySecret');
   return new Promise(function (resolve, reject) {
     const arn = `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/public`;
     secretExists(arn, log).then((exists) => {
@@ -482,6 +497,7 @@ function updateSecretsAddTags(
   resource: CustomResource<ResourceProperties>,
   log: Logger
 ): Promise<void> {
+  log.debug('called function updateSecretsAddTags');
   const secretPrivateKey = `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/private`;
   const secretPublicKey = `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/public`;
   return new Promise(function (resolve, reject) {
@@ -504,6 +520,7 @@ function updateSecretAddTags(
   log: Logger,
   secretId: string
 ): Promise<void> {
+  log.debug('called function updateSecretAddTags');
   log.info(`Attempting to update tags for secret ${secretId}`);
   return new Promise(function (resolve, reject) {
     const oldTags = makeTags(resource, resource.properties.Tags?.before);
@@ -534,6 +551,7 @@ function updateSecretsRemoveTags(
   resource: CustomResource<ResourceProperties>,
   log: Logger
 ): Promise<void> {
+  log.debug('called function updateSecretsRemoveTags');
   const secretPrivateKey = `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/private`;
   const secretPublicKey = `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/public`;
   return new Promise(function (resolve, reject) {
@@ -555,6 +573,7 @@ function getPrivateKey(
   resource: CustomResource<ResourceProperties>,
   log: Logger
 ): Promise<string> {
+  log.debug('called function getPrivateKey');
   return new Promise(function (resolve, reject) {
     const params: GetSecretValueCommandInput = {
       SecretId: `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/private`,
@@ -576,6 +595,7 @@ function makePublicKey(
   log: Logger,
   keyPair: CreateKeyPairCommandOutput | KeyPairInfo
 ): Promise<string> {
+  log.debug('called function makePublicKey');
   return new Promise(async function (resolve, reject) {
     if (
       'KeyMaterial' in keyPair &&
@@ -616,6 +636,7 @@ function exposePublicKey(
   log: Logger,
   keyPair: CreateKeyPairCommandOutput | KeyPairInfo
 ): Promise<void> {
+  log.debug('called function exposePublicKey');
   return new Promise(async function (resolve, reject) {
     if (resource.properties.ExposePublicKey?.value == 'true') {
       try {
@@ -644,6 +665,7 @@ function updateSecretRemoveTags(
   log: Logger,
   secretId: string
 ): Promise<void> {
+  log.debug('called function updateSecretRemoveTags');
   log.info(`Attempting to remove some tags for secret ${secretId}`);
   return new Promise(function (resolve, reject) {
     const oldTags = makeTags(resource, resource.properties.Tags?.before);
@@ -680,6 +702,7 @@ function deletePrivateKeySecret(
   resource: CustomResource<ResourceProperties>,
   log: Logger
 ): Promise<void> {
+  log.debug('called function deletePrivateKeySecret');
   return new Promise(async function (resolve, reject) {
     const arn = `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/private`;
     secretExists(arn, log)
@@ -707,6 +730,7 @@ function deletePublicKeySecret(
   resource: CustomResource<ResourceProperties>,
   log: Logger
 ): Promise<void> {
+  log.debug('called function deletePublicKeySecret');
   return new Promise(async function (resolve, reject) {
     const arn = `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/public`;
     secretExists(arn, log)
@@ -731,6 +755,7 @@ function deletePublicKeySecret(
 }
 
 async function secretExists(name: string, log: Logger): Promise<boolean> {
+  log.debug('called function secretExists');
   return new Promise(async function (resolve, reject) {
     const params: ListSecretsCommandInput = {
       Filters: [
@@ -757,6 +782,7 @@ function deleteSecret(
   log: Logger,
   secretId: string
 ): Promise<DeleteSecretCommandOutput> {
+  log.debug('called function deleteSecret');
   const params: DeleteSecretCommandInput = {
     SecretId: secretId,
   };
