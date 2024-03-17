@@ -244,8 +244,6 @@ function updateKeyPair(
         const keyPairId = keyPair.KeyPairId!;
         const keyPairName = keyPair.KeyName!;
 
-        console.log(`the KEY ID IS ${keyPairId}`);
-
         resource.addResponseValue('KeyPairName', keyPairName);
         resource.addResponseValue('KeyPairID', keyPairId);
         resolve(keyPair);
@@ -384,13 +382,11 @@ function createPrivateKeySecret(
     secretsManagerClient
       .send(new CreateSecretCommand(params))
       .then((data) => {
-        console.log('CREATED PRIVATE KEY', JSON.stringify(data, null, 2));
         resource.addResponseValue('PrivateKeyARN', data.ARN!);
         resolve();
       })
       .catch((err) => {
-        console.error('FAILED TO CREATE PRIVATE KEY', err);
-
+        log.error('FAILED TO CREATE PRIVATE KEY', err);
         reject(err);
       });
   });
