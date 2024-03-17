@@ -47,7 +47,7 @@ import { PublicKeyFormat } from '../lib/index';
 
 export interface ResourceProperties {
   Name: string;
-  StorePublicKey?: 'true' | 'false'; // @TODO: would be cool if we can define these as boolean
+  StorePublicKey?: 'true' | 'false'; // props passed via lambda always are of type string
   ExposePublicKey?: 'true' | 'false';
   PublicKey: string;
   SecretPrefix: string;
