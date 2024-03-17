@@ -178,7 +178,7 @@ function createKeyPair(
             ResourceType: 'key-pair',
             Tags: makeTags(
               resource,
-              resource.properties.Tags?.value
+              resource.properties.Tags.value
             ) as Ec2Tag[],
           },
         ],
@@ -203,7 +203,7 @@ function createKeyPair(
             ResourceType: 'key-pair',
             Tags: makeTags(
               resource,
-              resource.properties.Tags?.value
+              resource.properties.Tags.value
             ) as Ec2Tag[],
           },
         ],
@@ -266,8 +266,8 @@ function updateKeyPairAddTags(
     `Attempting to update tags for Key Pair ${resource.properties.Name}`
   );
   return new Promise(function (resolve, reject) {
-    const oldTags = makeTags(resource, resource.properties.Tags?.before);
-    const newTags = makeTags(resource, resource.properties.Tags?.value);
+    const oldTags = makeTags(resource, resource.properties.Tags.before);
+    const newTags = makeTags(resource, resource.properties.Tags.value);
     if (JSON.stringify(oldTags) == JSON.stringify(newTags)) {
       log.info(
         `No changes of tags detected for Key Pair ${resource.properties.Name}. Not attempting any update`
@@ -301,9 +301,9 @@ function updateKeyPairRemoveTags(
     `Attempting to remove some tags for Key Pair ${resource.properties.Name}`
   );
   return new Promise(function (resolve, reject) {
-    const oldTags = makeTags(resource, resource.properties.Tags?.before);
+    const oldTags = makeTags(resource, resource.properties.Tags.before);
 
-    const newTags = makeTags(resource, resource.properties.Tags?.value);
+    const newTags = makeTags(resource, resource.properties.Tags.value);
     const tagsToRemove = getMissingTags(oldTags, newTags);
     if (
       JSON.stringify(oldTags) == JSON.stringify(newTags) ||
@@ -321,7 +321,7 @@ function updateKeyPairRemoveTags(
       Tags: tagsToRemove.map((key) => {
         return {
           Key: key,
-          Value: resource.properties.Tags?.before![key],
+          Value: resource.properties.Tags.before![key],
         } as Ec2Tag;
       }),
     };
@@ -378,7 +378,7 @@ function createPrivateKeySecret(
       Description: `${resource.properties.Description} (Private Key)`,
       SecretString: keyPair.KeyMaterial,
       KmsKeyId: resource.properties.KmsPrivate.value,
-      Tags: makeTags(resource, resource.properties.Tags?.value),
+      Tags: makeTags(resource, resource.properties.Tags.value),
     };
     log.debug(`secretsmanager.createSecret: ${JSON.stringify(params)}`);
     secretsManagerClient
@@ -423,7 +423,7 @@ function createPublicKeySecret(
       Description: `${resource.properties.Description} (Public Key)`,
       SecretString: publicKey,
       KmsKeyId: resource.properties.KmsPublic.value,
-      Tags: makeTags(resource, resource.properties.Tags?.value),
+      Tags: makeTags(resource, resource.properties.Tags.value),
     };
     log.debug(`secretsmanager.createSecret: ${JSON.stringify(params)}`);
     secretsManagerClient
@@ -523,8 +523,8 @@ function updateSecretAddTags(
   log.debug('called function updateSecretAddTags');
   log.info(`Attempting to update tags for secret ${secretId}`);
   return new Promise(function (resolve, reject) {
-    const oldTags = makeTags(resource, resource.properties.Tags?.before);
-    const newTags = makeTags(resource, resource.properties.Tags?.value);
+    const oldTags = makeTags(resource, resource.properties.Tags.before);
+    const newTags = makeTags(resource, resource.properties.Tags.value);
     if (JSON.stringify(oldTags) == JSON.stringify(newTags)) {
       log.info(
         `No changes of tags detected for secret ${secretId}. Not attempting any update`
@@ -668,8 +668,8 @@ function updateSecretRemoveTags(
   log.debug('called function updateSecretRemoveTags');
   log.info(`Attempting to remove some tags for secret ${secretId}`);
   return new Promise(function (resolve, reject) {
-    const oldTags = makeTags(resource, resource.properties.Tags?.before);
-    const newTags = makeTags(resource, resource.properties.Tags?.value);
+    const oldTags = makeTags(resource, resource.properties.Tags.before);
+    const newTags = makeTags(resource, resource.properties.Tags.value);
     const tagsToRemove = getMissingTags(oldTags, newTags);
     if (
       JSON.stringify(oldTags) == JSON.stringify(newTags) ||
