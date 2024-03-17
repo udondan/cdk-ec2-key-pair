@@ -41,6 +41,8 @@ import {
   CustomResource,
   Event,
   Logger,
+  StandardLogger,
+  LogLevel,
 } from 'aws-cloudformation-custom-resource';
 import * as forge from 'node-forge';
 import { PublicKeyFormat } from '../lib/index';
@@ -74,7 +76,7 @@ export const handler = function (
     createResource,
     updateResource,
     deleteResource
-  );
+  ).setLogger(new StandardLogger(LogLevel.debug));
 };
 
 function createResource(
@@ -586,45 +588,29 @@ function getPrivateKey(
   });
 }
 
-function makePublicKey(
+async function makePublicKey(
   resource: CustomResource<ResourceProperties>,
   log: Logger,
   keyPair: CreateKeyPairCommandOutput | KeyPairInfo
 ): Promise<string> {
   log.debug('called function makePublicKey');
-  return new Promise(async function (resolve, reject) {
-    if (
-      'KeyMaterial' in keyPair &&
-      typeof keyPair.KeyMaterial !== 'undefined'
-    ) {
-      const privateKey = forge.pki.privateKeyFromPem(keyPair.KeyMaterial!);
-      const forgePublicKey = forge.pki.rsa.setPublicKey(
-        privateKey.n,
-        privateKey.e
-      );
 
-      let publicKey = '';
-      if (resource.properties.PublicKeyFormat.value === 'PEM') {
-        publicKey = forge.pki.publicKeyToPem(forgePublicKey);
-      } else if (resource.properties.PublicKeyFormat.value === 'OPENSSH') {
-        publicKey = forge.ssh.publicKeyToOpenSSH(forgePublicKey);
-      } else {
-        reject(
-          new Error(
-            `Unsupported public key format ${resource.properties.PublicKeyFormat.value}`
-          )
-        );
-      }
-      resolve(publicKey);
-    } else {
-      try {
-        const keyMaterial = await getPrivateKey(resource, log);
-        resolve(keyMaterial);
-      } catch (err) {
-        return reject(err);
-      }
-    }
-  });
+  const keyMaterial =
+    (keyPair as CreateKeyPairCommandOutput).KeyMaterial ||
+    (await getPrivateKey(resource, log));
+
+  const privateKey = forge.pki.privateKeyFromPem(keyMaterial);
+  const forgePublicKey = forge.pki.rsa.setPublicKey(privateKey.n, privateKey.e);
+
+  const publicKeyFormat = resource.properties.PublicKeyFormat.value;
+  switch (publicKeyFormat) {
+    case 'PEM':
+      return forge.pki.publicKeyToPem(forgePublicKey);
+    case 'OPENSSH':
+      return forge.ssh.publicKeyToOpenSSH(forgePublicKey);
+    default:
+      throw new Error(`Unsupported public key format ${publicKeyFormat}`);
+  }
 }
 
 function exposePublicKey(
