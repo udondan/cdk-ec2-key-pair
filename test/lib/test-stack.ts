@@ -1,18 +1,18 @@
-import cdk = require('aws-cdk-lib');
+import { Tags, StackProps, Stack, CfnOutput, aws_iam } from 'aws-cdk-lib';
 import cloudfront = require('aws-cdk-lib/aws-cloudfront');
 import { Construct } from 'constructs';
 
 import { KeyPair, PublicKeyFormat } from '../../lib';
 
-interface Props extends cdk.StackProps {
+interface Props extends StackProps {
   currentUserName: string;
 }
 
-export class TestStack extends cdk.Stack {
+export class TestStack extends Stack {
   constructor(scope: Construct, id: string, props: Props) {
     super(scope, id, props);
 
-    cdk.Tags.of(scope).add('Hello', 'World');
+    Tags.of(scope).add('Hello', 'World');
 
     const keyPair = new KeyPair(this, 'Test-Key-Pair', {
       keyPairName: 'test-key-pair',
@@ -22,10 +22,10 @@ export class TestStack extends cdk.Stack {
       exposePublicKey: true,
     });
 
-    cdk.Tags.of(keyPair).add('a', 'b');
-    cdk.Tags.of(keyPair).add('c', 'd');
+    Tags.of(keyPair).add('a', 'b');
+    Tags.of(keyPair).add('c', 'd');
 
-    new cdk.CfnOutput(this, 'Test-Public-Key', {
+    new CfnOutput(this, 'Test-Public-Key', {
       exportName: 'TestPublicKey',
       value: keyPair.publicKeyValue,
     });
@@ -41,7 +41,7 @@ export class TestStack extends cdk.Stack {
       publicKey: keyPair.publicKeyValue,
     });
 
-    new cdk.CfnOutput(this, 'Test-Public-Key-Import', {
+    new CfnOutput(this, 'Test-Public-Key-Import', {
       exportName: 'TestPublicKeyImport',
       value: keyPairImport.publicKeyValue,
     });
@@ -56,7 +56,7 @@ export class TestStack extends cdk.Stack {
       legacyLambdaName: true,
     });
 
-    const currentUser = cdk.aws_iam.User.fromUserName(
+    const currentUser = aws_iam.User.fromUserName(
       this,
       'Current-User',
       props.currentUserName
@@ -65,7 +65,7 @@ export class TestStack extends cdk.Stack {
     keyPairPem.grantReadOnPrivateKey(currentUser);
     keyPairPem.grantReadOnPublicKey(currentUser);
 
-    new cdk.CfnOutput(this, 'Test-Public-Key-PEM', {
+    new CfnOutput(this, 'Test-Public-Key-PEM', {
       exportName: 'TestPublicKeyPEM',
       value: keyPairPem.publicKeyValue,
     });

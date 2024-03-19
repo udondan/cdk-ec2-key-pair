@@ -14,6 +14,7 @@ import {
 } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as path from 'path';
+import { ResourceProperties } from '../lambda/index';
 
 const resourceType = 'Custom::EC2-Key-Pair';
 const ID = `CFN::Resource::${resourceType}`;
@@ -234,25 +235,27 @@ export class KeyPair extends Construct implements ITaggable {
     const kmsPrivate = props.kmsPrivateKey || props.kms;
     const kmsPublic = props.kmsPublicKey || props.kms;
 
+    const lambdaProperties: ResourceProperties = {
+      Name: props.keyPairName,
+      Description: props.description || '',
+      KmsPrivate: kmsPrivate?.keyArn || 'alias/aws/secretsmanager',
+      KmsPublic: kmsPublic?.keyArn || 'alias/aws/secretsmanager',
+      PublicKey: props.publicKey || '',
+      StorePublicKey: props.storePublicKey ? 'true' : 'false',
+      ExposePublicKey: props.exposePublicKey ? 'true' : 'false',
+      PublicKeyFormat: props.publicKeyFormat || PublicKeyFormat.OPENSSH,
+      RemoveKeySecretsAfterDays: props.removeKeySecretsAfterDays || 0,
+      SecretPrefix: props.secretPrefix || 'ec2-ssh-key/',
+      StackName: stack,
+      Tags: Lazy.any({
+        produce: () => this.tags.renderTags(),
+      }) as unknown as Record<string, string>,
+    };
+
     const key = new CustomResource(this, `EC2-Key-Pair-${props.keyPairName}`, {
       serviceToken: this.lambda.functionArn,
       resourceType: resourceType,
-      properties: {
-        Name: props.keyPairName,
-        Description: props.description || '',
-        KmsPrivate: kmsPrivate?.keyArn || 'alias/aws/secretsmanager',
-        KmsPublic: kmsPublic?.keyArn || 'alias/aws/secretsmanager',
-        PublicKey: props.publicKey || '',
-        StorePublicKey: props.storePublicKey || false,
-        ExposePublicKey: props.exposePublicKey || false,
-        PublicKeyFormat: props.publicKeyFormat || PublicKeyFormat.OPENSSH,
-        RemoveKeySecretsAfterDays: props.removeKeySecretsAfterDays || 0,
-        SecretPrefix: props.secretPrefix || 'ec2-ssh-key/',
-        StackName: stack,
-        Tags: Lazy.any({
-          produce: () => this.tags.renderTags(),
-        }),
-      },
+      properties: lambdaProperties,
     });
 
     if (typeof props.kms !== 'undefined') {
