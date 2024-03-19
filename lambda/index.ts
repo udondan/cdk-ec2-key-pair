@@ -276,9 +276,7 @@ function updateKeyPairAddTags(
     `Attempting to update tags for Key Pair ${resource.properties.Name}`
   );
   return new Promise(function (resolve, reject) {
-    const oldTags = makeTags(resource, resource.properties.Tags.before);
-    const newTags = makeTags(resource, resource.properties.Tags.value);
-    if (JSON.stringify(oldTags) == JSON.stringify(newTags)) {
+    if (!resource.properties.Tags.changed) {
       log.info(
         `No changes of tags detected for Key Pair ${resource.properties.Name}. Not attempting any update`
       );
@@ -287,7 +285,7 @@ function updateKeyPairAddTags(
 
     const params: CreateTagsCommandInput = {
       Resources: [keyPairId],
-      Tags: newTags,
+      Tags: makeTags(resource, resource.properties.Tags.value),
     };
     log.debug(`ec2.createTags: ${JSON.stringify(params)}`);
     ec2Client
@@ -311,14 +309,17 @@ function updateKeyPairRemoveTags(
     `Attempting to remove some tags for Key Pair ${resource.properties.Name}`
   );
   return new Promise(function (resolve, reject) {
-    const oldTags = makeTags(resource, resource.properties.Tags.before);
+    if (!resource.properties.Tags.changed) {
+      log.info(
+        `No changes of tags detected for Key Pair ${resource.properties.Name}. Not attempting any update`
+      );
+      return resolve();
+    }
 
+    const oldTags = makeTags(resource, resource.properties.Tags.before);
     const newTags = makeTags(resource, resource.properties.Tags.value);
     const tagsToRemove = getMissingTags(oldTags, newTags);
-    if (
-      JSON.stringify(oldTags) == JSON.stringify(newTags) ||
-      !tagsToRemove.length
-    ) {
+    if (!tagsToRemove.length) {
       log.info(
         `No changes of tags detected for Key Pair ${resource.properties.Name}. Not attempting any update`
       );
@@ -509,9 +510,7 @@ function updateSecretAddTags(
   log.debug('called function updateSecretAddTags');
   log.info(`Attempting to update tags for secret ${secretId}`);
   return new Promise(function (resolve, reject) {
-    const oldTags = makeTags(resource, resource.properties.Tags.before);
-    const newTags = makeTags(resource, resource.properties.Tags.value);
-    if (JSON.stringify(oldTags) == JSON.stringify(newTags)) {
+    if (!resource.properties.Tags.changed) {
       log.info(
         `No changes of tags detected for secret ${secretId}. Not attempting any update`
       );
@@ -519,7 +518,7 @@ function updateSecretAddTags(
     }
     const params: TagResourceCommandInput = {
       SecretId: secretId,
-      Tags: newTags,
+      Tags: makeTags(resource, resource.properties.Tags.value),
     };
     log.debug(`secretsmanager.tagResource: ${JSON.stringify(params)}`);
     secretsManagerClient
@@ -616,13 +615,17 @@ function updateSecretRemoveTags(
   log.debug('called function updateSecretRemoveTags');
   log.info(`Attempting to remove some tags for secret ${secretId}`);
   return new Promise(function (resolve, reject) {
+    if (!resource.properties.Tags.changed) {
+      log.info(
+        `No changes of tags detected for secret ${secretId}. Not attempting any update`
+      );
+      return resolve();
+    }
+
     const oldTags = makeTags(resource, resource.properties.Tags.before);
     const newTags = makeTags(resource, resource.properties.Tags.value);
     const tagsToRemove = getMissingTags(oldTags, newTags);
-    if (
-      JSON.stringify(oldTags) == JSON.stringify(newTags) ||
-      !tagsToRemove.length
-    ) {
+    if (!tagsToRemove.length) {
       log.info(
         `No changes of tags detected for secret ${secretId}. Not attempting any update`
       );
