@@ -23,8 +23,10 @@ const cleanID = ID.replace(/:+/g, '-');
 const lambdaTimeout = 3; // minutes
 
 export enum PublicKeyFormat {
+  /* eslint-disable @typescript-eslint/naming-convention */
   OPENSSH = 'OPENSSH',
   PEM = 'PEM',
+  /* eslint-enable @typescript-eslint/naming-convention */
 }
 
 /**
@@ -227,29 +229,31 @@ export class KeyPair extends Construct implements ITaggable {
         );
       }
     }
-    this.lambda = this.ensureLambda(props.legacyLambdaName || false);
+    this.lambda = this.ensureLambda(props.legacyLambdaName ?? false);
 
     this.tags = new TagManager(TagType.MAP, 'Custom::EC2-Key-Pair');
     this.tags.setTag(createdByTag, ID);
 
-    const kmsPrivate = props.kmsPrivateKey || props.kms;
-    const kmsPublic = props.kmsPublicKey || props.kms;
+    const kmsPrivate = props.kmsPrivateKey ?? props.kms;
+    const kmsPublic = props.kmsPublicKey ?? props.kms;
 
     const lambdaProperties: ResourceProperties = {
+      /* eslint-disable @typescript-eslint/naming-convention */
       Name: props.keyPairName,
-      Description: props.description || '',
-      KmsPrivate: kmsPrivate?.keyArn || 'alias/aws/secretsmanager',
-      KmsPublic: kmsPublic?.keyArn || 'alias/aws/secretsmanager',
-      PublicKey: props.publicKey || '',
+      Description: props.description ?? '',
+      KmsPrivate: kmsPrivate?.keyArn ?? 'alias/aws/secretsmanager',
+      KmsPublic: kmsPublic?.keyArn ?? 'alias/aws/secretsmanager',
+      PublicKey: props.publicKey ?? '',
       StorePublicKey: props.storePublicKey ? 'true' : 'false',
       ExposePublicKey: props.exposePublicKey ? 'true' : 'false',
-      PublicKeyFormat: props.publicKeyFormat || PublicKeyFormat.OPENSSH,
-      RemoveKeySecretsAfterDays: props.removeKeySecretsAfterDays || 0,
-      SecretPrefix: props.secretPrefix || 'ec2-ssh-key/',
+      PublicKeyFormat: props.publicKeyFormat ?? PublicKeyFormat.OPENSSH,
+      RemoveKeySecretsAfterDays: props.removeKeySecretsAfterDays ?? 0,
+      SecretPrefix: props.secretPrefix ?? 'ec2-ssh-key/',
       StackName: stack,
       Tags: Lazy.any({
-        produce: () => this.tags.renderTags(),
+        produce: () => this.tags.renderTags() as Record<string, string>,
       }) as unknown as Record<string, string>,
+      /* eslint-enable @typescript-eslint/naming-convention */
     };
 
     const key = new CustomResource(this, `EC2-Key-Pair-${props.keyPairName}`, {
@@ -303,9 +307,11 @@ export class KeyPair extends Construct implements ITaggable {
       new aws_iam.PolicyStatement({
         actions: ['ec2:CreateKeyPair', 'ec2:CreateTags', 'ec2:ImportKeyPair'],
         conditions: {
+          /* eslint-disable @typescript-eslint/naming-convention */
           StringLike: {
             'aws:RequestTag/CreatedByCfnCustomResource': ID,
           },
+          /* eslint-enable @typescript-eslint/naming-convention */
         },
         resources,
       }),
@@ -313,9 +319,11 @@ export class KeyPair extends Construct implements ITaggable {
         // allow delete/update, only if createdByTag is set
         actions: ['ec2:CreateTags', 'ec2:DeleteKeyPair', 'ec2:DeleteTags'],
         conditions: {
+          /* eslint-disable @typescript-eslint/naming-convention */
           StringLike: {
             'ec2:ResourceTag/CreatedByCfnCustomResource': ID,
           },
+          /* eslint-enable @typescript-eslint/naming-convention */
         },
         resources,
       }),
@@ -328,9 +336,11 @@ export class KeyPair extends Construct implements ITaggable {
       new aws_iam.PolicyStatement({
         actions: ['secretsmanager:CreateSecret', 'secretsmanager:TagResource'],
         conditions: {
+          /* eslint-disable @typescript-eslint/naming-convention */
           StringLike: {
             'aws:RequestTag/CreatedByCfnCustomResource': ID,
           },
+          /* eslint-enable @typescript-eslint/naming-convention */
         },
         resources: ['*'],
       }),
@@ -351,9 +361,11 @@ export class KeyPair extends Construct implements ITaggable {
           'secretsmanager:UpdateSecretVersionStage',
         ],
         conditions: {
+          /* eslint-disable @typescript-eslint/naming-convention */
           StringLike: {
             'secretsmanager:ResourceTag/CreatedByCfnCustomResource': ID,
           },
+          /* eslint-enable @typescript-eslint/naming-convention */
         },
         resources: ['*'],
       }),

@@ -46,6 +46,7 @@ import * as forge from 'node-forge';
 import { PublicKeyFormat } from '../lib/index';
 
 export interface ResourceProperties {
+  /* eslint-disable @typescript-eslint/naming-convention */
   Name: string;
   StorePublicKey?: 'true' | 'false'; // props passed via lambda always are of type string
   ExposePublicKey?: 'true' | 'false';
@@ -58,6 +59,7 @@ export interface ResourceProperties {
   RemoveKeySecretsAfterDays: number;
   StackName: string;
   Tags: Record<string, string>;
+  /* eslint-enable @typescript-eslint/naming-convention */
 }
 
 const ec2Client = new EC2Client({});
@@ -77,26 +79,22 @@ export const handler = function (
   );
 };
 
-function createResource(
+async function createResource(
   resource: CustomResource<ResourceProperties>,
   log: Logger,
 ): Promise<void> {
   log.debug('called function createResource');
-  log.info(`Attempting to create EC2 Key Pair ${resource.properties.Name}`);
-  return new Promise(async function (resolve, reject) {
-    try {
-      const keyPair = await createKeyPair(resource, log);
-      await createPrivateKeySecret(resource, keyPair, log);
-      await createPublicKeySecret(resource, log, keyPair);
-      await exposePublicKey(resource, log, keyPair);
-      resolve();
-    } catch (error) {
-      reject(error);
-    }
-  });
+  log.info(
+    `Attempting to create EC2 Key Pair ${resource.properties.Name.value}`,
+  );
+
+  const keyPair = await createKeyPair(resource, log);
+  await createPrivateKeySecret(resource, keyPair, log);
+  await createPublicKeySecret(resource, log, keyPair);
+  await exposePublicKey(resource, log, keyPair);
 }
 
-function updateResource(
+async function updateResource(
   resource: CustomResource<ResourceProperties>,
   log: Logger,
 ): Promise<void> {
@@ -104,453 +102,364 @@ function updateResource(
   log.info(
     `Attempting to update EC2 Key Pair ${resource.properties.Name.value}`,
   );
-  return new Promise(async function (resolve, reject) {
-    if (resource.properties.Name.changed) {
-      reject(
-        new Error(
-          'A Key Pair cannot be renamed. Please create a new Key Pair instead',
-        ),
-      );
-    } else if (resource.properties.StorePublicKey?.changed) {
-      reject(
-        new Error(
-          'Once created, a key cannot be modified or accessed. Therefore the public key can only be stored, when the key is created.',
-        ),
-      );
-    } else if (resource.properties.PublicKey.changed) {
-      reject(
-        new Error(
-          'You cannot change the public key of an exiting key pair. Please delete the key pair and create a new one.',
-        ),
-      );
-    }
 
-    try {
-      const keyPair = await updateKeyPair(resource, log);
-      await updateKeyPairAddTags(resource, log, keyPair.KeyPairId!);
-      await updateKeyPairRemoveTags(resource, log, keyPair.KeyPairId!);
-      if (!resource.properties.PublicKey.value.length) {
-        // in case we imported a public key, there is no private key secret
-        const secretId = `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/private`;
-        await updatePrivateKeySecret(resource, log);
-        await updateSecretAddTags(resource, log, secretId);
-        await updateSecretRemoveTags(resource, log, secretId);
-      }
-      if (resource.properties.StorePublicKey?.value === 'true') {
-        // in case user did not want to store the public key, there is no public key secret
-        const secretId = `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/public`;
-        await updatePublicKeySecret(resource, log);
-        await updateSecretAddTags(resource, log, secretId);
-        await updateSecretRemoveTags(resource, log, secretId);
-      }
-      await exposePublicKey(resource, log, keyPair);
-      resolve();
-    } catch (error) {
-      reject(error);
-    }
-  });
+  if (resource.properties.Name.changed) {
+    throw new Error(
+      'A Key Pair cannot be renamed. Please create a new Key Pair instead',
+    );
+  } else if (resource.properties.StorePublicKey?.changed) {
+    throw new Error(
+      'Once created, a key cannot be modified or accessed. Therefore the public key can only be stored, when the key is created.',
+    );
+  } else if (resource.properties.PublicKey.changed) {
+    throw new Error(
+      'You cannot change the public key of an exiting key pair. Please delete the key pair and create a new one.',
+    );
+  }
+
+  const keyPair = await updateKeyPair(resource, log);
+  await updateKeyPairAddTags(resource, log, keyPair.KeyPairId!);
+  await updateKeyPairRemoveTags(resource, log, keyPair.KeyPairId!);
+  if (!resource.properties.PublicKey.value.length) {
+    // in case we imported a public key, there is no private key secret
+    const secretId = `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/private`;
+    await updatePrivateKeySecret(resource, log);
+    await updateSecretAddTags(resource, log, secretId);
+    await updateSecretRemoveTags(resource, log, secretId);
+  }
+  if (resource.properties.StorePublicKey?.value === 'true') {
+    // in case user did not want to store the public key, there is no public key secret
+    const secretId = `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/public`;
+    await updatePublicKeySecret(resource, log);
+    await updateSecretAddTags(resource, log, secretId);
+    await updateSecretRemoveTags(resource, log, secretId);
+  }
+  await exposePublicKey(resource, log, keyPair);
 }
 
-function deleteResource(
+async function deleteResource(
   resource: CustomResource<ResourceProperties>,
   log: Logger,
 ): Promise<void> {
   log.debug('called function deleteResource');
-  log.info(`Attempting to delete EC2 Key Pair ${resource.properties.Name}`);
-  return new Promise(async function (resolve, reject) {
-    try {
-      await deleteKeyPair(resource, log);
-      await deletePrivateKeySecret(resource, log);
-      await deletePublicKeySecret(resource, log);
-      resolve();
-    } catch (err) {
-      reject(err);
-    }
-  });
+  log.info(
+    `Attempting to delete EC2 Key Pair ${resource.properties.Name.value}`,
+  );
+
+  await deleteKeyPair(resource, log);
+  await deletePrivateKeySecret(resource, log);
+  await deletePublicKeySecret(resource, log);
 }
 
-function createKeyPair(
+async function createKeyPair(
   resource: CustomResource<ResourceProperties>,
   log: Logger,
 ): Promise<CreateKeyPairCommandOutput> {
   log.debug('called function createKeyPair');
-  return new Promise(function (resolve, reject) {
-    if (
-      // public key provided, let's import
-      resource.properties.PublicKey &&
-      resource.properties.PublicKey.value.length
-    ) {
-      const params: ImportKeyPairCommandInput = {
-        KeyName: resource.properties.Name.value,
-        PublicKeyMaterial: Buffer.from(resource.properties.PublicKey.value),
-        TagSpecifications: [
-          {
-            ResourceType: 'key-pair',
-            Tags: makeTags(
-              resource,
-              resource.properties.Tags.value,
-            ) as Ec2Tag[],
-          },
-        ],
-      };
-      log.debug(`ec2.importKeyPair: ${JSON.stringify(params)}`);
-      ec2Client
-        .send(new ImportKeyPairCommand(params))
-        .then((data) => {
-          log.debug('Import successful', JSON.stringify(data, null, 2));
-          resource.addResponseValue('KeyPairName', data.KeyName!);
-          resource.addResponseValue('KeyPairID', data.KeyPairId!);
-          resolve(data);
-        })
-        .catch((err) => {
-          log.error('Import failed', err);
-          reject(err);
-        });
-    } else {
-      // no public key provided. create new key
-      const params: CreateKeyPairCommandInput = {
-        KeyName: resource.properties.Name.value,
-        TagSpecifications: [
-          {
-            ResourceType: 'key-pair',
-            Tags: makeTags(
-              resource,
-              resource.properties.Tags.value,
-            ) as Ec2Tag[],
-          },
-        ],
-      };
-      log.debug(`ec2.createKeyPair: ${JSON.stringify(params)}`);
-      ec2Client
-        .send(new CreateKeyPairCommand(params))
-        .then((data) => {
-          resource.addResponseValue('KeyPairName', data.KeyName!);
-          resource.addResponseValue('KeyPairID', data.KeyPairId!);
-          resolve(data);
-        })
-        .catch((err) => {
-          reject(err);
-        });
+  if (
+    // public key provided, let's import
+    resource.properties.PublicKey?.value.length
+  ) {
+    const params: ImportKeyPairCommandInput = {
+      /* eslint-disable @typescript-eslint/naming-convention */
+      KeyName: resource.properties.Name.value,
+      PublicKeyMaterial: Buffer.from(resource.properties.PublicKey.value),
+      TagSpecifications: [
+        {
+          ResourceType: 'key-pair',
+          Tags: makeTags(resource, resource.properties.Tags.value) as Ec2Tag[],
+        },
+      ],
+      /* eslint-enable @typescript-eslint/naming-convention */
+    };
+    log.debug(`ec2.importKeyPair: ${JSON.stringify(params)}`);
+    try {
+      const result = await ec2Client.send(new ImportKeyPairCommand(params));
+      log.debug('Import successful', JSON.stringify(result, null, 2));
+      resource.addResponseValue('KeyPairName', result.KeyName!);
+      resource.addResponseValue('KeyPairID', result.KeyPairId!);
+      return result;
+    } catch (error) {
+      log.error('Import failed', error);
+      throw error;
     }
-  });
+  } else {
+    // no public key provided. create new key
+    const params: CreateKeyPairCommandInput = {
+      /* eslint-disable @typescript-eslint/naming-convention */
+      KeyName: resource.properties.Name.value,
+      TagSpecifications: [
+        {
+          ResourceType: 'key-pair',
+          Tags: makeTags(resource, resource.properties.Tags.value) as Ec2Tag[],
+        },
+      ],
+      /* eslint-enable @typescript-eslint/naming-convention */
+    };
+    log.debug(`ec2.createKeyPair: ${JSON.stringify(params)}`);
+    const result = await ec2Client.send(new CreateKeyPairCommand(params));
+    resource.addResponseValue('KeyPairName', result.KeyName!);
+    resource.addResponseValue('KeyPairID', result.KeyPairId!);
+    return result;
+  }
 }
 
-function updateKeyPair(
+async function updateKeyPair(
   resource: CustomResource<ResourceProperties>,
   log: Logger,
 ): Promise<KeyPairInfo> {
   log.debug('called function updateKeyPair');
-  return new Promise(function (resolve, reject) {
-    // there is nothing to update. a key cannot be changed
-    // though we use this step to enrich the event with the keyId
-    const params: DescribeKeyPairsCommandInput = {
-      KeyNames: [resource.properties.Name.value],
-    };
-    log.debug(`ec2.describeKeyPairs: ${JSON.stringify(params)}`);
-    ec2Client
-      .send(new DescribeKeyPairsCommand(params))
-      .then((data) => {
-        if (data.KeyPairs?.length != 1)
-          return reject(new Error('Key pair was not found'));
-        const keyPair = data.KeyPairs[0];
-        const keyPairId = keyPair.KeyPairId!;
-        const keyPairName = keyPair.KeyName!;
 
-        resource.addResponseValue('KeyPairName', keyPairName);
-        resource.addResponseValue('KeyPairID', keyPairId);
-        resolve(keyPair);
-      })
-      .catch((err) => {
-        reject(err);
-      });
-  });
+  // there is nothing to update. a key cannot be changed
+  // though we use this step to enrich the event with the keyId
+  const params: DescribeKeyPairsCommandInput = {
+    /* eslint-disable-next-line @typescript-eslint/naming-convention */
+    KeyNames: [resource.properties.Name.value],
+  };
+  log.debug(`ec2.describeKeyPairs: ${JSON.stringify(params)}`);
+  const result = await ec2Client.send(new DescribeKeyPairsCommand(params));
+
+  if (result.KeyPairs?.length != 1) {
+    throw new Error('Key pair was not found');
+  }
+
+  const keyPair = result.KeyPairs[0];
+  const keyPairId = keyPair.KeyPairId!;
+  const keyPairName = keyPair.KeyName!;
+
+  resource.addResponseValue('KeyPairName', keyPairName);
+  resource.addResponseValue('KeyPairID', keyPairId);
+  return keyPair;
 }
 
-function updateKeyPairAddTags(
+async function updateKeyPairAddTags(
   resource: CustomResource<ResourceProperties>,
   log: Logger,
   keyPairId: string,
 ): Promise<void> {
   log.debug('called function updateKeyPairAddTags');
   log.info(
-    `Attempting to update tags for Key Pair ${resource.properties.Name}`,
+    `Attempting to update tags for Key Pair ${resource.properties.Name.value}`,
   );
-  return new Promise(function (resolve, reject) {
-    if (!resource.properties.Tags.changed) {
-      log.info(
-        `No changes of tags detected for Key Pair ${resource.properties.Name}. Not attempting any update`,
-      );
-      return resolve();
-    }
 
-    const params: CreateTagsCommandInput = {
-      Resources: [keyPairId],
-      Tags: makeTags(resource, resource.properties.Tags.value),
-    };
-    log.debug(`ec2.createTags: ${JSON.stringify(params)}`);
-    ec2Client
-      .send(new CreateTagsCommand(params))
-      .then((_data) => {
-        resolve();
-      })
-      .catch((err) => {
-        reject(err);
-      });
-  });
+  if (!resource.properties.Tags.changed) {
+    log.info(
+      `No changes of tags detected for Key Pair ${resource.properties.Name.value}. Not attempting any update`,
+    );
+    return;
+  }
+
+  const params: CreateTagsCommandInput = {
+    /* eslint-disable @typescript-eslint/naming-convention */
+    Resources: [keyPairId],
+    Tags: makeTags(resource, resource.properties.Tags.value),
+    /* eslint-enable @typescript-eslint/naming-convention */
+  };
+  log.debug(`ec2.createTags: ${JSON.stringify(params)}`);
+  await ec2Client.send(new CreateTagsCommand(params));
 }
 
-function updateKeyPairRemoveTags(
+async function updateKeyPairRemoveTags(
   resource: CustomResource<ResourceProperties>,
   log: Logger,
   keyPairId: string,
 ): Promise<void> {
   log.debug('called function updateKeyPairRemoveTags');
   log.info(
-    `Attempting to remove some tags for Key Pair ${resource.properties.Name}`,
+    `Attempting to remove some tags for Key Pair ${resource.properties.Name.value}`,
   );
-  return new Promise(function (resolve, reject) {
-    if (!resource.properties.Tags.changed) {
-      log.info(
-        `No changes of tags detected for Key Pair ${resource.properties.Name}. Not attempting any update`,
-      );
-      return resolve();
-    }
 
-    const oldTags = makeTags(resource, resource.properties.Tags.before);
-    const newTags = makeTags(resource, resource.properties.Tags.value);
-    const tagsToRemove = getMissingTags(oldTags, newTags);
-    if (!tagsToRemove.length) {
-      log.info(
-        `No changes of tags detected for Key Pair ${resource.properties.Name}. Not attempting any update`,
-      );
-      return resolve();
-    }
+  if (!resource.properties.Tags.changed) {
+    log.info(
+      `No changes of tags detected for Key Pair ${resource.properties.Name.value}. Not attempting any update`,
+    );
+    return;
+  }
 
-    log.info(`Will remove the following tags: ${JSON.stringify(tagsToRemove)}`);
-    const params: DeleteTagsCommandInput = {
-      Resources: [keyPairId],
-      Tags: tagsToRemove.map((key) => {
-        return {
-          Key: key,
-          Value: resource.properties.Tags.before![key],
-        } as Ec2Tag;
-      }),
-    };
-    log.debug(`ec2.deleteTags: ${JSON.stringify(params)}`);
-    ec2Client
-      .send(new DeleteTagsCommand(params))
-      .then((_data) => {
-        resolve();
-      })
-      .catch((err) => {
-        reject(err);
-      });
-  });
+  const oldTags = makeTags(resource, resource.properties.Tags.before);
+  const newTags = makeTags(resource, resource.properties.Tags.value);
+  const tagsToRemove = getMissingTags(oldTags, newTags);
+  if (!tagsToRemove.length) {
+    log.info(
+      `No changes of tags detected for Key Pair ${resource.properties.Name.value}. Not attempting any update`,
+    );
+    return;
+  }
+
+  log.info(`Will remove the following tags: ${JSON.stringify(tagsToRemove)}`);
+  const params: DeleteTagsCommandInput = {
+    /* eslint-disable @typescript-eslint/naming-convention */
+    Resources: [keyPairId],
+    Tags: tagsToRemove.map((key) => {
+      return {
+        Key: key,
+        Value: resource.properties.Tags.before![key],
+      } as Ec2Tag;
+    }),
+    /* eslint-enable @typescript-eslint/naming-convention */
+  };
+  log.debug(`ec2.deleteTags: ${JSON.stringify(params)}`);
+  await ec2Client.send(new DeleteTagsCommand(params));
 }
 
-function deleteKeyPair(
+async function deleteKeyPair(
   resource: CustomResource<ResourceProperties>,
   log: Logger,
 ): Promise<void> {
   log.debug('called function deleteKeyPair');
-  return new Promise(function (resolve, reject) {
-    const params: DeleteKeyPairCommandInput = {
-      KeyName: resource.properties.Name.value,
-    };
-    log.debug(`ec2.deleteKeyPair: ${JSON.stringify(params)}`);
-    ec2Client
-      .send(new DeleteKeyPairCommand(params))
-      .then((_data) => {
-        resource.addResponseValue(
-          'KeyPairName',
-          resource.properties.Name.value,
-        );
-        resolve();
-      })
-      .catch((err) => {
-        reject(err);
-      });
-  });
+  const params: DeleteKeyPairCommandInput = {
+    /* eslint-disable-next-line @typescript-eslint/naming-convention */
+    KeyName: resource.properties.Name.value,
+  };
+  log.debug(`ec2.deleteKeyPair: ${JSON.stringify(params)}`);
+  await ec2Client.send(new DeleteKeyPairCommand(params));
+  resource.addResponseValue('KeyPairName', resource.properties.Name.value);
 }
 
-function createPrivateKeySecret(
+async function createPrivateKeySecret(
   resource: CustomResource<ResourceProperties>,
   keyPair: CreateKeyPairCommandOutput,
   log: Logger,
 ): Promise<void> {
   log.debug('called function createPrivateKeySecret');
-  return new Promise(function (resolve, reject) {
-    if (resource.properties.PublicKey.value.length) {
-      resource.addResponseValue('PrivateKeyARN', '');
-      return resolve();
-    }
+  if (resource.properties.PublicKey.value.length) {
+    resource.addResponseValue('PrivateKeyARN', '');
+    return;
+  }
+
+  try {
     const params: CreateSecretCommandInput = {
-      Name: `${resource.properties.SecretPrefix}${resource.properties.Name}/private`,
-      Description: `${resource.properties.Description} (Private Key)`,
+      /* eslint-disable @typescript-eslint/naming-convention */
+      Name: `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/private`,
+      Description: `${resource.properties.Description.value} (Private Key)`,
       SecretString: keyPair.KeyMaterial,
       KmsKeyId: resource.properties.KmsPrivate.value,
       Tags: makeTags(resource, resource.properties.Tags.value),
+      /* eslint-enable @typescript-eslint/naming-convention */
     };
     log.debug(`secretsmanager.createSecret: ${JSON.stringify(params)}`);
-    secretsManagerClient
-      .send(new CreateSecretCommand(params))
-      .then((data) => {
-        resource.addResponseValue('PrivateKeyARN', data.ARN!);
-        resolve();
-      })
-      .catch((err) => {
-        log.error('FAILED TO CREATE PRIVATE KEY', err);
-        reject(err);
-      });
-  });
+    const result = await secretsManagerClient.send(
+      new CreateSecretCommand(params),
+    );
+    resource.addResponseValue('PrivateKeyARN', result.ARN!);
+  } catch (error) {
+    log.error('FAILED TO CREATE PRIVATE KEY', error);
+    throw error;
+  }
 }
 
-function createPublicKeySecret(
+async function createPublicKeySecret(
   resource: CustomResource<ResourceProperties>,
   log: Logger,
   keyPair: CreateKeyPairCommandOutput,
 ): Promise<void> {
   log.debug('called function createPublicKeySecret');
-  return new Promise(async function (resolve, reject) {
-    let publicKey: string;
-    if (resource.properties.PublicKey.value.length)
-      publicKey = resource.properties.PublicKey.value;
-    else {
-      try {
-        publicKey = await makePublicKey(resource, log, keyPair);
-      } catch (err) {
-        return reject(err);
-      }
-    }
 
-    if (resource.properties.StorePublicKey?.value !== 'true') {
-      return resolve();
-    }
+  let publicKey: string;
+  if (resource.properties.PublicKey.value.length)
+    publicKey = resource.properties.PublicKey.value;
+  else {
+    publicKey = await makePublicKey(resource, log, keyPair);
+  }
 
-    const params: CreateSecretCommandInput = {
-      Name: `${resource.properties.SecretPrefix}${resource.properties.Name}/public`,
-      Description: `${resource.properties.Description} (Public Key)`,
-      SecretString: publicKey,
-      KmsKeyId: resource.properties.KmsPublic.value,
-      Tags: makeTags(resource, resource.properties.Tags.value),
-    };
-    log.debug(`secretsmanager.createSecret: ${JSON.stringify(params)}`);
-    secretsManagerClient
-      .send(new CreateSecretCommand(params))
-      .then((data) => {
-        resource.addResponseValue('PublicKeyARN', data.ARN!);
-        resolve();
-      })
-      .catch((err) => {
-        reject(err);
-      });
-  });
+  if (resource.properties.StorePublicKey?.value !== 'true') {
+    return;
+  }
+
+  const params: CreateSecretCommandInput = {
+    /* eslint-disable @typescript-eslint/naming-convention */
+    Name: `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/public`,
+    Description: `${resource.properties.Description.value} (Public Key)`,
+    SecretString: publicKey,
+    KmsKeyId: resource.properties.KmsPublic.value,
+    Tags: makeTags(resource, resource.properties.Tags.value),
+    /* eslint-enable @typescript-eslint/naming-convention */
+  };
+  log.debug(`secretsmanager.createSecret: ${JSON.stringify(params)}`);
+  const result = await secretsManagerClient.send(
+    new CreateSecretCommand(params),
+  );
+  resource.addResponseValue('PublicKeyARN', result.ARN!);
 }
 
-function updatePrivateKeySecret(
+async function updatePrivateKeySecret(
   resource: CustomResource<ResourceProperties>,
   log: Logger,
 ): Promise<void> {
   log.debug('called function updatePrivateKeySecret');
-  return new Promise(function (resolve, reject) {
-    const params: UpdateSecretCommandInput = {
-      SecretId: `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/private`,
-      Description: `${resource.properties.Description.value} (Private key)`,
-      KmsKeyId: resource.properties.KmsPrivate.value,
-    };
-    log.debug('secretsmanager.updateSecret:', JSON.stringify(params));
-    secretsManagerClient
-      .send(new UpdateSecretCommand(params))
-      .then((data) => {
-        resource.addResponseValue('PrivateKeyARN', data.ARN!);
-        resolve();
-      })
-      .catch((err) => {
-        reject(err);
-      });
-  });
+  const params: UpdateSecretCommandInput = {
+    /* eslint-disable @typescript-eslint/naming-convention */
+    SecretId: `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/private`,
+    Description: `${resource.properties.Description.value} (Private key)`,
+    KmsKeyId: resource.properties.KmsPrivate.value,
+    /* eslint-enable @typescript-eslint/naming-convention */
+  };
+  log.debug('secretsmanager.updateSecret:', JSON.stringify(params));
+  const result = await secretsManagerClient.send(
+    new UpdateSecretCommand(params),
+  );
+  resource.addResponseValue('PrivateKeyARN', result.ARN!);
 }
 
-function updatePublicKeySecret(
+async function updatePublicKeySecret(
   resource: CustomResource<ResourceProperties>,
   log: Logger,
 ): Promise<void> {
   log.debug('called function updatePublicKeySecret');
-  return new Promise(function (resolve, reject) {
-    const arn = `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/public`;
-    secretExists(arn, log).then((exists) => {
-      if (!exists) {
-        // no public key stored. nothing to do
-        return resolve();
-      }
-      const params: UpdateSecretCommandInput = {
-        SecretId: arn,
-        Description: `${resource.properties.Description.value} (Public Key)`,
-        KmsKeyId: resource.properties.KmsPublic.value,
-      };
-      log.debug('secretsmanager.updateSecret:', JSON.stringify(params));
-      secretsManagerClient
-        .send(new UpdateSecretCommand(params))
-        .then((data) => {
-          resource.addResponseValue('PublicKeyARN', data.ARN!);
-          resolve();
-        })
-        .catch((err) => {
-          reject(err);
-        });
-    });
-  });
+  const arn = `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/public`;
+  if (!(await secretExists(arn, log))) {
+    return;
+  }
+
+  const params: UpdateSecretCommandInput = {
+    /* eslint-disable @typescript-eslint/naming-convention */
+    SecretId: arn,
+    Description: `${resource.properties.Description.value} (Public Key)`,
+    KmsKeyId: resource.properties.KmsPublic.value,
+    /* eslint-enable @typescript-eslint/naming-convention */
+  };
+  log.debug('secretsmanager.updateSecret:', JSON.stringify(params));
+  const data = await secretsManagerClient.send(new UpdateSecretCommand(params));
+  resource.addResponseValue('PublicKeyARN', data.ARN!);
 }
 
-function updateSecretAddTags(
+async function updateSecretAddTags(
   resource: CustomResource<ResourceProperties>,
   log: Logger,
   secretId: string,
 ): Promise<void> {
   log.debug('called function updateSecretAddTags');
   log.info(`Attempting to update tags for secret ${secretId}`);
-  return new Promise(function (resolve, reject) {
-    if (!resource.properties.Tags.changed) {
-      log.info(
-        `No changes of tags detected for secret ${secretId}. Not attempting any update`,
-      );
-      return resolve();
-    }
-    const params: TagResourceCommandInput = {
-      SecretId: secretId,
-      Tags: makeTags(resource, resource.properties.Tags.value),
-    };
-    log.debug(`secretsmanager.tagResource: ${JSON.stringify(params)}`);
-    secretsManagerClient
-      .send(new TagResourceCommand(params))
-      .then((_data) => {
-        resolve();
-      })
-      .catch((err) => {
-        reject(err);
-      });
-  });
+  if (!resource.properties.Tags.changed) {
+    log.info(
+      `No changes of tags detected for secret ${secretId}. Not attempting any update`,
+    );
+    return;
+  }
+  const params: TagResourceCommandInput = {
+    /* eslint-disable @typescript-eslint/naming-convention */
+    SecretId: secretId,
+    Tags: makeTags(resource, resource.properties.Tags.value),
+    /* eslint-enable @typescript-eslint/naming-convention */
+  };
+  log.debug(`secretsmanager.tagResource: ${JSON.stringify(params)}`);
+  await secretsManagerClient.send(new TagResourceCommand(params));
 }
 
-function getPrivateKey(
+async function getPrivateKey(
   resource: CustomResource<ResourceProperties>,
   log: Logger,
 ): Promise<string> {
   log.debug('called function getPrivateKey');
-  return new Promise(function (resolve, reject) {
-    const params: GetSecretValueCommandInput = {
-      SecretId: `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/private`,
-    };
-    log.debug(`secretsmanager.getSecretValue: ${JSON.stringify(params)}`);
-    secretsManagerClient
-      .send(new GetSecretValueCommand(params))
-      .then((data) => {
-        resolve(data.SecretString!);
-      })
-      .catch((err) => {
-        reject(err);
-      });
-  });
+  const params: GetSecretValueCommandInput = {
+    /* eslint-disable-next-line @typescript-eslint/naming-convention */
+    SecretId: `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/private`,
+  };
+  log.debug(`secretsmanager.getSecretValue: ${JSON.stringify(params)}`);
+  const result = await secretsManagerClient.send(
+    new GetSecretValueCommand(params),
+  );
+  return result.SecretString!;
 }
 
 async function makePublicKey(
@@ -561,7 +470,7 @@ async function makePublicKey(
   log.debug('called function makePublicKey');
 
   const keyMaterial =
-    (keyPair as CreateKeyPairCommandOutput).KeyMaterial ||
+    (keyPair as CreateKeyPairCommandOutput).KeyMaterial ??
     (await getPrivateKey(resource, log));
 
   const privateKey = forge.pki.privateKeyFromPem(keyMaterial);
@@ -569,167 +478,125 @@ async function makePublicKey(
 
   const publicKeyFormat = resource.properties.PublicKeyFormat.value;
   switch (publicKeyFormat) {
-    case 'PEM':
+    case PublicKeyFormat.PEM:
       return forge.pki.publicKeyToPem(forgePublicKey);
-    case 'OPENSSH':
+    case PublicKeyFormat.OPENSSH:
       return forge.ssh.publicKeyToOpenSSH(forgePublicKey);
     default:
-      throw new Error(`Unsupported public key format ${publicKeyFormat}`);
+      throw new Error(
+        `Unsupported public key format ${publicKeyFormat as string}`,
+      );
   }
 }
 
-function exposePublicKey(
+async function exposePublicKey(
   resource: CustomResource<ResourceProperties>,
   log: Logger,
   keyPair: CreateKeyPairCommandOutput | KeyPairInfo,
 ): Promise<void> {
   log.debug('called function exposePublicKey');
-  return new Promise(async function (resolve, reject) {
-    if (resource.properties.ExposePublicKey?.value == 'true') {
-      try {
-        let publicKey: string;
-        if (resource.properties.PublicKey.value.length) {
-          publicKey = resource.properties.PublicKey.value;
-        } else {
-          publicKey = await makePublicKey(resource, log, keyPair);
-        }
-        resource.addResponseValue('PublicKeyValue', publicKey);
-      } catch (err) {
-        return reject(err);
-      }
+  if (resource.properties.ExposePublicKey?.value == 'true') {
+    let publicKey: string;
+    if (resource.properties.PublicKey.value.length) {
+      publicKey = resource.properties.PublicKey.value;
     } else {
-      resource.addResponseValue(
-        'PublicKeyValue',
-        'Not requested - Set ExposePublicKey to true',
-      );
+      publicKey = await makePublicKey(resource, log, keyPair);
     }
-    resolve();
-  });
+    resource.addResponseValue('PublicKeyValue', publicKey);
+  } else {
+    resource.addResponseValue(
+      'PublicKeyValue',
+      'Not requested - Set ExposePublicKey to true',
+    );
+  }
 }
 
-function updateSecretRemoveTags(
+async function updateSecretRemoveTags(
   resource: CustomResource<ResourceProperties>,
   log: Logger,
   secretId: string,
 ): Promise<void> {
   log.debug('called function updateSecretRemoveTags');
   log.info(`Attempting to remove some tags for secret ${secretId}`);
-  return new Promise(function (resolve, reject) {
-    if (!resource.properties.Tags.changed) {
-      log.info(
-        `No changes of tags detected for secret ${secretId}. Not attempting any update`,
-      );
-      return resolve();
-    }
+  if (!resource.properties.Tags.changed) {
+    log.info(
+      `No changes of tags detected for secret ${secretId}. Not attempting any update`,
+    );
+    return;
+  }
 
-    const oldTags = makeTags(resource, resource.properties.Tags.before);
-    const newTags = makeTags(resource, resource.properties.Tags.value);
-    const tagsToRemove = getMissingTags(oldTags, newTags);
-    if (!tagsToRemove.length) {
-      log.info(
-        `No changes of tags detected for secret ${secretId}. Not attempting any update`,
-      );
-      return resolve();
-    }
+  const oldTags = makeTags(resource, resource.properties.Tags.before);
+  const newTags = makeTags(resource, resource.properties.Tags.value);
+  const tagsToRemove = getMissingTags(oldTags, newTags);
+  if (!tagsToRemove.length) {
+    log.info(
+      `No changes of tags detected for secret ${secretId}. Not attempting any update`,
+    );
+    return;
+  }
 
-    log.info(`Will remove the following tags: ${JSON.stringify(tagsToRemove)}`);
-    const params: UntagResourceCommandInput = {
-      SecretId: secretId,
-      TagKeys: tagsToRemove,
-    };
-    log.debug(`secretsmanager.untagResource: ${JSON.stringify(params)}`);
-    secretsManagerClient
-      .send(new UntagResourceCommand(params))
-      .then((_data) => {
-        resolve();
-      })
-      .catch((err) => {
-        reject(err);
-      });
-  });
+  log.info(`Will remove the following tags: ${JSON.stringify(tagsToRemove)}`);
+  const params: UntagResourceCommandInput = {
+    /* eslint-disable @typescript-eslint/naming-convention */
+    SecretId: secretId,
+    TagKeys: tagsToRemove,
+    /* eslint-enable @typescript-eslint/naming-convention */
+  };
+  log.debug(`secretsmanager.untagResource: ${JSON.stringify(params)}`);
+  await secretsManagerClient.send(new UntagResourceCommand(params));
 }
 
-function deletePrivateKeySecret(
+async function deletePrivateKeySecret(
   resource: CustomResource<ResourceProperties>,
   log: Logger,
 ): Promise<void> {
   log.debug('called function deletePrivateKeySecret');
-  return new Promise(async function (resolve, reject) {
-    const arn = `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/private`;
-    secretExists(arn, log)
-      .then((exists) => {
-        if (!exists) {
-          // no private key stored. nothing to do
-          return resolve();
-        }
-        deleteSecret(resource, log, arn)
-          .then((data) => {
-            resource.addResponseValue('PrivateKeyARN', data.ARN!);
-            resolve();
-          })
-          .catch((err) => {
-            reject(err);
-          });
-      })
-      .catch((err) => {
-        reject(err);
-      });
-  });
+  const arn = `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/private`;
+  if (!(await secretExists(arn, log))) {
+    return;
+  }
+  const result = await deleteSecret(resource, log, arn);
+  resource.addResponseValue('PrivateKeyARN', result.ARN!);
 }
 
-function deletePublicKeySecret(
+async function deletePublicKeySecret(
   resource: CustomResource<ResourceProperties>,
   log: Logger,
 ): Promise<void> {
   log.debug('called function deletePublicKeySecret');
-  return new Promise(async function (resolve, reject) {
-    const arn = `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/public`;
-    secretExists(arn, log)
-      .then((exists) => {
-        if (!exists) {
-          // no public key stored. nothing to do
-          return resolve();
-        }
-        deleteSecret(resource, log, arn)
-          .then((data) => {
-            resource.addResponseValue('PublicKeyARN', data.ARN!);
-            resolve();
-          })
-          .catch((err) => {
-            reject(err);
-          });
-      })
-      .catch((err) => {
-        reject(err);
-      });
-  });
+  const arn = `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/public`;
+  if (!(await secretExists(arn, log))) {
+    return;
+  }
+  const result = await deleteSecret(resource, log, arn);
+  resource.addResponseValue('PublicKeyARN', result.ARN!);
 }
 
 async function secretExists(name: string, log: Logger): Promise<boolean> {
   log.debug('called function secretExists');
-  return new Promise(async function (resolve, reject) {
-    const params: ListSecretsCommandInput = {
-      Filters: [
-        {
-          Key: 'name',
-          Values: [name],
-        },
-      ],
-    };
-    log.debug(`secretsmanager.listSecrets: ${JSON.stringify(params)}`);
-    return secretsManagerClient
-      .send(new ListSecretsCommand(params))
-      .then((data) => {
-        resolve((data.SecretList?.length || 0) > 0);
-      })
-      .catch((err) => {
-        if (err.name === 'ResourceNotFoundException') {
-          resolve(false);
-        } else {
-          reject(err);
-        }
-      });
-  });
+  const params: ListSecretsCommandInput = {
+    /* eslint-disable @typescript-eslint/naming-convention */
+    Filters: [
+      {
+        Key: 'name',
+        Values: [name],
+      },
+    ],
+    /* eslint-enable @typescript-eslint/naming-convention */
+  };
+  log.debug(`secretsmanager.listSecrets: ${JSON.stringify(params)}`);
+  try {
+    const result = await secretsManagerClient.send(
+      new ListSecretsCommand(params),
+    );
+    return (result.SecretList?.length ?? 0) > 0;
+  } catch (error) {
+    if (error.name === 'ResourceNotFoundException') {
+      return false;
+    } else {
+      throw error;
+    }
+  }
 }
 
 function deleteSecret(
@@ -739,6 +606,7 @@ function deleteSecret(
 ): Promise<DeleteSecretCommandOutput> {
   log.debug('called function deleteSecret');
   const params: DeleteSecretCommandInput = {
+    /* eslint-disable-next-line @typescript-eslint/naming-convention */
     SecretId: secretId,
   };
 
@@ -761,6 +629,7 @@ function makeTags(
   eventTags?: Record<string, string>,
 ): SecretManagerTag[] {
   const tags: SecretManagerTag[] = [
+    /* eslint-disable @typescript-eslint/naming-convention */
     {
       Key: 'aws-cloudformation:stack-id',
       Value: resource.event.StackId,
@@ -773,12 +642,15 @@ function makeTags(
       Key: 'aws-cloudformation:logical-id',
       Value: resource.event.LogicalResourceId,
     },
+    /* eslint-enable @typescript-eslint/naming-convention */
   ];
   if (eventTags && Object.keys(eventTags).length) {
     Object.keys(eventTags).forEach(function (key: string) {
       tags.push({
+        /* eslint-disable @typescript-eslint/naming-convention */
         Key: key,
         Value: eventTags[key],
+        /* eslint-enable @typescript-eslint/naming-convention */
       });
     });
   }
