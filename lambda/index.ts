@@ -41,8 +41,6 @@ import {
   CustomResource,
   Event,
   Logger,
-  StandardLogger,
-  LogLevel,
 } from 'aws-cloudformation-custom-resource';
 import * as forge from 'node-forge';
 import { PublicKeyFormat } from '../lib/index';
@@ -76,7 +74,7 @@ export const handler = function (
     createResource,
     updateResource,
     deleteResource
-  ).setLogger(new StandardLogger(LogLevel.debug));
+  );
 };
 
 function createResource(
@@ -131,10 +129,20 @@ function updateResource(
       const keyPair = await updateKeyPair(resource, log);
       await updateKeyPairAddTags(resource, log, keyPair.KeyPairId!);
       await updateKeyPairRemoveTags(resource, log, keyPair.KeyPairId!);
-      await updatePrivateKeySecret(resource, log);
-      await updatePublicKeySecret(resource, log);
-      await updateSecretsAddTags(resource, log);
-      await updateSecretsRemoveTags(resource, log);
+      if (!resource.properties.PublicKey.value.length) {
+        // in case we imported a public key, there is no private key secret
+        const secretId = `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/private`;
+        await updatePrivateKeySecret(resource, log);
+        await updateSecretAddTags(resource, log, secretId);
+        await updateSecretRemoveTags(resource, log, secretId);
+      }
+      if (resource.properties.StorePublicKey?.value === 'true') {
+        // in case user did not want to store the public key, there is no public key secret
+        const secretId = `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/public`;
+        await updatePublicKeySecret(resource, log);
+        await updateSecretAddTags(resource, log, secretId);
+        await updateSecretRemoveTags(resource, log, secretId);
+      }
       await exposePublicKey(resource, log, keyPair);
       resolve();
     } catch (error) {
@@ -189,11 +197,13 @@ function createKeyPair(
       ec2Client
         .send(new ImportKeyPairCommand(params))
         .then((data) => {
+          log.debug('Import successful', JSON.stringify(data, null, 2));
           resource.addResponseValue('KeyPairName', data.KeyName!);
           resource.addResponseValue('KeyPairID', data.KeyPairId!);
           resolve(data);
         })
         .catch((err) => {
+          log.error('Import failed', err);
           reject(err);
         });
     } else {
@@ -491,28 +501,6 @@ function updatePublicKeySecret(
   });
 }
 
-function updateSecretsAddTags(
-  resource: CustomResource<ResourceProperties>,
-  log: Logger
-): Promise<void> {
-  log.debug('called function updateSecretsAddTags');
-  const secretPrivateKey = `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/private`;
-  const secretPublicKey = `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/public`;
-  return new Promise(function (resolve, reject) {
-    updateSecretAddTags(resource, log, secretPrivateKey).then((_event) => {
-      secretExists(secretPublicKey, log).then((exists) => {
-        if (!exists) {
-          // no public key stored. nothing to do
-          return resolve();
-        }
-        updateSecretAddTags(resource, log, secretPublicKey)
-          .then(resolve)
-          .catch(reject);
-      });
-    });
-  });
-}
-
 function updateSecretAddTags(
   resource: CustomResource<ResourceProperties>,
   log: Logger,
@@ -542,28 +530,6 @@ function updateSecretAddTags(
       .catch((err) => {
         reject(err);
       });
-  });
-}
-
-function updateSecretsRemoveTags(
-  resource: CustomResource<ResourceProperties>,
-  log: Logger
-): Promise<void> {
-  log.debug('called function updateSecretsRemoveTags');
-  const secretPrivateKey = `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/private`;
-  const secretPublicKey = `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/public`;
-  return new Promise(function (resolve, reject) {
-    updateSecretRemoveTags(resource, log, secretPrivateKey).then((_event) => {
-      secretExists(secretPublicKey, log).then((exists) => {
-        if (!exists) {
-          // no public key stored. nothing to do
-          return resolve();
-        }
-        updateSecretRemoveTags(resource, log, secretPublicKey)
-          .then(resolve)
-          .catch(reject);
-      });
-    });
   });
 }
 
@@ -754,7 +720,11 @@ async function secretExists(name: string, log: Logger): Promise<boolean> {
         resolve((data.SecretList?.length || 0) > 0);
       })
       .catch((err) => {
-        reject(err);
+        if (err.name === 'ResourceNotFoundException') {
+          resolve(false);
+        } else {
+          reject(err);
+        }
       });
   });
 }
