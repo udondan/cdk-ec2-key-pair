@@ -22,8 +22,5 @@
     "target": "ES2018"
   },
   "include": ["**/*.ts"],
-  "exclude": ["node_modules"],
-  "ts-node": {
-    "swc": true
-  }
+  "exclude": ["node_modules"]
 }

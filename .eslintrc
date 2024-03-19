@@ -10,7 +10,7 @@
   "plugins": ["@typescript-eslint", "deprecation"],
   "root": true,
   "parserOptions": {
-    "project": "./tsconfig.json",
+    "project": "./tsconfig-lint.json",
     "tsconfigRootDir": "."
   },
   "ignorePatterns": ["**/*.js", "**/*.d.ts"],
