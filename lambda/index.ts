@@ -26,6 +26,7 @@ import {
   GetSecretValueCommandInput,
   ListSecretsCommand,
   ListSecretsCommandInput,
+  ResourceNotFoundException,
   SecretsManagerClient,
   Tag as SecretManagerTag,
   TagResourceCommand,
@@ -591,7 +592,7 @@ async function secretExists(name: string, log: Logger): Promise<boolean> {
     );
     return (result.SecretList?.length ?? 0) > 0;
   } catch (error) {
-    if (error.name === 'ResourceNotFoundException') {
+    if (error instanceof ResourceNotFoundException) {
       return false;
     } else {
       throw error;
