@@ -173,7 +173,7 @@ async function createKeyPair(
       ],
       /* eslint-enable @typescript-eslint/naming-convention */
     };
-    log.debug(`ec2.importKeyPair: ${JSON.stringify(params)}`);
+    log.debug('ec2.importKeyPair:', JSON.stringify(params, null, 2));
     try {
       const result = await ec2Client.send(new ImportKeyPairCommand(params));
       log.debug('Import successful', JSON.stringify(result, null, 2));
@@ -197,7 +197,7 @@ async function createKeyPair(
       ],
       /* eslint-enable @typescript-eslint/naming-convention */
     };
-    log.debug(`ec2.createKeyPair: ${JSON.stringify(params)}`);
+    log.debug('ec2.createKeyPair:', JSON.stringify(params, null, 2));
     const result = await ec2Client.send(new CreateKeyPairCommand(params));
     resource.addResponseValue('KeyPairName', result.KeyName!);
     resource.addResponseValue('KeyPairID', result.KeyPairId!);
@@ -217,7 +217,7 @@ async function updateKeyPair(
     /* eslint-disable-next-line @typescript-eslint/naming-convention */
     KeyNames: [resource.properties.Name.value],
   };
-  log.debug(`ec2.describeKeyPairs: ${JSON.stringify(params)}`);
+  log.debug('ec2.describeKeyPairs:', JSON.stringify(params, null, 2));
   const result = await ec2Client.send(new DescribeKeyPairsCommand(params));
 
   if (result.KeyPairs?.length != 1) {
@@ -256,7 +256,7 @@ async function updateKeyPairAddTags(
     Tags: makeTags(resource, resource.properties.Tags.value),
     /* eslint-enable @typescript-eslint/naming-convention */
   };
-  log.debug(`ec2.createTags: ${JSON.stringify(params)}`);
+  log.debug('ec2.createTags:', JSON.stringify(params, null, 2));
   await ec2Client.send(new CreateTagsCommand(params));
 }
 
@@ -287,7 +287,10 @@ async function updateKeyPairRemoveTags(
     return;
   }
 
-  log.info(`Will remove the following tags: ${JSON.stringify(tagsToRemove)}`);
+  log.info(
+    'Will remove the following tags:',
+    JSON.stringify(tagsToRemove, null, 2),
+  );
   const params: DeleteTagsCommandInput = {
     /* eslint-disable @typescript-eslint/naming-convention */
     Resources: [keyPairId],
@@ -299,7 +302,7 @@ async function updateKeyPairRemoveTags(
     }),
     /* eslint-enable @typescript-eslint/naming-convention */
   };
-  log.debug(`ec2.deleteTags: ${JSON.stringify(params)}`);
+  log.debug('ec2.deleteTags:', JSON.stringify(params, null, 2));
   await ec2Client.send(new DeleteTagsCommand(params));
 }
 
@@ -312,7 +315,7 @@ async function deleteKeyPair(
     /* eslint-disable-next-line @typescript-eslint/naming-convention */
     KeyName: resource.properties.Name.value,
   };
-  log.debug(`ec2.deleteKeyPair: ${JSON.stringify(params)}`);
+  log.debug('ec2.deleteKeyPair:', JSON.stringify(params, null, 2));
   await ec2Client.send(new DeleteKeyPairCommand(params));
   resource.addResponseValue('KeyPairName', resource.properties.Name.value);
 }
@@ -338,7 +341,7 @@ async function createPrivateKeySecret(
       Tags: makeTags(resource, resource.properties.Tags.value),
       /* eslint-enable @typescript-eslint/naming-convention */
     };
-    log.debug(`secretsmanager.createSecret: ${JSON.stringify(params)}`);
+    log.debug('secretsmanager.createSecret:', JSON.stringify(params, null, 2));
     const result = await secretsManagerClient.send(
       new CreateSecretCommand(params),
     );
@@ -376,7 +379,7 @@ async function createPublicKeySecret(
     Tags: makeTags(resource, resource.properties.Tags.value),
     /* eslint-enable @typescript-eslint/naming-convention */
   };
-  log.debug(`secretsmanager.createSecret: ${JSON.stringify(params)}`);
+  log.debug('secretsmanager.createSecret:', JSON.stringify(params, null, 2));
   const result = await secretsManagerClient.send(
     new CreateSecretCommand(params),
   );
@@ -395,7 +398,7 @@ async function updatePrivateKeySecret(
     KmsKeyId: resource.properties.KmsPrivate.value,
     /* eslint-enable @typescript-eslint/naming-convention */
   };
-  log.debug('secretsmanager.updateSecret:', JSON.stringify(params));
+  log.debug('secretsmanager.updateSecret:', JSON.stringify(params, null, 2));
   const result = await secretsManagerClient.send(
     new UpdateSecretCommand(params),
   );
@@ -419,7 +422,7 @@ async function updatePublicKeySecret(
     KmsKeyId: resource.properties.KmsPublic.value,
     /* eslint-enable @typescript-eslint/naming-convention */
   };
-  log.debug('secretsmanager.updateSecret:', JSON.stringify(params));
+  log.debug('secretsmanager.updateSecret:', JSON.stringify(params, null, 2));
   const data = await secretsManagerClient.send(new UpdateSecretCommand(params));
   resource.addResponseValue('PublicKeyARN', data.ARN!);
 }
@@ -443,7 +446,7 @@ async function updateSecretAddTags(
     Tags: makeTags(resource, resource.properties.Tags.value),
     /* eslint-enable @typescript-eslint/naming-convention */
   };
-  log.debug(`secretsmanager.tagResource: ${JSON.stringify(params)}`);
+  log.debug('secretsmanager.tagResource:', JSON.stringify(params, null, 2));
   await secretsManagerClient.send(new TagResourceCommand(params));
 }
 
@@ -456,7 +459,7 @@ async function getPrivateKey(
     /* eslint-disable-next-line @typescript-eslint/naming-convention */
     SecretId: `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/private`,
   };
-  log.debug(`secretsmanager.getSecretValue: ${JSON.stringify(params)}`);
+  log.debug('secretsmanager.getSecretValue:', JSON.stringify(params, null, 2));
   const result = await secretsManagerClient.send(
     new GetSecretValueCommand(params),
   );
@@ -536,14 +539,17 @@ async function updateSecretRemoveTags(
     return;
   }
 
-  log.info(`Will remove the following tags: ${JSON.stringify(tagsToRemove)}`);
+  log.info(
+    'Will remove the following tags:',
+    JSON.stringify(tagsToRemove, null, 2),
+  );
   const params: UntagResourceCommandInput = {
     /* eslint-disable @typescript-eslint/naming-convention */
     SecretId: secretId,
     TagKeys: tagsToRemove,
     /* eslint-enable @typescript-eslint/naming-convention */
   };
-  log.debug(`secretsmanager.untagResource: ${JSON.stringify(params)}`);
+  log.debug('secretsmanager.untagResource:', JSON.stringify(params, null, 2));
   await secretsManagerClient.send(new UntagResourceCommand(params));
 }
 
@@ -585,7 +591,7 @@ async function secretExists(name: string, log: Logger): Promise<boolean> {
     ],
     /* eslint-enable @typescript-eslint/naming-convention */
   };
-  log.debug(`secretsmanager.listSecrets: ${JSON.stringify(params)}`);
+  log.debug('secretsmanager.listSecrets:', JSON.stringify(params, null, 2));
   try {
     const result = await secretsManagerClient.send(
       new ListSecretsCommand(params),
@@ -621,7 +627,7 @@ function deleteSecret(
     params.ForceDeleteWithoutRecovery = true;
   }
 
-  log.debug(`secretsmanager.deleteSecret: ${JSON.stringify(params)}`);
+  log.debug('secretsmanager.deleteSecret:', JSON.stringify(params, null, 2));
   return secretsManagerClient.send(new DeleteSecretCommand(params));
 }
 
