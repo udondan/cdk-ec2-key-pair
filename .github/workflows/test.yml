@@ -41,6 +41,14 @@ jobs:
             ${{ runner.os }}-build-
             ${{ runner.os }}-
 
+      - name: Install dependencies
+        run: |
+          make install
+          (cd test && make install)
+
+      - name: Linting
+        run: make eslint
+
       - name: Set Build Permissions
         run: |
           mkdir $GITHUB_WORKSPACE/test/cdk.out

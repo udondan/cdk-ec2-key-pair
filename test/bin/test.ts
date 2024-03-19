@@ -28,7 +28,7 @@ if (
 async function getIdentity() {
   const stsClient = new STSClient(clientConfig);
   const callerIdentity = await stsClient.send(new GetCallerIdentityCommand({}));
-  return callerIdentity.Arn?.split('/')[1] as string;
+  return callerIdentity.Arn?.split('/')[1]!;
 }
 
 async function main() {

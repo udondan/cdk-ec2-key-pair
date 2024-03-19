@@ -65,7 +65,7 @@ const secretsManagerClient = new SecretsManagerClient({});
 export const handler = function (
   event: Event<ResourceProperties>,
   context: Context,
-  callback: Callback
+  callback: Callback,
 ) {
   new CustomResource<ResourceProperties>(
     event,
@@ -73,13 +73,13 @@ export const handler = function (
     callback,
     createResource,
     updateResource,
-    deleteResource
+    deleteResource,
   );
 };
 
 function createResource(
   resource: CustomResource<ResourceProperties>,
-  log: Logger
+  log: Logger,
 ): Promise<void> {
   log.debug('called function createResource');
   log.info(`Attempting to create EC2 Key Pair ${resource.properties.Name}`);
@@ -98,30 +98,30 @@ function createResource(
 
 function updateResource(
   resource: CustomResource<ResourceProperties>,
-  log: Logger
+  log: Logger,
 ): Promise<void> {
   log.debug('called function updateResource');
   log.info(
-    `Attempting to update EC2 Key Pair ${resource.properties.Name.value}`
+    `Attempting to update EC2 Key Pair ${resource.properties.Name.value}`,
   );
   return new Promise(async function (resolve, reject) {
     if (resource.properties.Name.changed) {
       reject(
         new Error(
-          'A Key Pair cannot be renamed. Please create a new Key Pair instead'
-        )
+          'A Key Pair cannot be renamed. Please create a new Key Pair instead',
+        ),
       );
     } else if (resource.properties.StorePublicKey?.changed) {
       reject(
         new Error(
-          'Once created, a key cannot be modified or accessed. Therefore the public key can only be stored, when the key is created.'
-        )
+          'Once created, a key cannot be modified or accessed. Therefore the public key can only be stored, when the key is created.',
+        ),
       );
     } else if (resource.properties.PublicKey.changed) {
       reject(
         new Error(
-          'You cannot change the public key of an exiting key pair. Please delete the key pair and create a new one.'
-        )
+          'You cannot change the public key of an exiting key pair. Please delete the key pair and create a new one.',
+        ),
       );
     }
 
@@ -153,7 +153,7 @@ function updateResource(
 
 function deleteResource(
   resource: CustomResource<ResourceProperties>,
-  log: Logger
+  log: Logger,
 ): Promise<void> {
   log.debug('called function deleteResource');
   log.info(`Attempting to delete EC2 Key Pair ${resource.properties.Name}`);
@@ -171,7 +171,7 @@ function deleteResource(
 
 function createKeyPair(
   resource: CustomResource<ResourceProperties>,
-  log: Logger
+  log: Logger,
 ): Promise<CreateKeyPairCommandOutput> {
   log.debug('called function createKeyPair');
   return new Promise(function (resolve, reject) {
@@ -188,7 +188,7 @@ function createKeyPair(
             ResourceType: 'key-pair',
             Tags: makeTags(
               resource,
-              resource.properties.Tags.value
+              resource.properties.Tags.value,
             ) as Ec2Tag[],
           },
         ],
@@ -215,7 +215,7 @@ function createKeyPair(
             ResourceType: 'key-pair',
             Tags: makeTags(
               resource,
-              resource.properties.Tags.value
+              resource.properties.Tags.value,
             ) as Ec2Tag[],
           },
         ],
@@ -237,7 +237,7 @@ function createKeyPair(
 
 function updateKeyPair(
   resource: CustomResource<ResourceProperties>,
-  log: Logger
+  log: Logger,
 ): Promise<KeyPairInfo> {
   log.debug('called function updateKeyPair');
   return new Promise(function (resolve, reject) {
@@ -252,7 +252,7 @@ function updateKeyPair(
       .then((data) => {
         if (data.KeyPairs?.length != 1)
           return reject(new Error('Key pair was not found'));
-        const keyPair = data.KeyPairs![0];
+        const keyPair = data.KeyPairs[0];
         const keyPairId = keyPair.KeyPairId!;
         const keyPairName = keyPair.KeyName!;
 
@@ -269,16 +269,16 @@ function updateKeyPair(
 function updateKeyPairAddTags(
   resource: CustomResource<ResourceProperties>,
   log: Logger,
-  keyPairId: string
+  keyPairId: string,
 ): Promise<void> {
   log.debug('called function updateKeyPairAddTags');
   log.info(
-    `Attempting to update tags for Key Pair ${resource.properties.Name}`
+    `Attempting to update tags for Key Pair ${resource.properties.Name}`,
   );
   return new Promise(function (resolve, reject) {
     if (!resource.properties.Tags.changed) {
       log.info(
-        `No changes of tags detected for Key Pair ${resource.properties.Name}. Not attempting any update`
+        `No changes of tags detected for Key Pair ${resource.properties.Name}. Not attempting any update`,
       );
       return resolve();
     }
@@ -302,16 +302,16 @@ function updateKeyPairAddTags(
 function updateKeyPairRemoveTags(
   resource: CustomResource<ResourceProperties>,
   log: Logger,
-  keyPairId: string
+  keyPairId: string,
 ): Promise<void> {
   log.debug('called function updateKeyPairRemoveTags');
   log.info(
-    `Attempting to remove some tags for Key Pair ${resource.properties.Name}`
+    `Attempting to remove some tags for Key Pair ${resource.properties.Name}`,
   );
   return new Promise(function (resolve, reject) {
     if (!resource.properties.Tags.changed) {
       log.info(
-        `No changes of tags detected for Key Pair ${resource.properties.Name}. Not attempting any update`
+        `No changes of tags detected for Key Pair ${resource.properties.Name}. Not attempting any update`,
       );
       return resolve();
     }
@@ -321,7 +321,7 @@ function updateKeyPairRemoveTags(
     const tagsToRemove = getMissingTags(oldTags, newTags);
     if (!tagsToRemove.length) {
       log.info(
-        `No changes of tags detected for Key Pair ${resource.properties.Name}. Not attempting any update`
+        `No changes of tags detected for Key Pair ${resource.properties.Name}. Not attempting any update`,
       );
       return resolve();
     }
@@ -350,7 +350,7 @@ function updateKeyPairRemoveTags(
 
 function deleteKeyPair(
   resource: CustomResource<ResourceProperties>,
-  log: Logger
+  log: Logger,
 ): Promise<void> {
   log.debug('called function deleteKeyPair');
   return new Promise(function (resolve, reject) {
@@ -363,7 +363,7 @@ function deleteKeyPair(
       .then((_data) => {
         resource.addResponseValue(
           'KeyPairName',
-          resource.properties.Name.value
+          resource.properties.Name.value,
         );
         resolve();
       })
@@ -376,7 +376,7 @@ function deleteKeyPair(
 function createPrivateKeySecret(
   resource: CustomResource<ResourceProperties>,
   keyPair: CreateKeyPairCommandOutput,
-  log: Logger
+  log: Logger,
 ): Promise<void> {
   log.debug('called function createPrivateKeySecret');
   return new Promise(function (resolve, reject) {
@@ -408,7 +408,7 @@ function createPrivateKeySecret(
 function createPublicKeySecret(
   resource: CustomResource<ResourceProperties>,
   log: Logger,
-  keyPair: CreateKeyPairCommandOutput
+  keyPair: CreateKeyPairCommandOutput,
 ): Promise<void> {
   log.debug('called function createPublicKeySecret');
   return new Promise(async function (resolve, reject) {
@@ -449,7 +449,7 @@ function createPublicKeySecret(
 
 function updatePrivateKeySecret(
   resource: CustomResource<ResourceProperties>,
-  log: Logger
+  log: Logger,
 ): Promise<void> {
   log.debug('called function updatePrivateKeySecret');
   return new Promise(function (resolve, reject) {
@@ -473,7 +473,7 @@ function updatePrivateKeySecret(
 
 function updatePublicKeySecret(
   resource: CustomResource<ResourceProperties>,
-  log: Logger
+  log: Logger,
 ): Promise<void> {
   log.debug('called function updatePublicKeySecret');
   return new Promise(function (resolve, reject) {
@@ -505,14 +505,14 @@ function updatePublicKeySecret(
 function updateSecretAddTags(
   resource: CustomResource<ResourceProperties>,
   log: Logger,
-  secretId: string
+  secretId: string,
 ): Promise<void> {
   log.debug('called function updateSecretAddTags');
   log.info(`Attempting to update tags for secret ${secretId}`);
   return new Promise(function (resolve, reject) {
     if (!resource.properties.Tags.changed) {
       log.info(
-        `No changes of tags detected for secret ${secretId}. Not attempting any update`
+        `No changes of tags detected for secret ${secretId}. Not attempting any update`,
       );
       return resolve();
     }
@@ -534,7 +534,7 @@ function updateSecretAddTags(
 
 function getPrivateKey(
   resource: CustomResource<ResourceProperties>,
-  log: Logger
+  log: Logger,
 ): Promise<string> {
   log.debug('called function getPrivateKey');
   return new Promise(function (resolve, reject) {
@@ -556,7 +556,7 @@ function getPrivateKey(
 async function makePublicKey(
   resource: CustomResource<ResourceProperties>,
   log: Logger,
-  keyPair: CreateKeyPairCommandOutput | KeyPairInfo
+  keyPair: CreateKeyPairCommandOutput | KeyPairInfo,
 ): Promise<string> {
   log.debug('called function makePublicKey');
 
@@ -581,7 +581,7 @@ async function makePublicKey(
 function exposePublicKey(
   resource: CustomResource<ResourceProperties>,
   log: Logger,
-  keyPair: CreateKeyPairCommandOutput | KeyPairInfo
+  keyPair: CreateKeyPairCommandOutput | KeyPairInfo,
 ): Promise<void> {
   log.debug('called function exposePublicKey');
   return new Promise(async function (resolve, reject) {
@@ -600,7 +600,7 @@ function exposePublicKey(
     } else {
       resource.addResponseValue(
         'PublicKeyValue',
-        'Not requested - Set ExposePublicKey to true'
+        'Not requested - Set ExposePublicKey to true',
       );
     }
     resolve();
@@ -610,14 +610,14 @@ function exposePublicKey(
 function updateSecretRemoveTags(
   resource: CustomResource<ResourceProperties>,
   log: Logger,
-  secretId: string
+  secretId: string,
 ): Promise<void> {
   log.debug('called function updateSecretRemoveTags');
   log.info(`Attempting to remove some tags for secret ${secretId}`);
   return new Promise(function (resolve, reject) {
     if (!resource.properties.Tags.changed) {
       log.info(
-        `No changes of tags detected for secret ${secretId}. Not attempting any update`
+        `No changes of tags detected for secret ${secretId}. Not attempting any update`,
       );
       return resolve();
     }
@@ -627,7 +627,7 @@ function updateSecretRemoveTags(
     const tagsToRemove = getMissingTags(oldTags, newTags);
     if (!tagsToRemove.length) {
       log.info(
-        `No changes of tags detected for secret ${secretId}. Not attempting any update`
+        `No changes of tags detected for secret ${secretId}. Not attempting any update`,
       );
       return resolve();
     }
@@ -651,7 +651,7 @@ function updateSecretRemoveTags(
 
 function deletePrivateKeySecret(
   resource: CustomResource<ResourceProperties>,
-  log: Logger
+  log: Logger,
 ): Promise<void> {
   log.debug('called function deletePrivateKeySecret');
   return new Promise(async function (resolve, reject) {
@@ -679,7 +679,7 @@ function deletePrivateKeySecret(
 
 function deletePublicKeySecret(
   resource: CustomResource<ResourceProperties>,
-  log: Logger
+  log: Logger,
 ): Promise<void> {
   log.debug('called function deletePublicKeySecret');
   return new Promise(async function (resolve, reject) {
@@ -735,7 +735,7 @@ async function secretExists(name: string, log: Logger): Promise<boolean> {
 function deleteSecret(
   resource: CustomResource<ResourceProperties>,
   log: Logger,
-  secretId: string
+  secretId: string,
 ): Promise<DeleteSecretCommandOutput> {
   log.debug('called function deleteSecret');
   const params: DeleteSecretCommandInput = {
@@ -743,7 +743,7 @@ function deleteSecret(
   };
 
   const removeKeySecretsAfterDays = parseInt(
-    String(resource.properties.RemoveKeySecretsAfterDays.value)
+    String(resource.properties.RemoveKeySecretsAfterDays.value),
   );
 
   if (removeKeySecretsAfterDays > 0) {
@@ -758,7 +758,7 @@ function deleteSecret(
 
 function makeTags(
   resource: CustomResource<ResourceProperties>,
-  eventTags?: Record<string, string>
+  eventTags?: Record<string, string>,
 ): SecretManagerTag[] {
   const tags: SecretManagerTag[] = [
     {
@@ -787,9 +787,9 @@ function makeTags(
 
 function getMissingTags(
   oldTags: SecretManagerTag[],
-  newTags: SecretManagerTag[]
+  newTags: SecretManagerTag[],
 ): string[] {
-  var missing = oldTags.filter(missingTags(newTags));
+  const missing = oldTags.filter(missingTags(newTags));
   return missing.map(function (tag: SecretManagerTag) {
     return tag.Key!;
   });

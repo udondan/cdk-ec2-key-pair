@@ -59,7 +59,7 @@ export class TestStack extends Stack {
     const currentUser = aws_iam.User.fromUserName(
       this,
       'Current-User',
-      props.currentUserName
+      props.currentUserName,
     );
 
     keyPairPem.grantReadOnPrivateKey(currentUser);

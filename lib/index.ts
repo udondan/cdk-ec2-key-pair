@@ -201,7 +201,7 @@ export class KeyPair extends Construct implements ITaggable {
         props.removeKeySecretsAfterDays > 30)
     ) {
       Annotations.of(this).addError(
-        `Parameter removeKeySecretsAfterDays must be 0 or between 7 and 30. Got ${props.removeKeySecretsAfterDays}`
+        `Parameter removeKeySecretsAfterDays must be 0 or between 7 and 30. Got ${props.removeKeySecretsAfterDays}`,
       );
     }
 
@@ -211,7 +211,7 @@ export class KeyPair extends Construct implements ITaggable {
       props.publicKeyFormat !== PublicKeyFormat.OPENSSH
     ) {
       Annotations.of(this).addError(
-        'When importing a key, the format has to be of type OpenSSH'
+        'When importing a key, the format has to be of type OpenSSH',
       );
     }
 
@@ -223,7 +223,7 @@ export class KeyPair extends Construct implements ITaggable {
         // Cloudformation limits names to 63 characters.
         Annotations.of(this).addError(
           `Cloudformation limits names to 63 characters.
-           Prefix ${this.prefix} is too long to be used as a prefix for your roleName. Define parameter resourcePrefix?:`
+           Prefix ${this.prefix} is too long to be used as a prefix for your roleName. Define parameter resourcePrefix?:`,
         );
       }
     }
@@ -365,7 +365,7 @@ export class KeyPair extends Construct implements ITaggable {
       runtime: aws_lambda.Runtime.NODEJS_18_X,
       handler: 'index.handler',
       code: aws_lambda.Code.fromAsset(
-        path.join(__dirname, '../lambda/code.zip')
+        path.join(__dirname, '../lambda/code.zip'),
       ),
       timeout: Duration.minutes(lambdaTimeout),
     });
