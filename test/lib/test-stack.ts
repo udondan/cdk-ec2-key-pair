@@ -1,8 +1,8 @@
 import { Tags, StackProps, Stack, CfnOutput, aws_iam } from 'aws-cdk-lib';
 import cloudfront = require('aws-cdk-lib/aws-cloudfront');
 import { Construct } from 'constructs';
-
-import { KeyPair, PublicKeyFormat } from '../../lib';
+import { PublicKeyFormat } from '../../lambda';
+import { KeyPair } from '../../lib';
 
 interface Props extends StackProps {
   currentUserName: string;

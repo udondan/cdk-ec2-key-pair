@@ -14,20 +14,14 @@ import {
 } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as path from 'path';
-import { ResourceProperties } from '../lambda/index';
+import { PublicKeyFormat, ResourceProperties } from '../lambda';
+export { PublicKeyFormat } from '../lambda';
 
 const resourceType = 'Custom::EC2-Key-Pair';
 const ID = `CFN::Resource::${resourceType}`;
 const createdByTag = 'CreatedByCfnCustomResource';
 const cleanID = ID.replace(/:+/g, '-');
 const lambdaTimeout = 3; // minutes
-
-export enum PublicKeyFormat {
-  /* eslint-disable @typescript-eslint/naming-convention */
-  OPENSSH = 'OPENSSH',
-  PEM = 'PEM',
-  /* eslint-enable @typescript-eslint/naming-convention */
-}
 
 /**
  * Definition of EC2 Key Pair

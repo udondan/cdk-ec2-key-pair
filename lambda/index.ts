@@ -44,7 +44,13 @@ import {
   Logger,
 } from 'aws-cloudformation-custom-resource';
 import * as forge from 'node-forge';
-import { PublicKeyFormat } from '../lib/index';
+
+export enum PublicKeyFormat {
+  /* eslint-disable @typescript-eslint/naming-convention */
+  OPENSSH = 'OPENSSH',
+  PEM = 'PEM',
+  /* eslint-enable @typescript-eslint/naming-convention */
+}
 
 export interface ResourceProperties {
   /* eslint-disable @typescript-eslint/naming-convention */
