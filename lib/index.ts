@@ -147,7 +147,7 @@ export class KeyPair extends Construct implements ITaggable {
   /**
    * The lambda function that is created
    */
-  public readonly lambda: aws_lambda.IFunction;
+  public readonly lambdaFunction: aws_lambda.IFunction;
 
   /**
    * ARN of the private key in AWS Secrets Manager
@@ -223,7 +223,7 @@ export class KeyPair extends Construct implements ITaggable {
         );
       }
     }
-    this.lambda = this.ensureLambda(props.legacyLambdaName ?? false);
+    this.lambdaFunction = this.ensureLambda(props.legacyLambdaName ?? false);
 
     this.tags = new TagManager(TagType.MAP, 'Custom::EC2-Key-Pair');
     this.tags.setTag(createdByTag, ID);
@@ -251,27 +251,27 @@ export class KeyPair extends Construct implements ITaggable {
     };
 
     const key = new CustomResource(this, `EC2-Key-Pair-${props.keyPairName}`, {
-      serviceToken: this.lambda.functionArn,
+      serviceToken: this.lambdaFunction.functionArn,
       resourceType: resourceType,
       properties: lambdaProperties,
     });
 
     if (typeof props.kms !== 'undefined') {
-      props.kms.grantEncryptDecrypt(this.lambda.role!);
+      props.kms.grantEncryptDecrypt(this.lambdaFunction.role!);
       key.node.addDependency(props.kms);
-      key.node.addDependency(this.lambda.role!);
+      key.node.addDependency(this.lambdaFunction.role!);
     }
 
     if (typeof props.kmsPrivateKey !== 'undefined') {
-      props.kmsPrivateKey.grantEncryptDecrypt(this.lambda.role!);
+      props.kmsPrivateKey.grantEncryptDecrypt(this.lambdaFunction.role!);
       key.node.addDependency(props.kmsPrivateKey);
-      key.node.addDependency(this.lambda.role!);
+      key.node.addDependency(this.lambdaFunction.role!);
     }
 
     if (typeof props.kmsPublicKey !== 'undefined') {
-      props.kmsPublicKey.grantEncryptDecrypt(this.lambda.role!);
+      props.kmsPublicKey.grantEncryptDecrypt(this.lambdaFunction.role!);
       key.node.addDependency(props.kmsPublicKey);
-      key.node.addDependency(this.lambda.role!);
+      key.node.addDependency(this.lambdaFunction.role!);
     }
 
     this.privateKeyArn = key.getAttString('PrivateKeyARN');
