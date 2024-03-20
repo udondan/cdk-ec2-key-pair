@@ -40,7 +40,7 @@
   },
   "jsii": {
     "excludeTypescript": [
-      "lambda/index.ts"
+      "lambda"
     ],
     "outdir": "dist",
     "targets": {
