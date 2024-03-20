@@ -63,7 +63,7 @@
     "@typescript-eslint/parser": "7.3.1",
     "aws-cdk-lib": "2.133.0",
     "aws-cloudformation-custom-resource": "5.0.0",
-    "@aws-sdk/client-ec2": "3.535.0",
+    "@aws-sdk/client-ec2": "3.537.0",
     "@aws-sdk/client-secrets-manager": "3.535.0",
     "constructs": "10.3.0",
     "eslint": "8.57.0",
