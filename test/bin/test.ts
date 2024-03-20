@@ -28,7 +28,11 @@ if (
 async function getIdentity() {
   const stsClient = new STSClient(clientConfig);
   const callerIdentity = await stsClient.send(new GetCallerIdentityCommand({}));
-  return callerIdentity.Arn?.split('/')[1] as string;
+  const arn = callerIdentity.Arn;
+  if (!arn) {
+    throw new Error('Unable to get caller identity');
+  }
+  return arn.split('/')[1];
 }
 
 async function main() {
@@ -43,4 +47,6 @@ async function main() {
   });
 }
 
-main();
+main().catch((error) => {
+  console.error('An error occurred:', error);
+});

@@ -19,3 +19,8 @@ install:
 	@echo -e "$(TARGET_COLOR)Running install$(NO_COLOR)"
 	@npm clean-install --prefer-offline --cache .npm
 	@npm list
+
+eslint:
+	@echo -e "$(TARGET_COLOR)Running eslint $$(npx eslint --version)$(NO_COLOR)"
+	@npx eslint .; \
+	echo "Passed"

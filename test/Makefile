@@ -14,7 +14,7 @@ install:
 	@npm clean-install --prefer-offline --cache ../.npm
 	@npm list
 
-build: install lambda
+build: lambda
 	@echo Building application...
 	@npm run build
 
