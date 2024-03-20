@@ -14,7 +14,11 @@
 
 [AWS CDK] L3 construct for managing [EC2 Key Pairs].
 
-CloudFormation doesn't directly support creation of EC2 Key Pairs. This construct provides an easy interface for creating Key Pairs through a [custom CloudFormation resource]. The private key is stored in [AWS Secrets Manager].
+> ⚠️ Please be aware, CloudFormation now natively supports creating EC2 Key Pairs via [AWS::EC2::KeyPair](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-keypair.html), so you can generally use [CDK's own KeyPair construct](https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_ec2.KeyPair.html). There are a few differences though and this is the reason why this custom construct is still in existence:
+>
+> - Instead of SSM Parameter Store, keys are stored in [AWS Secrets Manager]
+> - Secrets can be **KMS encrypted** - even different KMS keys for the private and public keys. Of course, SSM parameters _can_ be encrypted too, CloudFormation just doesn't do it
+> - Optionally, this construct can store and expose the public key, enabling the user to directly use it as input for other resources, e.g. for CloudFront signed urls
 
 ## Installation
 
@@ -29,7 +33,7 @@ For TypeScript/NodeJS, add these to your `dependencies` in `package.json`. For P
 ## CDK compatibility
 
 - Version 3.x is compatible with the CDK v2.
-- Version 2.x is compatible with the CDK v1. There won't be regular updates for this.
+- Version 2.x is compatible with the CDK v1. There won't be updates for this.
 
 ## Usage
 
@@ -42,22 +46,22 @@ import { KeyPair } from 'cdk-ec2-key-pair';
 
 // Create the Key Pair
 const key = new KeyPair(this, 'A-Key-Pair', {
-    name: 'a-key-pair',
-    description: 'This is a Key Pair',
-    storePublicKey: true, // by default the public key will not be stored in Secrets Manager
+  name: 'a-key-pair',
+  description: 'This is a Key Pair',
+  storePublicKey: true, // by default the public key will not be stored in Secrets Manager
 });
 
 // Grant read access to the private key to a role or user
-key.grantReadOnPrivateKey(someRole)
+key.grantReadOnPrivateKey(someRole);
 
 // Grant read access to the public key to another role or user
-key.grantReadOnPublicKey(anotherRole)
+key.grantReadOnPublicKey(anotherRole);
 
 // Use Key Pair on an EC2 instance
 new ec2.Instance(this, 'An-Instance', {
-    keyName: key.keyPairName,
-    // ...
-})
+  keyName: key.keyPairName,
+  // ...
+});
 ```
 
 The private (and optionally the public) key will be stored in AWS Secrets Manager. The secret names by default are prefixed with `ec2-ssh-key/`. The private key is suffixed with `/private`, the public key is suffixed with `/public`. So in this example they will be stored as `ec2-ssh-key/a-key-pair/private` and `ec2-ssh-key/a-key-pair/public`.
@@ -97,8 +101,8 @@ To use a custom KMS key you can pass it to the Key Pair:
 const kmsKey = new kms.Key(this, 'KMS-key');
 
 const keyPair = new KeyPair(this, 'A-Key-Pair', {
-    name: 'a-key-pair',
-    kms: kmsKey,
+  name: 'a-key-pair',
+  kms: kmsKey,
 });
 ```
 
@@ -111,9 +115,9 @@ const kmsKeyPrivate = new kms.Key(this, 'KMS-key-private');
 const kmsKeyPublic = new kms.Key(this, 'KMS-key-public');
 
 const keyPair = new KeyPair(this, 'A-Key-Pair', {
-    name: 'a-key-pair',
-    kmsPrivateKey: kmsKeyPrivate,
-    kmsPublicKey: kmsKeyPublic
+  name: 'a-key-pair',
+  kmsPrivateKey: kmsKeyPrivate,
+  kmsPublicKey: kmsKeyPublic,
 });
 ```
 
@@ -126,7 +130,7 @@ The public key has to be in OpenSSH format.
 ```typescript
 new KeyPair(this, 'Test-Key-Pair', {
   name: 'imported-key-pair',
-  publicKey: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCuMmbK...'
+  publicKey: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCuMmbK...',
 });
 ```
 
@@ -138,23 +142,26 @@ Make sure to set `publicKeyFormat` to `PublicKeyFormat.PEM` as that is the forma
 You also have to set `exposePublicKey` to `true` so you can actually get the public key.
 
 ```typescript
-  const key = new KeyPair(this, 'Signing-Key-Pair', {
-      name: 'CFN-signing-key',
-      exposePublicKey: true,
-      storePublicKey: true,
-      publicKeyFormat: PublicKeyFormat.PEM
-  });
+const key = new KeyPair(this, 'Signing-Key-Pair', {
+  name: 'CFN-signing-key',
+  exposePublicKey: true,
+  storePublicKey: true,
+  publicKeyFormat: PublicKeyFormat.PEM,
+});
 
-  const pubKey = new cloudfront.PublicKey(this, 'Signing-Public-Key', {
-    encodedKey: key.publicKeyValue,
-  });
-  const trustedKeyGroupForCF = new cloudfront.KeyGroup(this, 'Signing-Key-Group', {
-    items: [ pubKey ]
-  });
+const pubKey = new cloudfront.PublicKey(this, 'Signing-Public-Key', {
+  encodedKey: key.publicKeyValue,
+});
+const trustedKeyGroupForCF = new cloudfront.KeyGroup(
+  this,
+  'Signing-Key-Group',
+  {
+    items: [pubKey],
+  },
+);
 ```
 
    [AWS CDK]: https://aws.amazon.com/cdk/
-   [custom CloudFormation resource]: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-custom-resources.html
    [EC2 Key Pairs]: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html
    [AWS Secrets Manager]: https://aws.amazon.com/secrets-manager/
    [npm]: https://www.npmjs.com/package/cdk-ec2-key-pair
