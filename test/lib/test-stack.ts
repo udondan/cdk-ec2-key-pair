@@ -48,7 +48,7 @@ export class TestStack extends Stack {
       publicKey: keyPair.publicKeyValue,
     });
 
-    if (process.env.with_ec2) {
+    if (process.env.with_ec2 === 'true') {
       new aws_ec2.Instance(this, 'Test-Instance', {
         vpc: aws_ec2.Vpc.fromLookup(this, 'VPC', {
           vpcName: 'default',
