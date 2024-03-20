@@ -18,6 +18,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
+    container:
+      image: public.ecr.aws/jsii/superchain:1-bookworm-slim-node20
+
     steps:
       - uses: actions/setup-node@v4
         with:
@@ -62,14 +65,10 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Build source w/ jsii
-        uses: udondan/jsii-publish@v0.15.0
-        with:
-          BUILD_SOURCE: true
+        run: npx jsii
 
-      - name: Build packages w/ jsii
-        uses: udondan/jsii-publish@v0.15.0
-        with:
-          BUILD_PACKAGES: true
+      - name: Build packages w/ jsii-pacmak
+        run: npx jsii-pacmak
 
   report-status:
     name: success
