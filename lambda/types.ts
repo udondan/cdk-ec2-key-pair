@@ -1,3 +1,6 @@
+// this file is physically present in /lambda, as it is required for build the lambda zip
+// the file is symlinked into /lib, as otherwise jsii is refusing to find it, even when the whole lambda directory is not ignored
+
 export enum PublicKeyFormat {
   /* eslint-disable @typescript-eslint/naming-convention */
   OPENSSH = 'OPENSSH',

@@ -14,8 +14,8 @@ import {
 } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as path from 'path';
-import { PublicKeyFormat, ResourceProperties } from '../lambda/types';
-export { PublicKeyFormat } from '../lambda/types';
+import { PublicKeyFormat, ResourceProperties } from './types';
+export { PublicKeyFormat } from './types';
 
 const resourceType = 'Custom::EC2-Key-Pair';
 const ID = `CFN::Resource::${resourceType}`;
