@@ -1,6 +1,7 @@
 .jsii
 node_modules
 dist
+/tsconfig.json
 lambda/*
 !lambda/*.ts
 !lambda/build
