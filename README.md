@@ -14,7 +14,7 @@
 
 [AWS CDK] L3 construct for managing [EC2 Key Pairs].
 
-> ⚠️ Please be aware, CloudFormation now natively supports creating EC2 Key Pairs via [AWS::EC2::KeyPair](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-keypair.html), so you can generally use [CDK's own KeyPair construct](https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_ec2.KeyPair.html). There are a few differences though and this is the reason why this custom construct is still in existence:
+> ⚠️ Please be aware, CloudFormation now natively supports creating EC2 Key Pairs via [AWS::EC2::KeyPair](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-keypair.html), so you can generally use [CDK's own KeyPair construct](https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_ec2.KeyPair.html). There are a few differences though and this is why the custom construct remains valuable:
 >
 > - Instead of SSM Parameter Store, keys are stored in [AWS Secrets Manager]
 > - Secrets can be **KMS encrypted** - even different KMS keys for the private and public keys. Of course, SSM parameters _can_ be encrypted too, CloudFormation just doesn't do it
