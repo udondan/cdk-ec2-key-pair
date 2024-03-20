@@ -76,7 +76,7 @@
     "prettier": "3.2.5",
     "regenerator-runtime": "0.14.1",
     "ts-node": "10.9.2",
-    "typescript": "5.4.2"
+    "typescript": "5.4.3"
   },
   "peerDependencies": {
     "aws-cdk-lib": "^2.0.0",
