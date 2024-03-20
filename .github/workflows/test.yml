@@ -68,7 +68,9 @@ jobs:
         run: npx jsii
 
       - name: Build packages w/ jsii-pacmak
-        run: npx jsii-pacmak
+        run: |
+          npx jsii-pacmak --verbose
+          tree dist
 
   report-status:
     name: success
