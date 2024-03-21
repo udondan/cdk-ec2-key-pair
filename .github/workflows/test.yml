@@ -43,6 +43,7 @@ jobs:
 
       - name: Install dependencies
         run: |
+          set -euo pipefail
           make install
           (cd test && make install)
           sudo apt-get update
@@ -53,12 +54,34 @@ jobs:
 
       - name: Set Build Permissions
         run: |
+          set -euo pipefail
           mkdir $GITHUB_WORKSPACE/test/cdk.out
           chmod 777 $GITHUB_WORKSPACE/test/cdk.out --recursive
           chmod 777 $GITHUB_WORKSPACE/lambda --recursive
 
       - name: Deploy & Destroy
-        run: cd test && make deploy get-secret-values DESTROY
+        run: |
+          set -euo pipefail
+
+          function get_secret_values() {
+            AWS_REGION=us-east-1 aws secretsmanager describe-secret \
+              --secret-id ec2-ssh-key/CFN-signing-key/private \
+              --query 'Tags[?Key==`Test`].Value' --output text
+          }
+          cd test
+          make deploy get-secret-values
+          if [ "$(get_secret_values)" != "default" ]; then
+            echo "Unexpected secret value"
+            exit 1
+          fi
+
+          TAG_VALUE=working make deploy
+          if [ "$(get_secret_values)" != "working" ]; then
+            echo "Unexpected secret value"
+            exit 1
+          fi
+
+          make DESTROY
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -68,5 +91,6 @@ jobs:
 
       - name: Build packages w/ jsii-pacmak
         run: |
+          set -euo pipefail
           npx jsii-pacmak --verbose
           tree dist
