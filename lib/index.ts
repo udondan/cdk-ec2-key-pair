@@ -5,7 +5,7 @@ import {
   aws_lambda,
   CustomResource,
   Duration,
-  ITaggable,
+  //ITaggable,
   Lazy,
   Resource,
   ResourceProps,
@@ -146,7 +146,7 @@ export interface KeyPairProps extends ResourceProps {
 /**
  * An EC2 Key Pair
  */
-export class KeyPair extends Resource implements ITaggable, IKeyPair {
+export class KeyPair extends Resource implements IKeyPair {
   /**
    * The lambda function that is created
    */
