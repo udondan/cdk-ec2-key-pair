@@ -6,17 +6,17 @@ concurrency:
   cancel-in-progress: false
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
   workflow_dispatch:
 
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-latest
+
+    container:
+      image: public.ecr.aws/jsii/superchain:1-bookworm-slim-node20
 
     steps:
       - uses: actions/setup-node@v4
@@ -45,6 +45,8 @@ jobs:
         run: |
           make install
           (cd test && make install)
+          sudo apt-get update
+          sudo apt-get install -y tree
 
       - name: Linting
         run: make eslint
@@ -62,20 +64,9 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Build source w/ jsii
-        uses: udondan/jsii-publish@v0.15.0
-        with:
-          BUILD_SOURCE: true
+        run: npx jsii
 
-      - name: Build packages w/ jsii
-        uses: udondan/jsii-publish@v0.15.0
-        with:
-          BUILD_PACKAGES: true
-
-  report-status:
-    name: success
-    runs-on: ubuntu-latest
-    needs:
-      - deploy
-    steps:
-      - name: Report success
-        run: echo 'Success'
+      - name: Build packages w/ jsii-pacmak
+        run: |
+          npx jsii-pacmak --verbose
+          tree dist
