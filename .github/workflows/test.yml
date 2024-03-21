@@ -48,6 +48,7 @@ jobs:
         run: |
           make install
           (cd test && make install)
+          sudo apt-get install -y tree
 
       - name: Linting
         run: make eslint
