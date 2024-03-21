@@ -28,13 +28,8 @@ This package has peer dependencies, which need to be installed along in the expe
 For TypeScript/NodeJS, add these to your `dependencies` in `package.json`. For Python, add these to your `requirements.txt`:
 
 - cdk-ec2-key-pair
-- aws-cdk-lib (^2.0.0)
+- aws-cdk-lib (^2.116.0)
 - constructs (^10.0.0)
-
-## CDK compatibility
-
-- Version 3.x is compatible with the CDK v2.
-- Version 2.x is compatible with the CDK v1. There won't be updates for this.
 
 ## Usage
 
