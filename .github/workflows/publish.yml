@@ -8,41 +8,49 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  publish:
     runs-on: ubuntu-latest
+
+    container:
+      image: public.ecr.aws/jsii/superchain:1-bookworm-slim-node20
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
-      - name: Build source
-        uses: udondan/jsii-publish@v0.15.0
-        with:
-          BUILD_SOURCE: true
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tree
 
-      - name: Build packages
-        uses: udondan/jsii-publish@v0.15.0
-        with:
-          BUILD_PACKAGES: true
+      - name: Build source w/ jsii
+        run: npx jsii
+
+      - name: Build packages w/ jsii-pacmak
+        run: |
+          npx jsii-pacmak --verbose
+          tree dist
 
       - name: Publish to npm
-        uses: udondan/jsii-publish@v0.15.0
-        with:
+        run: publib-npm
+        env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish to PyPI
-        uses: udondan/jsii-publish@v0.15.0
-        with:
-          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+        run: publib-pypi
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
 
       - name: Publish to NuGet
-        uses: udondan/jsii-publish@v0.15.0
-        with:
-          NUGET_TOKEN: ${{ secrets.NUGET_TOKEN }}
+        run: publib-nuget
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_TOKEN }}
 #
 #      - name: Publish to Maven GitHub
-#        uses: udondan/jsii-publish@v0.14.0
-#        with:
+#        run: publib-maven
+#        env:
 #          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 #          GITHUB_REPOSITORY: ${{ github.repository }}
