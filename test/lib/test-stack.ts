@@ -20,6 +20,7 @@ export class TestStack extends Stack {
     super(scope, id, props);
 
     Tags.of(scope).add('Hello', 'World');
+    Tags.of(scope).add('Test', process.env.TAG_VALUE ?? 'default');
 
     const keyPair = new KeyPair(this, 'Test-Key-Pair', {
       keyPairName: 'test-key-pair',
