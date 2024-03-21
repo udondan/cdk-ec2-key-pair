@@ -7,11 +7,13 @@ import {
   Duration,
   ITaggable,
   Lazy,
+  Resource,
   ResourceProps,
   Stack,
   TagManager,
   TagType,
 } from 'aws-cdk-lib';
+import { IKeyPair, OperatingSystemType } from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
 import * as path from 'path';
 import { PublicKeyFormat, ResourceProperties } from './types';
@@ -143,7 +145,7 @@ export interface KeyPairProps extends ResourceProps {
 /**
  * An EC2 Key Pair
  */
-export class KeyPair extends Construct implements ITaggable {
+export class KeyPair extends Resource implements ITaggable, IKeyPair {
   /**
    * The lambda function that is created
    */
@@ -409,5 +411,14 @@ export class KeyPair extends Construct implements ITaggable {
       scope: this,
     });
     return result;
+  }
+
+  /**
+   * Used internally to determine whether the key pair is compatible with an OS type.
+   *
+   * @internal
+   */
+  public _isOsCompatible(_osType: OperatingSystemType): boolean {
+    return true; // as we currently only support OpenSSH, we are compatible with all OS types
   }
 }

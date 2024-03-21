@@ -14,7 +14,8 @@
 
 [AWS CDK] L3 construct for managing [EC2 Key Pairs].
 
-> ⚠️ Please be aware, CloudFormation now natively supports creating EC2 Key Pairs via [AWS::EC2::KeyPair](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-keypair.html), so you can generally use [CDK's own KeyPair construct](https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_ec2.KeyPair.html). There are a few differences though and this is the reason why this custom construct is still in existence:
+> [!NOTE]
+> Please be aware, CloudFormation now natively supports creating EC2 Key Pairs via [AWS::EC2::KeyPair](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-keypair.html), so you can generally use [CDK's own KeyPair construct](https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_ec2.KeyPair.html). There are a few differences, though, and this is why the custom construct remains valuable:
 >
 > - Instead of SSM Parameter Store, keys are stored in [AWS Secrets Manager]
 > - Secrets can be **KMS encrypted** - even different KMS keys for the private and public keys. Of course, SSM parameters _can_ be encrypted too, CloudFormation just doesn't do it
@@ -27,13 +28,8 @@ This package has peer dependencies, which need to be installed along in the expe
 For TypeScript/NodeJS, add these to your `dependencies` in `package.json`. For Python, add these to your `requirements.txt`:
 
 - cdk-ec2-key-pair
-- aws-cdk-lib (^2.0.0)
+- aws-cdk-lib (^2.116.0)
 - constructs (^10.0.0)
-
-## CDK compatibility
-
-- Version 3.x is compatible with the CDK v2.
-- Version 2.x is compatible with the CDK v1. There won't be updates for this.
 
 ## Usage
 
@@ -161,11 +157,11 @@ const trustedKeyGroupForCF = new cloudfront.KeyGroup(
 );
 ```
 
-   [AWS CDK]: https://aws.amazon.com/cdk/
-   [EC2 Key Pairs]: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html
-   [AWS Secrets Manager]: https://aws.amazon.com/secrets-manager/
-   [npm]: https://www.npmjs.com/package/cdk-ec2-key-pair
-   [PyPI]: https://pypi.org/project/cdk-ec2-key-pair/
-   [docs]: https://constructs.dev/packages/cdk-ec2-key-pair
-   [source]: https://github.com/udondan/cdk-ec2-key-pair
-   [license]: https://github.com/udondan/cdk-ec2-key-pair/blob/main/LICENSE
+[AWS CDK]: https://aws.amazon.com/cdk/
+[EC2 Key Pairs]: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html
+[AWS Secrets Manager]: https://aws.amazon.com/secrets-manager/
+[npm]: https://www.npmjs.com/package/cdk-ec2-key-pair
+[PyPI]: https://pypi.org/project/cdk-ec2-key-pair/
+[docs]: https://constructs.dev/packages/cdk-ec2-key-pair
+[source]: https://github.com/udondan/cdk-ec2-key-pair
+[license]: https://github.com/udondan/cdk-ec2-key-pair/blob/main/LICENSE

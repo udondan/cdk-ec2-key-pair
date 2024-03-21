@@ -1,4 +1,11 @@
-import { Tags, StackProps, Stack, CfnOutput, aws_iam } from 'aws-cdk-lib';
+import {
+  Tags,
+  StackProps,
+  Stack,
+  CfnOutput,
+  aws_iam,
+  aws_ec2,
+} from 'aws-cdk-lib';
 import cloudfront = require('aws-cdk-lib/aws-cloudfront');
 import { Construct } from 'constructs';
 import { PublicKeyFormat } from '../../lambda/types';
@@ -40,6 +47,20 @@ export class TestStack extends Stack {
       exposePublicKey: true,
       publicKey: keyPair.publicKeyValue,
     });
+
+    if (process.env.with_ec2 === 'true') {
+      new aws_ec2.Instance(this, 'Test-Instance', {
+        vpc: aws_ec2.Vpc.fromLookup(this, 'VPC', {
+          vpcName: 'default',
+        }),
+        instanceType: aws_ec2.InstanceType.of(
+          aws_ec2.InstanceClass.T2,
+          aws_ec2.InstanceSize.MICRO,
+        ),
+        machineImage: aws_ec2.MachineImage.latestAmazonLinux2(),
+        keyPair: keyPairImport,
+      });
+    }
 
     new CfnOutput(this, 'Test-Public-Key-Import', {
       exportName: 'TestPublicKeyImport',
