@@ -6,9 +6,6 @@ concurrency:
   cancel-in-progress: false
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
