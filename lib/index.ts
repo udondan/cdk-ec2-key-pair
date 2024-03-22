@@ -16,8 +16,8 @@ import {
 import { IKeyPair, OperatingSystemType } from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
 import * as path from 'path';
-import { PublicKeyFormat, ResourceProperties } from './types';
-export { PublicKeyFormat } from './types';
+import { LogLevel, PublicKeyFormat, ResourceProperties } from './types';
+export { LogLevel, PublicKeyFormat } from './types';
 
 const resourceType = 'Custom::EC2-Key-Pair';
 const ID = `CFN::Resource::${resourceType}`;
@@ -140,6 +140,13 @@ export interface KeyPairProps extends ResourceProps {
    * @default false
    */
   readonly legacyLambdaName?: boolean;
+
+  /**
+   * The log level of the Lambda function
+   *
+   * @default LogLevel.warn
+   */
+  readonly logLevel?: LogLevel;
 }
 
 /**
@@ -249,6 +256,7 @@ export class KeyPair extends Resource implements ITaggable, IKeyPair {
       Tags: Lazy.any({
         produce: () => this.tags.renderTags() as Record<string, string>,
       }) as unknown as Record<string, string>,
+      LogLevel: props.logLevel,
       /* eslint-enable @typescript-eslint/naming-convention */
     };
 

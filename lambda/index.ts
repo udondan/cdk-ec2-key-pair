@@ -41,7 +41,9 @@ import {
   Callback,
   CustomResource,
   Event,
+  LogLevel,
   Logger,
+  StandardLogger,
 } from 'aws-cloudformation-custom-resource';
 import * as forge from 'node-forge';
 import { PublicKeyFormat, ResourceProperties } from './types';
@@ -53,7 +55,7 @@ export const handler = function (
   context: Context,
   callback: Callback,
 ) {
-  new CustomResource<ResourceProperties>(
+  const resource = new CustomResource<ResourceProperties>(
     event,
     context,
     callback,
@@ -61,6 +63,14 @@ export const handler = function (
     updateResource,
     deleteResource,
   );
+  if (event.ResourceProperties.LogLevel) {
+    resource.setLogger(
+      new StandardLogger(
+        // because jsii is forcing us to expose enums with all capitals and the enum in aws-cloudformation-custom-resource is all lowercase, we need to cast here. Other than the capitalization, the enums are identical
+        event.ResourceProperties.LogLevel as unknown as LogLevel,
+      ),
+    );
+  }
 };
 
 async function createResource(

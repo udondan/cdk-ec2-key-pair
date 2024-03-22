@@ -1,6 +1,15 @@
 // this file is physically present in /lambda, as it is required for build the lambda zip
 // the file is symlinked into /lib, as otherwise jsii is refusing to find it, even when the whole lambda directory is not ignored
 
+export enum LogLevel {
+  /* eslint-disable @typescript-eslint/naming-convention */
+  ERROR,
+  WARN,
+  INFO,
+  DEBUG,
+  /* eslint-enable @typescript-eslint/naming-convention */
+}
+
 export enum PublicKeyFormat {
   /* eslint-disable @typescript-eslint/naming-convention */
   OPENSSH = 'OPENSSH',
@@ -22,5 +31,6 @@ export interface ResourceProperties {
   RemoveKeySecretsAfterDays: number;
   StackName: string;
   Tags: Record<string, string>;
+  LogLevel?: LogLevel;
   /* eslint-enable @typescript-eslint/naming-convention */
 }
