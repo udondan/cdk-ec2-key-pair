@@ -161,7 +161,7 @@ async function createKeyPair(
       TagSpecifications: [
         {
           ResourceType: 'key-pair',
-          Tags: makeTags(resource, resource.properties.Tags.value) as Ec2Tag[],
+          Tags: makeTags<Ec2Tag>(resource, resource.properties.Tags.value),
         },
       ],
       /* eslint-enable @typescript-eslint/naming-convention */
@@ -185,7 +185,7 @@ async function createKeyPair(
       TagSpecifications: [
         {
           ResourceType: 'key-pair',
-          Tags: makeTags(resource, resource.properties.Tags.value) as Ec2Tag[],
+          Tags: makeTags<Ec2Tag>(resource, resource.properties.Tags.value),
         },
       ],
       /* eslint-enable @typescript-eslint/naming-convention */
@@ -270,8 +270,14 @@ async function updateKeyPairRemoveTags(
     return;
   }
 
-  const oldTags = makeTags(resource, resource.properties.Tags.before);
-  const newTags = makeTags(resource, resource.properties.Tags.value);
+  const oldTags = makeTags<SecretManagerTag>(
+    resource,
+    resource.properties.Tags.before,
+  );
+  const newTags = makeTags<SecretManagerTag>(
+    resource,
+    resource.properties.Tags.value,
+  );
   const tagsToRemove = getMissingTags(oldTags, newTags);
   if (!tagsToRemove.length) {
     log.info(
@@ -522,8 +528,14 @@ async function updateSecretRemoveTags(
     return;
   }
 
-  const oldTags = makeTags(resource, resource.properties.Tags.before);
-  const newTags = makeTags(resource, resource.properties.Tags.value);
+  const oldTags = makeTags<SecretManagerTag>(
+    resource,
+    resource.properties.Tags.before,
+  );
+  const newTags = makeTags<SecretManagerTag>(
+    resource,
+    resource.properties.Tags.value,
+  );
   const tagsToRemove = getMissingTags(oldTags, newTags);
   if (!tagsToRemove.length) {
     log.info(
@@ -624,24 +636,24 @@ function deleteSecret(
   return secretsManagerClient.send(new DeleteSecretCommand(params));
 }
 
-function makeTags(
+function makeTags<TagType>(
   resource: CustomResource<ResourceProperties>,
   eventTags?: Record<string, string>,
-): SecretManagerTag[] {
-  const tags: SecretManagerTag[] = [
+): TagType[] {
+  const tags: TagType[] = [
     /* eslint-disable @typescript-eslint/naming-convention */
     {
       Key: 'aws-cloudformation:stack-id',
       Value: resource.event.StackId,
-    },
+    } as TagType,
     {
       Key: 'aws-cloudformation:stack-name',
       Value: resource.properties.StackName.value,
-    },
+    } as TagType,
     {
       Key: 'aws-cloudformation:logical-id',
       Value: resource.event.LogicalResourceId,
-    },
+    } as TagType,
     /* eslint-enable @typescript-eslint/naming-convention */
   ];
   if (eventTags && Object.keys(eventTags).length) {
@@ -651,7 +663,7 @@ function makeTags(
         Key: key,
         Value: eventTags[key],
         /* eslint-enable @typescript-eslint/naming-convention */
-      });
+      } as TagType);
     });
   }
   return tags;
