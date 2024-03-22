@@ -8,12 +8,14 @@ import {
 } from 'aws-cdk-lib';
 import cloudfront = require('aws-cdk-lib/aws-cloudfront');
 import { Construct } from 'constructs';
-import { PublicKeyFormat } from '../../lambda/types';
+import { LogLevel, PublicKeyFormat } from '../../lambda/types';
 import { KeyPair } from '../../lib';
 
 interface Props extends StackProps {
   currentUserName: string;
 }
+
+const logLevel = LogLevel.DEBUG;
 
 export class TestStack extends Stack {
   constructor(scope: Construct, id: string, props: Props) {
@@ -47,6 +49,7 @@ export class TestStack extends Stack {
       storePublicKey: false,
       exposePublicKey: true,
       publicKey: keyPair.publicKeyValue,
+      logLevel,
     });
 
     if (process.env.with_ec2 === 'true') {
@@ -76,6 +79,7 @@ export class TestStack extends Stack {
       storePublicKey: true,
       publicKeyFormat: PublicKeyFormat.PEM,
       legacyLambdaName: true,
+      logLevel,
     });
 
     const currentUser = aws_iam.User.fromUserName(
