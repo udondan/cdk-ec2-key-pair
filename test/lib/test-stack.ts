@@ -46,7 +46,7 @@ export class TestStack extends Stack {
     });
 
     new CfnOutput(this, 'Test-Public-Key-Format', {
-      exportName: 'TestPublicKeyFingerprint',
+      exportName: 'TestPublicKeyFormat',
       value: keyPair.publicKeyFormat,
     });
 
