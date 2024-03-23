@@ -40,6 +40,16 @@ export class TestStack extends Stack {
       value: keyPair.publicKeyValue,
     });
 
+    new CfnOutput(this, 'Test-Public-Key-Fingerprint', {
+      exportName: 'TestPublicKeyFingerprint',
+      value: keyPair.keyPairFingerprint,
+    });
+
+    new CfnOutput(this, 'Test-Public-Key-Format', {
+      exportName: 'TestPublicKeyFingerprint',
+      value: keyPair.publicKeyFormat,
+    });
+
     // import public key
 
     const keyPairImport = new KeyPair(this, 'Test-Key-Pair-Import', {

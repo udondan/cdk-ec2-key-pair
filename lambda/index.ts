@@ -180,6 +180,7 @@ async function createKeyPair(
       log.debug('Import successful', JSON.stringify(result, null, 2));
       resource.addResponseValue('KeyPairName', result.KeyName!);
       resource.addResponseValue('KeyPairID', result.KeyPairId!);
+      resource.addResponseValue('KeyFingerprint', result.KeyFingerprint!);
       return result;
     } catch (error) {
       log.error('Import failed', error);
@@ -203,6 +204,7 @@ async function createKeyPair(
     const result = await ec2Client.send(new CreateKeyPairCommand(params));
     resource.addResponseValue('KeyPairName', result.KeyName!);
     resource.addResponseValue('KeyPairID', result.KeyPairId!);
+    resource.addResponseValue('KeyPairFingerprint', result.KeyFingerprint!);
     return result;
   }
 }
@@ -227,11 +229,9 @@ async function updateKeyPair(
   }
 
   const keyPair = result.KeyPairs[0];
-  const keyPairId = keyPair.KeyPairId!;
-  const keyPairName = keyPair.KeyName!;
-
-  resource.addResponseValue('KeyPairName', keyPairName);
-  resource.addResponseValue('KeyPairID', keyPairId);
+  resource.addResponseValue('KeyPairName', keyPair.KeyName!);
+  resource.addResponseValue('KeyPairID', keyPair.KeyPairId!);
+  resource.addResponseValue('KeyPairFingerprint', keyPair.KeyFingerprint!);
   return keyPair;
 }
 
@@ -330,7 +330,6 @@ async function deleteKeyPair(
   };
   log.debug('ec2.deleteKeyPair:', JSON.stringify(params, null, 2));
   await ec2Client.send(new DeleteKeyPairCommand(params));
-  resource.addResponseValue('KeyPairName', resource.properties.Name.value);
 }
 
 async function createPrivateKeySecret(

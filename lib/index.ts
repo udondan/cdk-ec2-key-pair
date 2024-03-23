@@ -198,6 +198,16 @@ export class KeyPair extends Resource implements ITaggable, IKeyPair {
   public readonly keyPairID: string = '';
 
   /**
+   * Fingerprint of the Key Pair
+   */
+  public readonly keyPairFingerprint: string = '';
+
+  /**
+   * Format of the public key
+   */
+  public readonly publicKeyFormat: PublicKeyFormat;
+
+  /**
    * Type of the Key Pair
    */
   public readonly keyType: KeyType;
@@ -264,6 +274,7 @@ export class KeyPair extends Resource implements ITaggable, IKeyPair {
     this.tags.setTag(createdByTag, ID);
 
     this.keyType = props.keyType ?? KeyType.RSA;
+    this.publicKeyFormat = props.publicKeyFormat ?? PublicKeyFormat.SSH;
 
     const kmsPrivate = props.kmsPrivateKey ?? props.kms;
     const kmsPublic = props.kmsPublicKey ?? props.kms;
@@ -318,6 +329,7 @@ export class KeyPair extends Resource implements ITaggable, IKeyPair {
     this.publicKeyValue = key.getAttString('PublicKeyValue');
     this.keyPairName = key.getAttString('KeyPairName');
     this.keyPairID = key.getAttString('KeyPairID');
+    this.keyPairFingerprint = key.getAttString('KeyPairFingerprint');
   }
 
   private ensureLambda(legacyLambdaName: boolean): aws_lambda.Function {
