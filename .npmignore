@@ -23,6 +23,9 @@ release-please-config.json
 renovate.json
 tsconfig.tsbuildinfo
 *.tgz
+.eslintrc
+.prettierrc
+tsconfig-lint.json
 
 lambda/*
 !lambda/code.zip
