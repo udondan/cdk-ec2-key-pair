@@ -16,8 +16,13 @@ import {
 import { IKeyPair, OperatingSystemType } from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
 import * as path from 'path';
-import { LogLevel, PublicKeyFormat, ResourceProperties } from './types';
-export { LogLevel, PublicKeyFormat } from './types';
+import {
+  KeyType,
+  LogLevel,
+  PublicKeyFormat,
+  ResourceProperties,
+} from './types';
+export { KeyType, LogLevel, PublicKeyFormat } from './types';
 
 const resourceType = 'Custom::EC2-Key-Pair';
 const ID = `CFN::Resource::${resourceType}`;
@@ -97,11 +102,18 @@ export interface KeyPairProps extends ResourceProps {
   readonly exposePublicKey?: boolean;
 
   /**
+   * The type of key pair
+   *
+   * @default - RSA
+   */
+  readonly keyType?: KeyType;
+
+  /**
    * Format for public key.
    *
    * Relevant only if the public key is stored and/or exposed.
    *
-   * @default - OPENSSH
+   * @default - SSH
    */
   readonly publicKeyFormat?: PublicKeyFormat;
 
@@ -186,6 +198,11 @@ export class KeyPair extends Resource implements ITaggable, IKeyPair {
   public readonly keyPairID: string = '';
 
   /**
+   * Type of the Key Pair
+   */
+  public readonly keyType: KeyType;
+
+  /**
    * Resource tags
    */
   public readonly tags: TagManager;
@@ -220,6 +237,15 @@ export class KeyPair extends Resource implements ITaggable, IKeyPair {
       );
     }
 
+    if (
+      props.keyType == KeyType.ED25519 &&
+      props.publicKeyFormat == PublicKeyFormat.PKCS1
+    ) {
+      Annotations.of(this).addError(
+        'The public key format PKCS1 is not supported for key type ED25519',
+      );
+    }
+
     const stack = Stack.of(this).stackName;
 
     if (props.legacyLambdaName) {
@@ -237,6 +263,8 @@ export class KeyPair extends Resource implements ITaggable, IKeyPair {
     this.tags = new TagManager(TagType.MAP, 'Custom::EC2-Key-Pair');
     this.tags.setTag(createdByTag, ID);
 
+    this.keyType = props.keyType ?? KeyType.RSA;
+
     const kmsPrivate = props.kmsPrivateKey ?? props.kms;
     const kmsPublic = props.kmsPublicKey ?? props.kms;
 
@@ -249,7 +277,8 @@ export class KeyPair extends Resource implements ITaggable, IKeyPair {
       PublicKey: props.publicKey ?? '',
       StorePublicKey: props.storePublicKey ? 'true' : 'false',
       ExposePublicKey: props.exposePublicKey ? 'true' : 'false',
-      PublicKeyFormat: props.publicKeyFormat ?? PublicKeyFormat.OPENSSH,
+      KeyType: this.keyType,
+      PublicKeyFormat: props.publicKeyFormat ?? PublicKeyFormat.SSH,
       RemoveKeySecretsAfterDays: props.removeKeySecretsAfterDays ?? 0,
       SecretPrefix: props.secretPrefix ?? 'ec2-ssh-key/',
       StackName: stack,
@@ -378,7 +407,7 @@ export class KeyPair extends Resource implements ITaggable, IKeyPair {
     const fn = new aws_lambda.Function(stack, constructName, {
       functionName: legacyLambdaName ? `${this.prefix}-${cleanID}` : undefined,
       description: 'Custom CFN resource: Manage EC2 Key Pairs',
-      runtime: aws_lambda.Runtime.NODEJS_18_X,
+      runtime: aws_lambda.Runtime.NODEJS_20_X,
       handler: 'index.handler',
       code: aws_lambda.Code.fromAsset(
         path.join(__dirname, '../lambda/code.zip'),
@@ -426,7 +455,12 @@ export class KeyPair extends Resource implements ITaggable, IKeyPair {
    *
    * @internal
    */
-  public _isOsCompatible(_osType: OperatingSystemType): boolean {
-    return true; // as we currently only support OpenSSH, we are compatible with all OS types
+  public _isOsCompatible(osType: OperatingSystemType): boolean {
+    switch (this.keyType) {
+      case KeyType.ED25519:
+        return osType !== OperatingSystemType.WINDOWS;
+      default:
+        return true;
+    }
   }
 }

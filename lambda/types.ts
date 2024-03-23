@@ -12,8 +12,50 @@ export enum LogLevel {
 
 export enum PublicKeyFormat {
   /* eslint-disable @typescript-eslint/naming-convention */
-  OPENSSH = 'OPENSSH',
-  PEM = 'PEM',
+  /**
+   * OpenSSH format
+   */
+  OPENSSH = 'openssh',
+
+  /**
+   * SSH format
+   */
+  SSH = 'ssh',
+
+  /**
+   * PEM format
+   */
+  PEM = 'pem',
+
+  /**
+   * PKCS#1 format
+   */
+  PKCS1 = 'pkcs1',
+
+  /**
+   * PKCS#8 format
+   */
+  PKCS8 = 'pkcs8',
+
+  /**
+   * Raw OpenSSH wire format
+   *
+   * As CloudFormation cannot handle binary data, if the public key is exposed in the template, the value is base64 encoded
+   */
+  RFC4253 = 'rfc4253',
+
+  /**
+   * PuTTY ppk format
+   */
+  PUTTY = 'putty',
+
+  /* eslint-enable @typescript-eslint/naming-convention */
+}
+
+export enum KeyType {
+  /* eslint-disable @typescript-eslint/naming-convention */
+  RSA = 'rsa',
+  ED25519 = 'ed25519',
   /* eslint-enable @typescript-eslint/naming-convention */
 }
 
@@ -27,6 +69,7 @@ export interface ResourceProperties {
   Description: string;
   KmsPrivate: string;
   KmsPublic: string;
+  KeyType: KeyType;
   PublicKeyFormat: PublicKeyFormat;
   RemoveKeySecretsAfterDays: number;
   StackName: string;

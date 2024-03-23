@@ -45,7 +45,7 @@ import {
   Logger,
   StandardLogger,
 } from 'aws-cloudformation-custom-resource';
-import * as forge from 'node-forge';
+import { parsePrivateKey } from 'sshpk';
 import { PublicKeyFormat, ResourceProperties } from './types';
 
 const ec2Client = new EC2Client({});
@@ -63,6 +63,7 @@ export const handler = function (
     updateResource,
     deleteResource,
   );
+
   if (event.ResourceProperties.LogLevel) {
     resource.setLogger(
       new StandardLogger(
@@ -108,6 +109,13 @@ async function updateResource(
   } else if (resource.properties.PublicKey.changed) {
     throw new Error(
       'You cannot change the public key of an exiting key pair. Please delete the key pair and create a new one.',
+    );
+  }
+
+  const oldKeyType = resource.event.OldResourceProperties?.KeyType ?? 'rsa'; // we added this feature later, so there might be keys w/o a stored type
+  if (resource.event.ResourceProperties.KeyType !== oldKeyType) {
+    throw new Error(
+      'The type of a key pair cannot be changed. Please create a new key pair instead',
     );
   }
 
@@ -182,6 +190,7 @@ async function createKeyPair(
     const params: CreateKeyPairCommandInput = {
       /* eslint-disable @typescript-eslint/naming-convention */
       KeyName: resource.properties.Name.value,
+      KeyType: resource.properties.KeyType.value,
       TagSpecifications: [
         {
           ResourceType: 'key-pair',
@@ -310,6 +319,11 @@ async function deleteKeyPair(
   log: Logger,
 ): Promise<void> {
   log.debug('called function deleteKeyPair');
+  const keyPairName = resource.properties.Name.value;
+  if (!(await keyPairExists(keyPairName, log))) {
+    log.warn(`Key Pair "${keyPairName}" does not exist. Nothing to delete`);
+    return;
+  }
   const params: DeleteKeyPairCommandInput = {
     /* eslint-disable-next-line @typescript-eslint/naming-convention */
     KeyName: resource.properties.Name.value,
@@ -476,20 +490,11 @@ async function makePublicKey(
     (keyPair as CreateKeyPairCommandOutput).KeyMaterial ??
     (await getPrivateKey(resource, log));
 
-  const privateKey = forge.pki.privateKeyFromPem(keyMaterial);
-  const forgePublicKey = forge.pki.rsa.setPublicKey(privateKey.n, privateKey.e);
-
-  const publicKeyFormat = resource.properties.PublicKeyFormat.value;
-  switch (publicKeyFormat) {
-    case PublicKeyFormat.PEM:
-      return forge.pki.publicKeyToPem(forgePublicKey);
-    case PublicKeyFormat.OPENSSH:
-      return forge.ssh.publicKeyToOpenSSH(forgePublicKey);
-    default:
-      throw new Error(
-        `Unsupported public key format ${publicKeyFormat as string}`,
-      );
-  }
+  const privateKey = parsePrivateKey(keyMaterial);
+  privateKey.comment = resource.properties.Name.value;
+  return privateKey
+    .toPublic()
+    .toString(resource.properties.PublicKeyFormat.value);
 }
 
 async function exposePublicKey(
@@ -504,6 +509,10 @@ async function exposePublicKey(
       publicKey = resource.properties.PublicKey.value;
     } else {
       publicKey = await makePublicKey(resource, log, keyPair);
+    }
+    if (resource.properties.PublicKeyFormat.value === PublicKeyFormat.RFC4253) {
+      // CloudFormation cannot deal with binary data, so we need to encode the public key
+      publicKey = Buffer.from(publicKey).toString('base64');
     }
     resource.addResponseValue('PublicKeyValue', publicKey);
   } else {
@@ -565,6 +574,7 @@ async function deletePrivateKeySecret(
   log.debug('called function deletePrivateKeySecret');
   const arn = `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/private`;
   if (!(await secretExists(arn, log))) {
+    log.warn(`Secret "${arn}" does not exist. Nothing to delete`);
     return;
   }
   const result = await deleteSecret(resource, log, arn);
@@ -578,6 +588,7 @@ async function deletePublicKeySecret(
   log.debug('called function deletePublicKeySecret');
   const arn = `${resource.properties.SecretPrefix.value}${resource.properties.Name.value}/public`;
   if (!(await secretExists(arn, log))) {
+    log.warn(`Secret "${arn}" does not exist. Nothing to delete`);
     return;
   }
   const result = await deleteSecret(resource, log, arn);
@@ -603,6 +614,28 @@ async function secretExists(name: string, log: Logger): Promise<boolean> {
     );
     return (result.SecretList?.length ?? 0) > 0;
   } catch (error) {
+    if (error instanceof ResourceNotFoundException) {
+      return false;
+    } else {
+      throw error;
+    }
+  }
+}
+
+async function keyPairExists(name: string, log: Logger): Promise<boolean> {
+  log.debug('called function keyPairExists');
+  const params: DescribeKeyPairsCommandInput = {
+    /* eslint-disable-next-line @typescript-eslint/naming-convention */
+    KeyNames: [name],
+  };
+  log.debug('ec2.describeKeyPairs:', JSON.stringify(params, null, 2));
+  try {
+    const result = await ec2Client.send(new DescribeKeyPairsCommand(params));
+    return (result.KeyPairs?.length ?? 0) > 0;
+  } catch (error) {
+    if (error.name && error.name == 'InvalidKeyPair.NotFound') {
+      return false;
+    }
     if (error instanceof ResourceNotFoundException) {
       return false;
     } else {

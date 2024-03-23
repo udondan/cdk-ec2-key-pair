@@ -8,7 +8,7 @@ import {
 } from 'aws-cdk-lib';
 import cloudfront = require('aws-cdk-lib/aws-cloudfront');
 import { Construct } from 'constructs';
-import { LogLevel, PublicKeyFormat } from '../../lambda/types';
+import { KeyType, LogLevel, PublicKeyFormat } from '../../lambda/types';
 import { KeyPair } from '../../lib';
 
 interface Props extends StackProps {
@@ -103,5 +103,31 @@ export class TestStack extends Stack {
     new cloudfront.KeyGroup(this, 'Signing-Key-Group', {
       items: [pubKey],
     });
+
+    for (const [_key, publicKeyFormat] of Object.entries(PublicKeyFormat)) {
+      for (const [_key, keyType] of Object.entries(KeyType)) {
+        if (
+          keyType === KeyType.ED25519 &&
+          publicKeyFormat == PublicKeyFormat.PKCS1
+        ) {
+          // combination not supported
+          continue;
+        }
+
+        const keyPairName = `Test-Key-Pair-${keyType}-${publicKeyFormat}`;
+        const keyPair = new KeyPair(this, keyPairName, {
+          keyPairName,
+          keyType,
+          publicKeyFormat,
+          exposePublicKey: true,
+          storePublicKey: true,
+          logLevel,
+        });
+        new CfnOutput(this, `${keyPairName}-Public-Key`, {
+          exportName: `${keyPairName}-Public-Key`,
+          value: keyPair.publicKeyValue,
+        });
+      }
+    }
   }
 }

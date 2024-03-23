@@ -14,6 +14,18 @@
 
 [AWS CDK] L3 construct for managing [EC2 Key Pairs].
 
+Manages RSA and ED25519 Key Pairs in EC2 through a Lambda function.
+
+Support for public key format in:
+
+- OpenSSH
+- ssh
+- PEM
+- PKCS#1
+- PKCS#8
+- RFC4253 (Base64 encoded)
+- PuTTY ppk
+
 > [!NOTE]
 > Please be aware, CloudFormation now natively supports creating EC2 Key Pairs via [AWS::EC2::KeyPair](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-keypair.html), so you can generally use [CDK's own KeyPair construct](https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_ec2.KeyPair.html). There are a few differences, though, and this is why the custom construct remains valuable:
 >
@@ -42,7 +54,7 @@ import { KeyPair } from 'cdk-ec2-key-pair';
 
 // Create the Key Pair
 const key = new KeyPair(this, 'A-Key-Pair', {
-  name: 'a-key-pair',
+  keyPairName: 'a-key-pair',
   description: 'This is a Key Pair',
   storePublicKey: true, // by default the public key will not be stored in Secrets Manager
 });
@@ -55,7 +67,7 @@ key.grantReadOnPublicKey(anotherRole);
 
 // Use Key Pair on an EC2 instance
 new ec2.Instance(this, 'An-Instance', {
-  keyName: key.keyPairName,
+  keyPair: key,
   // ...
 });
 ```
@@ -97,7 +109,7 @@ To use a custom KMS key you can pass it to the Key Pair:
 const kmsKey = new kms.Key(this, 'KMS-key');
 
 const keyPair = new KeyPair(this, 'A-Key-Pair', {
-  name: 'a-key-pair',
+  keyPairName: 'a-key-pair',
   kms: kmsKey,
 });
 ```
@@ -111,7 +123,7 @@ const kmsKeyPrivate = new kms.Key(this, 'KMS-key-private');
 const kmsKeyPublic = new kms.Key(this, 'KMS-key-public');
 
 const keyPair = new KeyPair(this, 'A-Key-Pair', {
-  name: 'a-key-pair',
+  keyPairName: 'a-key-pair',
   kmsPrivateKey: kmsKeyPrivate,
   kmsPublicKey: kmsKeyPublic,
 });
@@ -125,7 +137,7 @@ The public key has to be in OpenSSH format.
 
 ```typescript
 new KeyPair(this, 'Test-Key-Pair', {
-  name: 'imported-key-pair',
+  keyPairName: 'imported-key-pair',
   publicKey: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCuMmbK...',
 });
 ```
@@ -139,7 +151,7 @@ You also have to set `exposePublicKey` to `true` so you can actually get the pub
 
 ```typescript
 const key = new KeyPair(this, 'Signing-Key-Pair', {
-  name: 'CFN-signing-key',
+  keyPairName: 'CFN-signing-key',
   exposePublicKey: true,
   storePublicKey: true,
   publicKeyFormat: PublicKeyFormat.PEM,
