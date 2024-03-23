@@ -35,23 +35,23 @@ jobs:
           tree dist
 
       - name: Publish to npm
-        run: publib-npm
+        run: npx publib-npm
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish to PyPI
-        run: publib-pypi
+        run: npx publib-pypi
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
 
       - name: Publish to NuGet
-        run: publib-nuget
+        run: npx publib-nuget
         env:
           NUGET_API_KEY: ${{ secrets.NUGET_TOKEN }}
 #
 #      - name: Publish to Maven GitHub
-#        run: publib-maven
+#        run: npx publib-maven
 #        env:
 #          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 #          GITHUB_REPOSITORY: ${{ github.repository }}
