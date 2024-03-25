@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.0.1](https://github.com/udondan/cdk-ec2-key-pair/compare/v4.0.0...v4.0.1) (2024-03-25)
+
+
+### Bug Fixes
+
+* ensure all expected files are included in the resulting package ([#300](https://github.com/udondan/cdk-ec2-key-pair/issues/300)) ([509e42c](https://github.com/udondan/cdk-ec2-key-pair/commit/509e42c4fb9fd3d1667babffd11c3bfce0761b75))
+
 ## [4.0.0](https://github.com/udondan/cdk-ec2-key-pair/compare/v3.3.3...v4.0.0) (2024-03-23)
 
 
