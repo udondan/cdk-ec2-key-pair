@@ -92,7 +92,10 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Build source w/ jsii
-        run: npx jsii
+        run: |
+          lambda/build
+          npx jsii
+          make validate-package
 
       - name: Build packages w/ jsii-pacmak
         run: |

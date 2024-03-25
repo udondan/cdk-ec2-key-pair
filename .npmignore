@@ -26,6 +26,7 @@ tsconfig.tsbuildinfo
 .eslintrc
 .prettierrc
 tsconfig-lint.json
+publish_output.txt
 
 lambda/*
 !lambda/code.zip
