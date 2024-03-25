@@ -28,13 +28,14 @@ eslint:
 validate-package:
 	@echo -e "$(TARGET_COLOR)Checking package content$(NO_COLOR)"
 	@npm publish --dry-run 2>&1 | tee publish_output.txt
-	@FILES_TO_CHECK="lambda/code.zip lib/index.d.ts lib/index.js lib/types.d.ts lib/types.js"
-	@MISSING_FILES=""
+	@\
+	FILES_TO_CHECK="lambda/code.zip lib/index.d.ts lib/index.js lib/types.d.ts lib/types.js"; \
+	MISSING_FILES=""; \
 	for file in $$FILES_TO_CHECK; do \
 		if ! grep -q $$file publish_output.txt; then \
-			MISSING_FILES="$$MISSING_FILES $$file"
+			MISSING_FILES="$$MISSING_FILES $$file"; \
 		fi; \
-	done
+	done; \
 	if [ -n "$$MISSING_FILES" ]; then \
 		echo "❌ The following files are NOT included in the package:$$MISSING_FILES"; \
 		rm publish_output.txt; \
