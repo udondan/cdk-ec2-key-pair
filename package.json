@@ -57,7 +57,7 @@
   "devDependencies": {
     "@aws-sdk/client-ec2": "3.585.0",
     "@aws-sdk/client-secrets-manager": "3.583.0",
-    "@swc/core": "1.5.22",
+    "@swc/core": "1.5.24",
     "@swc/helpers": "0.5.11",
     "@types/node": "20.12.13",
     "@types/node-forge": "1.3.11",
