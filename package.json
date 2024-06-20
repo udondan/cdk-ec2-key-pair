@@ -78,7 +78,7 @@
     "publib": "0.2.851",
     "regenerator-runtime": "0.14.1",
     "ts-node": "10.9.2",
-    "typescript": "5.4.5"
+    "typescript": "5.5.2"
   },
   "peerDependencies": {
     "aws-cdk-lib": "^2.116.0",
