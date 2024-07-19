@@ -55,8 +55,8 @@
     }
   },
   "devDependencies": {
-    "@aws-sdk/client-ec2": "3.614.0",
-    "@aws-sdk/client-secrets-manager": "3.614.0",
+    "@aws-sdk/client-ec2": "3.616.0",
+    "@aws-sdk/client-secrets-manager": "3.616.0",
     "@swc/core": "1.7.0",
     "@swc/helpers": "0.5.12",
     "@types/node": "20.14.11",
