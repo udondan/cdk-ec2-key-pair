@@ -11,6 +11,7 @@
 ![Downloads](https://img.shields.io/badge/-DOWNLOADS:-brightgreen?color=gray)
 [![npm](https://img.shields.io/npm/dt/cdk-ec2-key-pair?label=npm&color=blueviolet)][npm]
 [![PyPI](https://img.shields.io/pypi/dm/cdk-ec2-key-pair?label=pypi&color=blueviolet)][PyPI]
+[![github network dependents](https://dependents.info/udondan/cdk-ec2-key-pair/badge?color=blueviolet)](https://dependents.info/udondan/cdk-ec2-key-pair)
 
 [AWS CDK] L3 construct for managing [EC2 Key Pairs].
 
