@@ -68,7 +68,7 @@
     "aws-cloudformation-custom-resource": "5.0.0",
     "constructs": "10.3.0",
     "eslint": "8.57.1",
-    "eslint-config-prettier": "9.1.1",
+    "eslint-config-prettier": "9.1.2",
     "eslint-plugin-deprecation": "3.0.0",
     "eslint-plugin-prettier": "5.5.1",
     "jsii": "5.8.15",
