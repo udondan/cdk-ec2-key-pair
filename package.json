@@ -59,7 +59,7 @@
     "@aws-sdk/client-secrets-manager": "3.848.0",
     "@swc/core": "1.13.0",
     "@swc/helpers": "0.5.17",
-    "@types/node": "20.19.8",
+    "@types/node": "20.19.9",
     "@types/node-forge": "1.3.13",
     "@types/sshpk": "^1.17.4",
     "@typescript-eslint/eslint-plugin": "7.18.0",
