@@ -23,7 +23,7 @@ jobs:
       image: public.ecr.aws/jsii/superchain:1-bookworm-slim-node20
 
     steps:
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 20.x
 
