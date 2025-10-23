@@ -1,5 +1,17 @@
 # Changelog
 
+## [4.1.0](https://github.com/udondan/cdk-ec2-key-pair/compare/v4.0.1...v4.1.0) (2025-10-23)
+
+
+### Features
+
+* update lambda runtime to Node.js 22 ([#1243](https://github.com/udondan/cdk-ec2-key-pair/issues/1243)) ([79d828c](https://github.com/udondan/cdk-ec2-key-pair/commit/79d828c12a588e455386f5c64d6aa6ea55ecc4cd))
+
+
+### Bug Fixes
+
+* add keyPairRef property to satisfy IKeyPair interface in CDK 2.219.0+ ([#1240](https://github.com/udondan/cdk-ec2-key-pair/issues/1240)) ([3f36420](https://github.com/udondan/cdk-ec2-key-pair/commit/3f36420cc541e28aeb05379d2be35ba6a6ab251b))
+
 ## [4.0.1](https://github.com/udondan/cdk-ec2-key-pair/compare/v4.0.0...v4.0.1) (2024-03-25)
 
 

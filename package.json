@@ -1,7 +1,7 @@
 {
   "name": "cdk-ec2-key-pair",
   "description": "CDK Construct for managing EC2 key pairs",
-  "version": "4.0.1",
+  "version": "4.1.0",
   "license": "Apache-2.0",
   "author": {
     "name": "Daniel Schroeder",
