@@ -5,8 +5,8 @@ import {
   CfnOutput,
   aws_iam,
   aws_ec2,
+  aws_cloudfront as cloudfront,
 } from 'aws-cdk-lib';
-import cloudfront = require('aws-cdk-lib/aws-cloudfront');
 import { Construct } from 'constructs';
 import { KeyType, LogLevel, PublicKeyFormat } from '../../lambda/types';
 import { KeyPair } from '../../lib';
