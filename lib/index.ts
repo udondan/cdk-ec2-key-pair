@@ -13,7 +13,11 @@ import {
   TagManager,
   TagType,
 } from 'aws-cdk-lib';
-import { IKeyPair, OperatingSystemType } from 'aws-cdk-lib/aws-ec2';
+import {
+  IKeyPair,
+  KeyPairReference,
+  OperatingSystemType,
+} from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
 import * as path from 'path';
 import {
@@ -218,6 +222,12 @@ export class KeyPair extends Resource implements ITaggable, IKeyPair {
   public readonly tags: TagManager;
 
   public readonly prefix: string = '';
+
+  public get keyPairRef(): KeyPairReference {
+    return {
+      keyName: this.keyPairName,
+    };
+  }
 
   /**
    * Defines a new EC2 Key Pair. The private key will be stored in AWS Secrets Manager
