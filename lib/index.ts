@@ -429,7 +429,7 @@ export class KeyPair extends Resource implements ITaggable, IKeyPair {
     const fn = new aws_lambda.Function(stack, constructName, {
       functionName: legacyLambdaName ? `${this.prefix}-${cleanID}` : undefined,
       description: 'Custom CFN resource: Manage EC2 Key Pairs',
-      runtime: aws_lambda.Runtime.NODEJS_20_X,
+      runtime: aws_lambda.Runtime.NODEJS_22_X,
       handler: 'index.handler',
       code: aws_lambda.Code.fromAsset(
         path.join(__dirname, '../lambda/code.zip'),
