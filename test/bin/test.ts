@@ -4,7 +4,7 @@ import {
   STSClient,
   STSClientConfig,
 } from '@aws-sdk/client-sts';
-import cdk = require('aws-cdk-lib');
+import * as cdk from 'aws-cdk-lib';
 
 import { TestStack } from '../lib/test-stack';
 

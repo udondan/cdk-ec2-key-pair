@@ -8,6 +8,7 @@ lambda/*
 !lambda/package.json
 !lambda/package-lock.json
 **/*.js
+!eslint.config.js
 **/*.d.ts
 **/cdk.out
 **/cdk.context.json
