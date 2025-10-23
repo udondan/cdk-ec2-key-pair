@@ -304,8 +304,8 @@ export class KeyPair extends Resource implements ITaggable, IKeyPair {
       SecretPrefix: props.secretPrefix ?? 'ec2-ssh-key/',
       StackName: stack,
       Tags: Lazy.any({
-        produce: () => this.tags.renderTags() as Record,
-      }) as unknown as Record,
+        produce: () => this.tags.renderTags() as Record<string, string>,
+      }) as unknown as Record<string, string>,
       LogLevel: props.logLevel,
       /* eslint-enable @typescript-eslint/naming-convention */
     };
