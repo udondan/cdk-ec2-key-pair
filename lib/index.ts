@@ -205,9 +205,7 @@ export class KeyPair extends Resource implements ITaggable, IKeyPair {
   /**
    * The private key secret in AWS Secrets Manager
    */
-
   public readonly privateKeySecret: aws_secretsmanager.ISecret;
-
   /**
    * The public key secret in AWS Secrets Manager
    */
