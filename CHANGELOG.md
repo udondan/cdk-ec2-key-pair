@@ -1,5 +1,16 @@
 # Changelog
 
+## [5.0.0](https://github.com/udondan/cdk-ec2-key-pair/compare/v4.1.0...v5.0.0) (2025-10-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* The properties `privateKeyArn` and `publicKeyArn` have been removed. Use `privateKeySecret.secretArn` and `publicKeySecret?.secretArn` instead. The methods `grantReadOnPrivateKey()` and `grantReadOnPublicKey()` have been removed. Use `privateKeySecret.grantRead()` and `publicKeySecret?.grantRead()` instead.
+
+### Features
+
+* expose secrets as ISecret instead of ARN strings ([#1247](https://github.com/udondan/cdk-ec2-key-pair/issues/1247)) ([a489529](https://github.com/udondan/cdk-ec2-key-pair/commit/a489529eee6d0f1b2165ccb91dd8b7b18b4c9ef5))
+
 ## [4.1.0](https://github.com/udondan/cdk-ec2-key-pair/compare/v4.0.1...v4.1.0) (2025-10-23)
 
 
