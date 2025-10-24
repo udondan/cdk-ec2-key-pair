@@ -1,8 +1,5 @@
 import {
   Annotations,
-  aws_iam,
-  aws_kms,
-  aws_lambda,
   CustomResource,
   Duration,
   ITaggable,
@@ -12,6 +9,10 @@ import {
   Stack,
   TagManager,
   TagType,
+  aws_iam,
+  aws_kms,
+  aws_lambda,
+  aws_secretsmanager,
 } from 'aws-cdk-lib';
 import {
   IKeyPair,
@@ -175,16 +176,6 @@ export class KeyPair extends Resource implements ITaggable, IKeyPair {
   public readonly lambdaFunction: aws_lambda.IFunction;
 
   /**
-   * ARN of the private key in AWS Secrets Manager
-   */
-  public readonly privateKeyArn: string = '';
-
-  /**
-   * ARN of the public key in AWS Secrets Manager
-   */
-  public readonly publicKeyArn: string = '';
-
-  /**
    * The public key.
    *
    * Only filled, when `exposePublicKey = true`
@@ -210,6 +201,17 @@ export class KeyPair extends Resource implements ITaggable, IKeyPair {
    * Format of the public key
    */
   public readonly publicKeyFormat: PublicKeyFormat;
+
+  /**
+   * The private key secret in AWS Secrets Manager
+   */
+  public readonly privateKeySecret: aws_secretsmanager.ISecret;
+  /**
+   * The public key secret in AWS Secrets Manager
+   *
+   * Only available when `storePublicKey` is set to `true`.
+   */
+  public readonly publicKeySecret?: aws_secretsmanager.ISecret;
 
   /**
    * Type of the Key Pair
@@ -316,6 +318,20 @@ export class KeyPair extends Resource implements ITaggable, IKeyPair {
       properties: lambdaProperties,
     });
 
+    this.privateKeySecret = aws_secretsmanager.Secret.fromSecretCompleteArn(
+      this,
+      'PrivateKeySecret',
+      key.getAttString('PrivateKeyARN'),
+    );
+
+    if (props.storePublicKey) {
+      this.publicKeySecret = aws_secretsmanager.Secret.fromSecretCompleteArn(
+        this,
+        'PublicKeySecret',
+        key.getAttString('PublicKeyARN'),
+      );
+    }
+
     if (typeof props.kms !== 'undefined') {
       props.kms.grantEncryptDecrypt(this.lambdaFunction.role!);
       key.node.addDependency(props.kms);
@@ -334,8 +350,6 @@ export class KeyPair extends Resource implements ITaggable, IKeyPair {
       key.node.addDependency(this.lambdaFunction.role!);
     }
 
-    this.privateKeyArn = key.getAttString('PrivateKeyARN');
-    this.publicKeyArn = key.getAttString('PublicKeyARN');
     this.publicKeyValue = key.getAttString('PublicKeyValue');
     this.keyPairName = key.getAttString('KeyPairName');
     this.keyPairID = key.getAttString('KeyPairID');
@@ -441,35 +455,6 @@ export class KeyPair extends Resource implements ITaggable, IKeyPair {
     });
 
     return fn;
-  }
-
-  /**
-   * Grants read access to the private key in AWS Secrets Manager
-   */
-  grantReadOnPrivateKey(grantee: aws_iam.IGrantable) {
-    return this.grantRead(this.privateKeyArn, grantee);
-  }
-
-  /**
-   * Grants read access to the public key in AWS Secrets Manager
-   */
-  grantReadOnPublicKey(grantee: aws_iam.IGrantable) {
-    return this.grantRead(this.publicKeyArn, grantee);
-  }
-
-  private grantRead(arn: string, grantee: aws_iam.IGrantable) {
-    const result = aws_iam.Grant.addToPrincipal({
-      grantee,
-      actions: [
-        'secretsmanager:DescribeSecret',
-        'secretsmanager:GetResourcePolicy',
-        'secretsmanager:GetSecretValue',
-        'secretsmanager:ListSecretVersionIds',
-      ],
-      resourceArns: [arn],
-      scope: this,
-    });
-    return result;
   }
 
   /**
