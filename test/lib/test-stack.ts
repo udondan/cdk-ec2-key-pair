@@ -98,8 +98,8 @@ export class TestStack extends Stack {
       props.currentUserName,
     );
 
-    keyPairPem.grantReadOnPrivateKey(currentUser);
-    keyPairPem.grantReadOnPublicKey(currentUser);
+    keyPairPem.privateKeySecret.grantRead(currentUser);
+    keyPairPem.publicKeySecret?.grantRead(currentUser);
 
     new CfnOutput(this, 'Test-Public-Key-PEM', {
       exportName: 'TestPublicKeyPEM',

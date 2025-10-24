@@ -59,11 +59,14 @@ const key = new KeyPair(this, 'A-Key-Pair', {
   storePublicKey: true, // by default the public key will not be stored in Secrets Manager
 });
 
-// Grant read access to the private key to a role or user
-key.grantReadOnPrivateKey(someRole);
+// Grant read access to the private key secret
+key.privateKeySecret.grantRead(someRole);
 
-// Grant read access to the public key to another role or user
-key.grantReadOnPublicKey(anotherRole);
+// Grant read access to the public key secret (if stored)
+key.publicKeySecret?.grantRead(anotherRole);
+
+// Access the secret ARN
+const privateKeyArn = key.privateKeySecret.secretArn;
 
 // Use Key Pair on an EC2 instance
 new ec2.Instance(this, 'An-Instance', {
@@ -74,7 +77,25 @@ new ec2.Instance(this, 'An-Instance', {
 
 The private (and optionally the public) key will be stored in AWS Secrets Manager. The secret names by default are prefixed with `ec2-ssh-key/`. The private key is suffixed with `/private`, the public key is suffixed with `/public`. So in this example they will be stored as `ec2-ssh-key/a-key-pair/private` and `ec2-ssh-key/a-key-pair/public`.
 
-To download the private key via AWS cli you can run:
+### Accessing Secrets
+
+The construct exposes the secrets as `ISecret` objects:
+
+```typescript
+// Access the private key secret
+const privateKeySecret = key.privateKeySecret;
+
+// Access the public key secret (if storePublicKey was enabled)
+const publicKeySecret = key.publicKeySecret;
+
+// Get the secret ARN
+const secretArn = key.privateKeySecret.secretArn;
+
+// Use the secret value in CloudFormation (e.g., for custom resources)
+const secretValue = key.privateKeySecret.secretValue;
+```
+
+To download the private key via AWS CLI you can run:
 
 ```bash
 aws secretsmanager get-secret-value \
