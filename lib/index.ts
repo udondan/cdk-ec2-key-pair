@@ -208,6 +208,8 @@ export class KeyPair extends Resource implements ITaggable, IKeyPair {
   public readonly privateKeySecret: aws_secretsmanager.ISecret;
   /**
    * The public key secret in AWS Secrets Manager
+   *
+   * Only available when `storePublicKey` is set to `true`.
    */
   public readonly publicKeySecret?: aws_secretsmanager.ISecret;
 
