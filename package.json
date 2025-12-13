@@ -68,7 +68,7 @@
     "aws-cdk-lib": "2.223.0",
     "aws-cloudformation-custom-resource": "5.0.0",
     "constructs": "10.4.2",
-    "eslint": "9.39.1",
+    "eslint": "9.39.2",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-prettier": "5.5.4",
     "jsii": "5.9.19",
