@@ -1,15 +1,5 @@
 # Changelog
 
-## [Unreleased]
-
-### Bug Fixes
-
-* remove explicit IKeyPair interface implementation to fix .NET compilation with CDK 2.237.x+ ([#1334](https://github.com/udondan/cdk-ec2-key-pair/issues/1334))
-  - Maintains full structural compatibility with IKeyPair
-  - Fixes .NET compilation error: "Interfaces namespace not found"
-  - Defines KeyPairReference interface inline to avoid aws-cdk-lib/interfaces dependency
-  - Works across CDK versions 2.219.0+
-
 ## [5.0.0](https://github.com/udondan/cdk-ec2-key-pair/compare/v4.1.0...v5.0.0) (2025-10-24)
 
 
