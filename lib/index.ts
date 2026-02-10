@@ -14,11 +14,7 @@ import {
   aws_lambda,
   aws_secretsmanager,
 } from 'aws-cdk-lib';
-import {
-  IKeyPair,
-  KeyPairReference,
-  OperatingSystemType,
-} from 'aws-cdk-lib/aws-ec2';
+import { OperatingSystemType } from 'aws-cdk-lib/aws-ec2';
 import { Construct } from 'constructs';
 import * as path from 'path';
 import {
@@ -34,6 +30,18 @@ const ID = `CFN::Resource::${resourceType}`;
 const createdByTag = 'CreatedByCfnCustomResource';
 const cleanID = ID.replace(/:+/g, '-');
 const lambdaTimeout = 3; // minutes
+
+/**
+ * Reference to a KeyPair resource.
+ * Defined inline to avoid importing from aws-cdk-lib/interfaces which causes
+ * .NET compilation issues.
+ */
+export interface KeyPairReference {
+  /**
+   * The KeyName of the KeyPair resource.
+   */
+  readonly keyName: string;
+}
 
 /**
  * Definition of EC2 Key Pair
@@ -168,8 +176,12 @@ export interface KeyPairProps extends ResourceProps {
 
 /**
  * An EC2 Key Pair
+ *
+ * Note: This class maintains structural compatibility with IKeyPair but doesn't explicitly
+ * implement it to avoid JSII generating references to IKeyPairRef which causes .NET compilation
+ * issues in CDK 2.237.x+ where IKeyPairRef moved to a separate interfaces module.
  */
-export class KeyPair extends Resource implements ITaggable, IKeyPair {
+export class KeyPair extends Resource implements ITaggable {
   /**
    * The lambda function that is created
    */
