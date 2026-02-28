@@ -67,7 +67,7 @@
     "@typescript-eslint/parser": "8.56.1",
     "aws-cdk-lib": "2.223.0",
     "aws-cloudformation-custom-resource": "5.0.0",
-    "constructs": "10.4.2",
+    "constructs": "10.5.1",
     "eslint": "9.39.3",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-prettier": "5.5.5",
