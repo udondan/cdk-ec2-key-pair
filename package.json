@@ -78,7 +78,7 @@
     "publib": "0.2.1040",
     "regenerator-runtime": "0.14.1",
     "ts-node": "10.9.2",
-    "typescript": "5.9.3",
+    "typescript": "6.0.2",
     "typescript-eslint": "8.58.1"
   },
   "peerDependencies": {
