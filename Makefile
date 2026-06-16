@@ -32,7 +32,7 @@ validate-package:
 		echo "❌ npm pack failed"; \
 		exit 1; \
 	fi; \
-	trap 'rm -f "$$TARBALL"' EXIT INT TERM; \
+	trap 'rm -f "$$TARBALL"' EXIT; trap 'exit 1' INT TERM; \
 	tar -tf "$$TARBALL"; \
 	FILES_TO_CHECK="lambda/code.zip lib/index.d.ts lib/index.js lib/types.d.ts lib/types.js"; \
 	MISSING_FILES=""; \
