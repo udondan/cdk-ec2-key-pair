@@ -14,11 +14,8 @@ import {
   aws_lambda,
   aws_secretsmanager,
 } from 'aws-cdk-lib';
-import {
-  IKeyPair,
-  KeyPairReference,
-  OperatingSystemType,
-} from 'aws-cdk-lib/aws-ec2';
+import { IKeyPair, OperatingSystemType } from 'aws-cdk-lib/aws-ec2';
+import { aws_ec2 as interfaces_aws_ec2 } from 'aws-cdk-lib/interfaces';
 import { Construct } from 'constructs';
 import * as path from 'path';
 import {
@@ -225,7 +222,7 @@ export class KeyPair extends Resource implements ITaggable, IKeyPair {
 
   public readonly prefix: string = '';
 
-  public get keyPairRef(): KeyPairReference {
+  public get keyPairRef(): interfaces_aws_ec2.KeyPairReference {
     return {
       keyName: this.keyPairName,
     };
