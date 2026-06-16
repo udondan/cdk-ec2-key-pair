@@ -32,7 +32,7 @@ validate-package:
 	FILES_TO_CHECK="lambda/code.zip lib/index.d.ts lib/index.js lib/types.d.ts lib/types.js"; \
 	MISSING_FILES=""; \
 	for file in $$FILES_TO_CHECK; do \
-		if ! grep -E -q "[[:space:]]$$file$$" publish_output.txt; then \
+		if ! grep -E -q "[[:space:]]$$file[[:space:]]*$$" publish_output.txt; then \
 			MISSING_FILES="$$MISSING_FILES $$file"; \
 		fi; \
 	done; \
