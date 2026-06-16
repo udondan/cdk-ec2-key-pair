@@ -11,6 +11,10 @@ jobs:
   publish:
     runs-on: ubuntu-latest
 
+    permissions:
+      id-token: write
+      contents: read
+
     container:
       image: public.ecr.aws/jsii/superchain:1-bookworm-slim-node20
 
@@ -24,7 +28,7 @@ jobs:
         run: |
           make install
           sudo apt-get update
-          sudo apt-get install -y tree
+          sudo apt-get install -y tree jq
 
       - name: Build source w/ jsii
         run: |
@@ -40,15 +44,15 @@ jobs:
       - name: Publish to npm
         run: npx publib-npm
         env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TRUSTED_PUBLISHER: "true"
+          NPM_CONFIG_PROVENANCE: "true"
 
       - name: Publish to PyPI
         run: |
           export PIP_BREAK_SYSTEM_PACKAGES=1
           npx publib-pypi
         env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+          PYPI_TRUSTED_PUBLISHER: "true"
 
       - name: Publish to NuGet
         run: npx publib-nuget
