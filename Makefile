@@ -28,8 +28,13 @@ eslint:
 validate-package:
 	@echo -e "$(TARGET_COLOR)Checking package content$(NO_COLOR)"
 	@\
-	if ! TARBALL=$$(npm pack --quiet | tail -n 1) || [ ! -f "$$TARBALL" ]; then \
+	if ! TARBALL=$$(npm pack --quiet) || [ -z "$$TARBALL" ]; then \
 		echo "❌ npm pack failed"; \
+		exit 1; \
+	fi; \
+	TARBALL=$$(printf '%s\n' "$$TARBALL" | tail -n 1); \
+	if [ ! -f "$$TARBALL" ]; then \
+		echo "❌ npm pack package file not found: $$TARBALL"; \
 		exit 1; \
 	fi; \
 	trap 'rm -f "$$TARBALL"' EXIT; trap 'exit 1' INT TERM; \
