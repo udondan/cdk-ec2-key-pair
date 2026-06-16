@@ -11,6 +11,10 @@ jobs:
   publish:
     runs-on: ubuntu-latest
 
+    permissions:
+      id-token: write
+      contents: read
+
     container:
       image: public.ecr.aws/jsii/superchain:1-bookworm-slim-node20
 
@@ -41,6 +45,7 @@ jobs:
         run: npx publib-npm
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: "true"
 
       - name: Publish to PyPI
         run: |

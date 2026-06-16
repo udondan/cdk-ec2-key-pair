@@ -27,7 +27,7 @@ eslint:
 
 validate-package:
 	@echo -e "$(TARGET_COLOR)Checking package content$(NO_COLOR)"
-	@npm publish --dry-run 2>&1 | tee publish_output.txt
+	@npm pack --dry-run 2>&1 | tee publish_output.txt
 	@\
 	FILES_TO_CHECK="lambda/code.zip lib/index.d.ts lib/index.js lib/types.d.ts lib/types.js"; \
 	MISSING_FILES=""; \
