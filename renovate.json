@@ -1,20 +1,18 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended", ":semanticCommitTypeAll(chore)"],
-  "dependencyDashboard": false,
-  "ignorePaths": [
-    "**/node_modules/**",
-    "**/bower_components/**",
-    "**/vendor/**",
-    "**/examples/**",
-    "**/__tests__/**",
-    "**/__fixtures__/**"
-  ],
+  "extends": ["config:recommended"],
+  "semanticCommitType": "chore",
+  "mode": "auto",
+  "prHourlyLimit": 10,
+  "rebaseWhen": "behind-base-branch",
+  "minimumReleaseAge": "3 days",
+  "automerge": true,
+  "automergeType": "pr",
+  "automergeStrategy": "squash",
   "packageRules": [
     {
-      "matchUpdateTypes": ["minor", "patch"],
-      "automerge": true
+      "matchPackagePatterns": [".*"],
+      "semanticCommitType": "chore"
     }
-  ],
-  "rebaseWhen": "auto"
+  ]
 }
