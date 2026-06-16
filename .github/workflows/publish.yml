@@ -44,7 +44,6 @@ jobs:
       - name: Publish to npm
         run: npx publib-npm
         env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: "true"
 
       - name: Publish to PyPI
