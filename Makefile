@@ -38,7 +38,10 @@ validate-package:
 		exit 1; \
 	fi; \
 	trap 'rm -f "$$TARBALL"' EXIT; \
-	tar -tf "$$TARBALL"; \
+	if ! tar -tf "$$TARBALL"; then \
+		echo "❌ Failed to list tarball contents"; \
+		exit 1; \
+	fi; \
 	FILES_TO_CHECK="lambda/code.zip lib/index.d.ts lib/index.js lib/types.d.ts lib/types.js"; \
 	MISSING_FILES=""; \
 	for file in $$FILES_TO_CHECK; do \
