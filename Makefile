@@ -38,7 +38,7 @@ validate-package:
 		exit 1; \
 	fi; \
 	trap 'rm -f "$$TARBALL"' EXIT; \
-	if ! tar -tf "$$TARBALL"; then \
+	if ! tar -tf "$$TARBALL" >/dev/null; then \
 		echo "❌ Failed to list tarball contents"; \
 		exit 1; \
 	fi; \
