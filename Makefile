@@ -33,12 +33,11 @@ validate-package:
 		exit 1; \
 	fi; \
 	trap 'rm -f "$$TARBALL"' EXIT; \
-	CONTENTS=$$(tar -tf "$$TARBALL"); \
-	echo "$$CONTENTS"; \
+	tar -tf "$$TARBALL"; \
 	FILES_TO_CHECK="lambda/code.zip lib/index.d.ts lib/index.js lib/types.d.ts lib/types.js"; \
 	MISSING_FILES=""; \
 	for file in $$FILES_TO_CHECK; do \
-		if ! printf "%s\n" "$$CONTENTS" | grep -Fqx "package/$$file"; then \
+		if ! tar -tf "$$TARBALL" "package/$$file" >/dev/null 2>&1; then \
 			MISSING_FILES="$$MISSING_FILES $$file"; \
 		fi; \
 	done; \
