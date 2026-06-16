@@ -28,14 +28,14 @@ eslint:
 validate-package:
 	@echo -e "$(TARGET_COLOR)Checking package content$(NO_COLOR)"
 	@\
-	TARBALL=$$(npm pack --quiet); \
+	TARBALL=$$(npm pack --quiet | tail -n 1); \
 	if [ ! -f "$$TARBALL" ]; then \
 		echo "❌ npm pack failed"; \
 		exit 1; \
 	fi; \
 	CONTENTS=$$(tar -tf "$$TARBALL"); \
-	echo "$$CONTENTS"; \
 	rm "$$TARBALL"; \
+	echo "$$CONTENTS"; \
 	FILES_TO_CHECK="lambda/code.zip lib/index.d.ts lib/index.js lib/types.d.ts lib/types.js"; \
 	MISSING_FILES=""; \
 	for file in $$FILES_TO_CHECK; do \
