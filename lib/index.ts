@@ -267,6 +267,15 @@ export class KeyPair extends Resource implements ITaggable, IKeyPair {
     }
 
     if (
+      props.lambdaRuntime !== undefined &&
+      props.lambdaRuntime.family !== aws_lambda.RuntimeFamily.NODEJS
+    ) {
+      Annotations.of(this).addError(
+        `Parameter lambdaRuntime must be a Node.js runtime. Got ${props.lambdaRuntime.name}`,
+      );
+    }
+
+    if (
       props.keyType == KeyType.ED25519 &&
       props.publicKeyFormat == PublicKeyFormat.PKCS1
     ) {
