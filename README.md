@@ -120,6 +120,21 @@ Since an EC2 KeyPair cannot be updated, you cannot change any property related t
 
 You can, however, change properties that only relate to the secrets. These are the KMS keys used for encryption, the `secretPrefix`, `description` and `removeKeySecretsAfterDays`.
 
+### Customizing the Lambda runtime
+
+The backing Lambda function defaults to the `NODEJS_24_X` runtime. If you need to pin to a specific Node.js version, pass the `lambdaRuntime` property:
+
+```typescript
+import { Runtime } from 'aws-cdk-lib/aws-lambda';
+
+const keyPair = new KeyPair(this, 'A-Key-Pair', {
+  keyPairName: 'a-key-pair',
+  lambdaRuntime: Runtime.NODEJS_22_X,
+});
+```
+
+> **Note:** The Lambda function is shared across all `KeyPair` instances in the same stack. Only the value set on the first instance takes effect.
+
 ### Encryption
 
 Secrets in the AWS Secrets Manager by default are encrypted with the key `alias/aws/secretsmanager`.

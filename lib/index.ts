@@ -161,6 +161,16 @@ export interface KeyPairProps extends ResourceProps {
    * @default LogLevel.warn
    */
   readonly logLevel?: LogLevel;
+
+  /**
+   * The Node.js runtime to use for the Lambda function backing the custom resource.
+   *
+   * Since this Lambda function is shared across all `KeyPair` instances in the same stack,
+   * only the value set on the first instance takes effect.
+   *
+   * @default aws_lambda.Runtime.NODEJS_24_X
+   */
+  readonly lambdaRuntime?: aws_lambda.Runtime;
 }
 
 /**
@@ -257,6 +267,15 @@ export class KeyPair extends Resource implements ITaggable, IKeyPair {
     }
 
     if (
+      props.lambdaRuntime !== undefined &&
+      props.lambdaRuntime.family !== aws_lambda.RuntimeFamily.NODEJS
+    ) {
+      Annotations.of(this).addError(
+        `Parameter lambdaRuntime must be a Node.js runtime. Got ${props.lambdaRuntime.name}`,
+      );
+    }
+
+    if (
       props.keyType == KeyType.ED25519 &&
       props.publicKeyFormat == PublicKeyFormat.PKCS1
     ) {
@@ -277,7 +296,10 @@ export class KeyPair extends Resource implements ITaggable, IKeyPair {
         );
       }
     }
-    this.lambdaFunction = this.ensureLambda(props.legacyLambdaName ?? false);
+    this.lambdaFunction = this.ensureLambda(
+      props.legacyLambdaName ?? false,
+      props.lambdaRuntime ?? aws_lambda.Runtime.NODEJS_24_X,
+    );
 
     this.tags = new TagManager(TagType.MAP, 'Custom::EC2-Key-Pair');
     this.tags.setTag(createdByTag, ID);
@@ -353,7 +375,10 @@ export class KeyPair extends Resource implements ITaggable, IKeyPair {
     this.keyPairFingerprint = key.getAttString('KeyPairFingerprint');
   }
 
-  private ensureLambda(legacyLambdaName: boolean): aws_lambda.Function {
+  private ensureLambda(
+    legacyLambdaName: boolean,
+    runtime: aws_lambda.Runtime,
+  ): aws_lambda.Function {
     const stack = Stack.of(this);
     const constructName = legacyLambdaName
       ? 'EC2-Key-Name-Manager-Lambda' // this name was not intentional but we keep it for legacy resources
@@ -440,7 +465,7 @@ export class KeyPair extends Resource implements ITaggable, IKeyPair {
     const fn = new aws_lambda.Function(stack, constructName, {
       functionName: legacyLambdaName ? `${this.prefix}-${cleanID}` : undefined,
       description: 'Custom CFN resource: Manage EC2 Key Pairs',
-      runtime: aws_lambda.Runtime.NODEJS_22_X,
+      runtime: runtime,
       handler: 'index.handler',
       code: aws_lambda.Code.fromAsset(
         path.join(__dirname, '../lambda/code.zip'),
