@@ -306,7 +306,7 @@ async function updateKeyPairRemoveTags(
       return {
         Key: key,
         Value: resource.properties.Tags.before![key],
-      } as Ec2Tag;
+      };
     }),
     /* eslint-enable @typescript-eslint/naming-convention */
   };
