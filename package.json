@@ -63,8 +63,8 @@
     "@swc/helpers": "0.5.23",
     "@types/node": "24.13.2",
     "@types/sshpk": "1.17.4",
-    "@typescript-eslint/eslint-plugin": "8.58.2",
-    "@typescript-eslint/parser": "8.58.2",
+    "@typescript-eslint/eslint-plugin": "8.61.0",
+    "@typescript-eslint/parser": "8.61.0",
     "aws-cdk-lib": "2.259.0",
     "aws-cloudformation-custom-resource": "5.0.0",
     "constructs": "10.6.0",
@@ -77,7 +77,7 @@
     "publib": "0.2.1050",
     "ts-node": "10.9.2",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.58.2"
+    "typescript-eslint": "8.61.0"
   },
   "peerDependencies": {
     "aws-cdk-lib": "^2.224.0",
