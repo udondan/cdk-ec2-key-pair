@@ -366,7 +366,10 @@ export class KeyPair extends Resource implements ITaggable, IKeyPair {
     this.keyPairFingerprint = key.getAttString('KeyPairFingerprint');
   }
 
-  private ensureLambda(legacyLambdaName: boolean, runtime: aws_lambda.Runtime): aws_lambda.Function {
+  private ensureLambda(
+    legacyLambdaName: boolean,
+    runtime: aws_lambda.Runtime,
+  ): aws_lambda.Function {
     const stack = Stack.of(this);
     const constructName = legacyLambdaName
       ? 'EC2-Key-Name-Manager-Lambda' // this name was not intentional but we keep it for legacy resources
