@@ -632,7 +632,7 @@ async function keyPairExists(name: string, log: Logger): Promise<boolean> {
     const result = await ec2Client.send(new DescribeKeyPairsCommand(params));
     return (result.KeyPairs?.length ?? 0) > 0;
   } catch (error) {
-    if (error.name && error.name == 'InvalidKeyPair.NotFound') {
+    if (error instanceof Error && error.name === 'InvalidKeyPair.NotFound') {
       return false;
     }
     if (error instanceof ResourceNotFoundException) {
