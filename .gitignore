@@ -7,6 +7,7 @@ lambda/*
 !lambda/build
 !lambda/package.json
 !lambda/package-lock.json
+!lambda/tsconfig.json
 **/*.js
 !eslint.config.js
 **/*.d.ts
