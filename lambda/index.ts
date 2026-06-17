@@ -38,7 +38,6 @@ import {
 } from '@aws-sdk/client-secrets-manager';
 import {
   Context,
-  Callback,
   CustomResource,
   Event,
   LogLevel,
@@ -50,28 +49,35 @@ import { PublicKeyFormat, ResourceProperties } from './types';
 
 const ec2Client = new EC2Client({});
 const secretsManagerClient = new SecretsManagerClient({});
-export const handler = function (
+export const handler = async function (
   event: Event<ResourceProperties>,
   context: Context,
-  callback: Callback,
-) {
-  const resource = new CustomResource<ResourceProperties>(
-    event,
-    context,
-    callback,
-    createResource,
-    updateResource,
-    deleteResource,
-  );
-
-  if (event.ResourceProperties.LogLevel) {
-    resource.setLogger(
-      new StandardLogger(
-        // because jsii is forcing us to expose enums with all capitals and the enum in aws-cloudformation-custom-resource is all lowercase, we need to cast here. Other than the capitalization, the enums are identical
-        event.ResourceProperties.LogLevel as unknown as LogLevel,
-      ),
+): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    const resource = new CustomResource<ResourceProperties>(
+      event,
+      context,
+      (error) => {
+        if (error) {
+          reject(typeof error === 'string' ? new Error(error) : error);
+        } else {
+          resolve();
+        }
+      },
+      createResource,
+      updateResource,
+      deleteResource,
     );
-  }
+
+    if (event.ResourceProperties.LogLevel) {
+      resource.setLogger(
+        new StandardLogger(
+          // because jsii is forcing us to expose enums with all capitals and the enum in aws-cloudformation-custom-resource is all lowercase, we need to cast here. Other than the capitalization, the enums are identical
+          event.ResourceProperties.LogLevel as unknown as LogLevel,
+        ),
+      );
+    }
+  });
 };
 
 async function createResource(
