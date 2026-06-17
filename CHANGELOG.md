@@ -1,5 +1,17 @@
 # Changelog
 
+## [5.1.0](https://github.com/udondan/cdk-ec2-key-pair/compare/v5.0.0...v5.1.0) (2026-06-17)
+
+
+### Features
+
+* add lambdaRuntime prop and bump default to NODEJS_24_X ([#1469](https://github.com/udondan/cdk-ec2-key-pair/issues/1469)) ([070017d](https://github.com/udondan/cdk-ec2-key-pair/commit/070017de4fc6037fb79cd8362c58f819b2044905))
+
+
+### Bug Fixes
+
+* import KeyPairReference from interfaces submodule ([#1452](https://github.com/udondan/cdk-ec2-key-pair/issues/1452)) ([6fabc04](https://github.com/udondan/cdk-ec2-key-pair/commit/6fabc040a6d47a7a161a974a969deadb5225ec60)), closes [#1334](https://github.com/udondan/cdk-ec2-key-pair/issues/1334)
+
 ## [5.0.0](https://github.com/udondan/cdk-ec2-key-pair/compare/v4.1.0...v5.0.0) (2025-10-24)
 
 
