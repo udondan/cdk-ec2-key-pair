@@ -62,7 +62,7 @@
     "@swc/core": "1.15.41",
     "@swc/helpers": "0.5.23",
     "@types/node": "24.13.2",
-    "@types/sshpk": "1.17.4",
+    "@types/sshpk": "1.17.5",
     "@typescript-eslint/eslint-plugin": "8.61.1",
     "@typescript-eslint/parser": "8.61.1",
     "aws-cdk-lib": "2.259.0",
