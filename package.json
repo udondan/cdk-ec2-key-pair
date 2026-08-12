@@ -61,7 +61,7 @@
     "@aws-sdk/client-sts": "3.1079.0",
     "@swc/core": "1.15.47",
     "@swc/helpers": "0.5.23",
-    "@types/node": "24.13.2",
+    "@types/node": "24.13.3",
     "@types/sshpk": "1.17.5",
     "@typescript-eslint/eslint-plugin": "8.62.1",
     "@typescript-eslint/parser": "8.62.1",
