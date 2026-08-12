@@ -19,8 +19,12 @@ jobs:
       image: public.ecr.aws/jsii/superchain:1-bookworm-slim-node20
 
     steps:
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24.x
+
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 1
 
