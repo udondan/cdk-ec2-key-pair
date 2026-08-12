@@ -13,7 +13,7 @@
     "ts-node": "^10.4.0",
     "typescript": "^5.9.3",
     "@aws-sdk/client-sts": "^3.914.0",
-    "aws-cdk-lib": "2.x",
+    "aws-cdk-lib": "2.263.0",
     "cdk-ssm-document": "file:.."
   }
 }
