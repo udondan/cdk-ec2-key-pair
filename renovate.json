@@ -4,6 +4,7 @@
   "semanticCommitType": "chore",
   "mode": "auto",
   "prHourlyLimit": 10,
+  "branchConcurrentLimit": 1,
   "rebaseWhen": "behind-base-branch",
   "minimumReleaseAge": "3 days",
   "automerge": true,
