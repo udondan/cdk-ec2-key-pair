@@ -65,7 +65,7 @@
     "@types/sshpk": "1.17.5",
     "@typescript-eslint/eslint-plugin": "8.66.0",
     "@typescript-eslint/parser": "8.66.0",
-    "aws-cdk-lib": "2.259.0",
+    "aws-cdk-lib": "2.263.0",
     "aws-cloudformation-custom-resource": "5.0.0",
     "constructs": "10.8.1",
     "eslint": "10.8.1",
