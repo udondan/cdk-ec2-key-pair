@@ -76,7 +76,7 @@
     "prettier": "3.9.6",
     "publib": "0.2.1059",
     "ts-node": "10.9.2",
-    "typescript": "6.0.3",
+    "typescript": "7.0.2",
     "typescript-eslint": "8.67.0"
   },
   "peerDependencies": {
