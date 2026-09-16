@@ -13,6 +13,10 @@
     {
       "matchPackagePatterns": [".*"],
       "semanticCommitType": "chore"
+    },
+    {
+      "matchPackageNames": ["aws-cloudformation-custom-resource"],
+      "minimumReleaseAge": null
     }
   ]
 }
