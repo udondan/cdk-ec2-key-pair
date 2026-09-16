@@ -12,7 +12,10 @@ import { KeyType, LogLevel, PublicKeyFormat } from '../../lambda/types';
 import { KeyPair } from '../../lib';
 
 interface Props extends StackProps {
-  currentUserName: string;
+  currentIdentity: {
+    type: 'user' | 'role';
+    name: string;
+  };
 }
 
 const logLevel = LogLevel.DEBUG;
@@ -92,14 +95,21 @@ export class TestStack extends Stack {
       logLevel,
     });
 
-    const currentUser = aws_iam.User.fromUserName(
-      this,
-      'Current-User',
-      props.currentUserName,
-    );
+    const currentIdentity =
+      props.currentIdentity.type === 'role'
+        ? aws_iam.Role.fromRoleName(
+            this,
+            'Current-Role',
+            props.currentIdentity.name,
+          )
+        : aws_iam.User.fromUserName(
+            this,
+            'Current-User',
+            props.currentIdentity.name,
+          );
 
-    keyPairPem.privateKeySecret.grantRead(currentUser);
-    keyPairPem.publicKeySecret?.grantRead(currentUser);
+    keyPairPem.privateKeySecret.grantRead(currentIdentity);
+    keyPairPem.publicKeySecret?.grantRead(currentIdentity);
 
     new CfnOutput(this, 'Test-Public-Key-PEM', {
       exportName: 'TestPublicKeyPEM',

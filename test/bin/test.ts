@@ -32,18 +32,24 @@ async function getIdentity() {
   if (!arn) {
     throw new Error('Unable to get caller identity');
   }
-  return arn.split('/')[1];
+  // arn:aws:iam::<account>:user/<name> or
+  // arn:aws:sts::<account>:assumed-role/<name>/<session>
+  const [resource, name] = arn.split(':')[5].split('/');
+  return {
+    type: resource === 'assumed-role' ? ('role' as const) : ('user' as const),
+    name,
+  };
 }
 
 async function main() {
-  const userName = await getIdentity();
+  const identity = await getIdentity();
   const app = new cdk.App();
   new TestStack(app, 'EC2KeyPair', {
     env: {
       account: process.env.CDK_DEFAULT_ACCOUNT,
       region: process.env.CDK_DEFAULT_REGION,
     },
-    currentUserName: userName,
+    currentIdentity: identity,
   });
 }
 
