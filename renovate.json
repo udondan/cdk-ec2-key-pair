@@ -11,8 +11,12 @@
   "automergeStrategy": "squash",
   "packageRules": [
     {
-      "matchPackagePatterns": [".*"],
+      "matchPackageNames": ["/.*/"],
       "semanticCommitType": "chore"
+    },
+    {
+      "matchPackageNames": ["aws-cloudformation-custom-resource"],
+      "minimumReleaseAge": null
     }
   ]
 }
