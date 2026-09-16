@@ -32,7 +32,6 @@
   "stability": "stable",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
-  "packageManager": "npm@12.0.2",
   "scripts": {
     "build": "jsii",
     "build:watch": "jsii -w",
