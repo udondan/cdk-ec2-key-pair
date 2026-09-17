@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.1.1](https://github.com/udondan/cdk-ec2-key-pair/compare/v5.1.0...v5.1.1) (2026-09-17)
+
+
+### Bug Fixes
+
+* update dependencies (maintenance release) ([aa46d32](https://github.com/udondan/cdk-ec2-key-pair/commit/aa46d32b2c3fb7944788486d60c59f9ef2479c34))
+
 ## [5.1.0](https://github.com/udondan/cdk-ec2-key-pair/compare/v5.0.0...v5.1.0) (2026-06-17)
 
 
