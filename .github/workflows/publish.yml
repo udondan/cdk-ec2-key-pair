@@ -59,9 +59,12 @@ jobs:
           PYPI_TRUSTED_PUBLISHER: "true"
 
       - name: Publish to NuGet
-        run: npx publib-nuget
+        run: |
+          export PIP_BREAK_SYSTEM_PACKAGES=1
+          npx publib-nuget
         env:
-          NUGET_API_KEY: ${{ secrets.NUGET_TOKEN }}
+          NUGET_TRUSTED_PUBLISHER: "true"
+          NUGET_USERNAME: udondan
 #
 #      - name: Publish to Maven GitHub
 #        run: npx publib-maven
