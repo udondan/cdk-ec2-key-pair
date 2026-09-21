@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: Enable auto-merge on release-please PR
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
+          GH_TOKEN: ${{ secrets.OVERRIDE_TOKEN }}
         run: |
           PRS=$(gh pr list \
             --repo "${{ github.repository }}" \
