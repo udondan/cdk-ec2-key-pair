@@ -73,7 +73,7 @@
     "eslint-plugin-prettier": "5.5.6",
     "jsii": "6.0.15",
     "jsii-pacmak": "1.140.0",
-    "prettier": "3.9.8",
+    "prettier": "3.9.9",
     "publib": "0.3.3",
     "ts-node": "10.9.2",
     "typescript": "6.0.3",
