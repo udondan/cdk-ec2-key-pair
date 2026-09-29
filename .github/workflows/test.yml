@@ -4,10 +4,6 @@ name: Test
 permissions:
   contents: read
 
-concurrency:
-  group: test
-  cancel-in-progress: false
-
 on:
   pull_request:
     branches:
@@ -15,7 +11,39 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Only one run at a time may use the AWS test account.
+  wait-for-turn:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    permissions:
+      actions: read
+      contents: write # lock refs under refs/wait-for-turn/
+      pull-requests: read # labels for label-weights
+    # A new commit on the branch cancels the waiting of the outdated run, so the
+    # new run doesn't queue behind it. Once a run has the turn, this job is
+    # done: test jobs that already run are never cancelled.
+    concurrency:
+      group: test-wait-${{ github.head_ref || github.ref }}
+      cancel-in-progress: true
+    steps:
+      # Queue order: manual PRs first, then Renovate updates, then the
+      # release-please PR, which is updated after every merge to main anyway.
+      # Fails right away if the branch is behind main. Branch protection
+      # requires PRs to be up to date, so testing an outdated branch is wasted
+      # time: it has to be updated and tested again.
+      - name: Wait for turn
+        uses: udondan/wait-for-turn@4a9f5171a1dbc3eb182410c772dae951e8ac26e3 # v1.3.0
+        with:
+          require-up-to-date: true
+          label-weights: |
+            autorelease: pending=-10
+            renovate=-5
+
   test:
+    needs: wait-for-turn
+    # A skipped job counts as passed for required checks. Run the job even if
+    # wait-for-turn failed and fail it in the first step.
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     permissions:
       id-token: write # OIDC token for assuming the AWS role
@@ -29,6 +57,10 @@ jobs:
       image: public.ecr.aws/jsii/superchain:1-bookworm-slim-node20
 
     steps:
+      - name: Check turn
+        if: needs.wait-for-turn.result != 'success'
+        run: exit 1
+
       - uses: actions/setup-node@v7
         with:
           node-version: 24.x
@@ -70,7 +102,7 @@ jobs:
           chmod 777 $GITHUB_WORKSPACE/lambda --recursive
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v6.3.0
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           role-to-assume: ${{ secrets.AWS_IAM_ROLE }}
           aws-region: ${{ secrets.AWS_REGION }}
