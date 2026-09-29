@@ -3,6 +3,7 @@
   "extends": ["github>udondan/renovate-config"],
   "packageRules": [
     {
+      "description": "Own package, no need to wait for the minimum release age.",
       "matchPackageNames": ["aws-cloudformation-custom-resource"],
       "minimumReleaseAge": null
     }
