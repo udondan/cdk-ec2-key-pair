@@ -1,21 +1,9 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
-  "semanticCommitType": "chore",
-  "mode": "full",
-  "semanticCommits": "enabled",
-  "prHourlyLimit": 1,
-  "rebaseWhen": "behind-base-branch",
-  "minimumReleaseAge": "3 days",
-  "automerge": true,
-  "automergeType": "pr",
-  "automergeStrategy": "squash",
+  "extends": ["github>udondan/renovate-config"],
   "packageRules": [
     {
-      "matchPackageNames": ["/.*/"],
-      "semanticCommitType": "chore"
-    },
-    {
+      "description": "Own package, no need to wait for the minimum release age.",
       "matchPackageNames": ["aws-cloudformation-custom-resource"],
       "minimumReleaseAge": null
     }
