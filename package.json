@@ -1,0 +1,86 @@
+{
+  "name": "cdk-ec2-key-pair",
+  "description": "CDK Construct for managing EC2 key pairs",
+  "version": "5.1.2",
+  "license": "Apache-2.0",
+  "author": {
+    "name": "Daniel Schroeder",
+    "url": "https://www.udondan.com/",
+    "twitter": "udondan"
+  },
+  "awscdkio": {
+    "twitter": "udondan"
+  },
+  "homepage": "https://github.com/udondan/cdk-ec2-key-pair",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/udondan/cdk-ec2-key-pair.git"
+  },
+  "bugs": {
+    "url": "https://github.com/udondan/cdk-ec2-key-pair/issues"
+  },
+  "keywords": [
+    "aws",
+    "cdk",
+    "aws-cdk",
+    "aws-cdk-construct",
+    "ec2",
+    "ec2-key-pair",
+    "cloudformation",
+    "cloudformation-custom-resource"
+  ],
+  "stability": "stable",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "build": "jsii",
+    "build:watch": "jsii -w",
+    "package": "jsii-pacmak",
+    "prepackage": "jsii && lambda/build"
+  },
+  "jsii": {
+    "excludeTypescript": [
+      "lambda",
+      "test"
+    ],
+    "outdir": "dist",
+    "targets": {
+      "python": {
+        "distName": "cdk-ec2-key-pair",
+        "module": "cdk_ec2_key_pair"
+      },
+      "dotnet": {
+        "namespace": "CDK.EC2.KeyPair",
+        "packageId": "CDK.EC2.KeyPair"
+      }
+    }
+  },
+  "devDependencies": {
+    "@aws-sdk/client-ec2": "3.1141.0",
+    "@aws-sdk/client-secrets-manager": "3.1141.0",
+    "@aws-sdk/client-sts": "3.1141.0",
+    "@swc/core": "1.16.12",
+    "@swc/helpers": "0.5.23",
+    "@types/node": "24.19.0",
+    "@types/sshpk": "1.17.5",
+    "@typescript-eslint/eslint-plugin": "8.70.1",
+    "@typescript-eslint/parser": "8.70.1",
+    "aws-cdk-lib": "2.271.0",
+    "aws-cloudformation-custom-resource": "5.1.1",
+    "constructs": "10.8.1",
+    "eslint": "10.11.0",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-prettier": "5.5.6",
+    "jsii": "6.0.15",
+    "jsii-pacmak": "1.140.0",
+    "prettier": "3.9.9",
+    "publib": "0.3.4",
+    "ts-node": "10.9.2",
+    "typescript": "7.0.2",
+    "typescript-eslint": "8.70.1"
+  },
+  "peerDependencies": {
+    "aws-cdk-lib": "^2.224.0",
+    "constructs": "^10.0.0"
+  }
+}

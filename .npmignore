@@ -1,0 +1,32 @@
+
+# Exclude typescript source and config
+*.ts
+tsconfig.json
+
+# Include javascript files and typescript declarations
+!*.js
+!*.d.ts
+
+# Exclude jsii outdir
+dist
+
+# Include .jsii
+!.jsii
+
+test
+.npm
+.github
+.release-please-manifest.json
+CHANGELOG.md
+Makefile
+release-please-config.json
+renovate.json
+tsconfig.tsbuildinfo
+*.tgz
+.eslintrc
+.prettierrc
+tsconfig-lint.json
+publish_output.txt
+
+lambda/*
+!lambda/code.zip
