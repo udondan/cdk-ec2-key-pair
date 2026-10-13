@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "aws-cloudformation-custom-resource": "5.1.1",
+    "aws-cloudformation-custom-resource": "5.1.2",
     "sshpk": "1.18.0"
   }
 }
