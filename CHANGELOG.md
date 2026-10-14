@@ -1,5 +1,23 @@
 # Changelog
 
+## [5.1.3](https://github.com/udondan/cdk-ec2-key-pair/compare/v5.1.2...v5.1.3) (2026-10-14)
+
+
+### Dependencies
+
+* **deps:** lock file maintenance ([#1621](https://github.com/udondan/cdk-ec2-key-pair/issues/1621)) ([6a2357a](https://github.com/udondan/cdk-ec2-key-pair/commit/6a2357a84f06ba8410784eb176603af16491db47))
+* **deps:** pin dependencies ([#1608](https://github.com/udondan/cdk-ec2-key-pair/issues/1608)) ([904392b](https://github.com/udondan/cdk-ec2-key-pair/commit/904392b85d48bc8d144046c9d323d92d20d61ab3))
+* **deps:** update aws-sdk-js-v3 monorepo to v3.1149.0 ([#1614](https://github.com/udondan/cdk-ec2-key-pair/issues/1614)) ([4ad08e9](https://github.com/udondan/cdk-ec2-key-pair/commit/4ad08e95f062791ac29ad82de4f492181dc24109))
+* **deps:** update dependency @swc/core to v1.16.13 ([#1609](https://github.com/udondan/cdk-ec2-key-pair/issues/1609)) ([64dcee0](https://github.com/udondan/cdk-ec2-key-pair/commit/64dcee09dd24729860ba02b71b53a826c024559e))
+* **deps:** update dependency @types/node to v24.19.2 ([#1610](https://github.com/udondan/cdk-ec2-key-pair/issues/1610)) ([609a281](https://github.com/udondan/cdk-ec2-key-pair/commit/609a281c08b94b7b60abf8506ca6689bfd5fdfb8))
+* **deps:** update dependency aws-cdk to ^2.1127.0 ([#1615](https://github.com/udondan/cdk-ec2-key-pair/issues/1615)) ([bf15690](https://github.com/udondan/cdk-ec2-key-pair/commit/bf15690816c8fdfb9d4eabd5434aa233d158a217))
+* **deps:** update dependency aws-cdk-lib to v2.273.0 ([#1616](https://github.com/udondan/cdk-ec2-key-pair/issues/1616)) ([d9f0383](https://github.com/udondan/cdk-ec2-key-pair/commit/d9f038345ec9de2fa93e7ebc67277700c0b5b94f))
+* **deps:** update dependency aws-cloudformation-custom-resource to v5.1.2 ([#1611](https://github.com/udondan/cdk-ec2-key-pair/issues/1611)) ([1e13c18](https://github.com/udondan/cdk-ec2-key-pair/commit/1e13c188f81ec706c574801f24bf8aa4bb4ec683))
+* **deps:** update dependency jsii to v6.0.17 ([#1612](https://github.com/udondan/cdk-ec2-key-pair/issues/1612)) ([063e8ce](https://github.com/udondan/cdk-ec2-key-pair/commit/063e8ceb74c8fa02f60f75779937590723554867))
+* **deps:** update dependency jsii-pacmak to v1.141.0 ([#1618](https://github.com/udondan/cdk-ec2-key-pair/issues/1618)) ([d19fe78](https://github.com/udondan/cdk-ec2-key-pair/commit/d19fe785e1c23c957506f604388603a68f94256e))
+* **deps:** update dependency publib to v0.3.6 ([#1613](https://github.com/udondan/cdk-ec2-key-pair/issues/1613)) ([c15e838](https://github.com/udondan/cdk-ec2-key-pair/commit/c15e83802bf2a02dd4de95bcdf78bd50c7fe8ea7))
+* **deps:** update lint tooling ([#1619](https://github.com/udondan/cdk-ec2-key-pair/issues/1619)) ([cd40f05](https://github.com/udondan/cdk-ec2-key-pair/commit/cd40f050c45cea58220e92c702a4a498c1806eb2))
+
 ## [5.1.2](https://github.com/udondan/cdk-ec2-key-pair/compare/v5.1.1...v5.1.2) (2026-09-30)
 
 
