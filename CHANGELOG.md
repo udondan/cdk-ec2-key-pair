@@ -1,5 +1,21 @@
 # Changelog
 
+## [5.1.4](https://github.com/udondan/cdk-ec2-key-pair/compare/v5.1.3...v5.1.4) (2026-10-19)
+
+
+### Dependencies
+
+* **deps:** lock file maintenance ([#1632](https://github.com/udondan/cdk-ec2-key-pair/issues/1632)) ([b66fadd](https://github.com/udondan/cdk-ec2-key-pair/commit/b66fadda191d430b50ed9c45ab2a3620326cfaa6))
+* **deps:** update aws-sdk-js-v3 monorepo to v3.1150.0 ([#1628](https://github.com/udondan/cdk-ec2-key-pair/issues/1628)) ([07075d8](https://github.com/udondan/cdk-ec2-key-pair/commit/07075d892eefa4df4732a1a9a0a4168bfbcc818a))
+* **deps:** update aws-sdk-js-v3 monorepo to v3.1151.0 ([#1630](https://github.com/udondan/cdk-ec2-key-pair/issues/1630)) ([0ddd616](https://github.com/udondan/cdk-ec2-key-pair/commit/0ddd616765a5ffc28f90fac4a13e5718a7bb89e9))
+* **deps:** update aws-sdk-js-v3 monorepo to v3.1152.0 ([#1631](https://github.com/udondan/cdk-ec2-key-pair/issues/1631)) ([b66c458](https://github.com/udondan/cdk-ec2-key-pair/commit/b66c4587a581b654dc385f426d0073e2543ea321))
+* **deps:** update dependency @swc/core to v1.16.18 ([#1623](https://github.com/udondan/cdk-ec2-key-pair/issues/1623)) ([62dcaa0](https://github.com/udondan/cdk-ec2-key-pair/commit/62dcaa06c1f1f30b24880965361ba656474784d9))
+* **deps:** update dependency eslint-plugin-prettier to v5.5.7 ([#1629](https://github.com/udondan/cdk-ec2-key-pair/issues/1629)) ([6591415](https://github.com/udondan/cdk-ec2-key-pair/commit/6591415a920279e8da7099aad706be6cf518a56a))
+* **deps:** update dependency jsii to v6.0.18 ([#1625](https://github.com/udondan/cdk-ec2-key-pair/issues/1625)) ([7f7bd70](https://github.com/udondan/cdk-ec2-key-pair/commit/7f7bd709f7f0642ed80d1e21df1ac43b44c54643))
+* **deps:** update dependency publib to v0.3.7 ([#1626](https://github.com/udondan/cdk-ec2-key-pair/issues/1626)) ([e914985](https://github.com/udondan/cdk-ec2-key-pair/commit/e914985f4672ebdf06683b55899b12be284aff65))
+* **deps:** update lint tooling to v8.71.2 ([#1627](https://github.com/udondan/cdk-ec2-key-pair/issues/1627)) ([2fda2c3](https://github.com/udondan/cdk-ec2-key-pair/commit/2fda2c3e6c838ced4edc9b38d72224af71539ce3))
+* **deps:** update udondan/wait-for-turn to v1.4.0 ([#1622](https://github.com/udondan/cdk-ec2-key-pair/issues/1622)) ([c3110b6](https://github.com/udondan/cdk-ec2-key-pair/commit/c3110b64d156c050f50faefb4a345f4f8f8955c9))
+
 ## [5.1.3](https://github.com/udondan/cdk-ec2-key-pair/compare/v5.1.2...v5.1.3) (2026-10-14)
 
 
