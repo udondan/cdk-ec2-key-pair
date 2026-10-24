@@ -74,7 +74,7 @@
     "jsii": "6.0.18",
     "jsii-pacmak": "1.141.0",
     "prettier": "3.9.10",
-    "publib": "0.3.7",
+    "publib": "0.3.9",
     "ts-node": "10.9.2",
     "typescript": "6.0.3",
     "typescript-eslint": "8.72.0"
