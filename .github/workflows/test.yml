@@ -53,9 +53,6 @@ jobs:
       run:
         shell: bash
 
-    container:
-      image: public.ecr.aws/jsii/superchain:1-bookworm-slim-node20
-
     steps:
       - name: Check turn
         if: needs.wait-for-turn.result != 'success'
@@ -64,6 +61,14 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 24.x
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: 3.x
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 8.0.x
 
       - name: Checkout code
         uses: actions/checkout@v7
