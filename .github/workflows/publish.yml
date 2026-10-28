@@ -19,6 +19,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 26.x
+          package-manager-cache: false # no cache restored from another run in the publish job
 
       - uses: actions/setup-python@v7
         with:
@@ -31,6 +32,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
         with:
+          persist-credentials: false
           fetch-depth: 1
 
       - name: Install dependencies
