@@ -21,6 +21,7 @@ CHANGELOG.md
 Makefile
 release-please-config.json
 renovate.json
+mise.toml
 tsconfig.tsbuildinfo
 *.tgz
 .eslintrc

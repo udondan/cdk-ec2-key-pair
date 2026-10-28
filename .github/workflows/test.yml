@@ -102,9 +102,9 @@ jobs:
       - name: Set Build Permissions
         run: |
           set -euo pipefail
-          mkdir $GITHUB_WORKSPACE/test/cdk.out
-          chmod 777 $GITHUB_WORKSPACE/test/cdk.out --recursive
-          chmod 777 $GITHUB_WORKSPACE/lambda --recursive
+          mkdir "$GITHUB_WORKSPACE/test/cdk.out"
+          chmod 777 "$GITHUB_WORKSPACE/test/cdk.out" --recursive
+          chmod 777 "$GITHUB_WORKSPACE/lambda" --recursive
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
@@ -116,6 +116,8 @@ jobs:
         run: |
           set -euo pipefail
 
+          # The backticks are a JMESPath literal, not a shell expansion.
+          # shellcheck disable=SC2016
           function get_secret_values() {
             AWS_REGION=us-east-1 aws secretsmanager describe-secret \
               --secret-id ec2-ssh-key/CFN-signing-key/private \
@@ -149,9 +151,25 @@ jobs:
           npx jsii-pacmak --verbose
           tree dist
 
+  # Doesn't wait for the AWS test account.
+  actions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          install_args: actionlint shellcheck
+
+      # Also runs shellcheck over every `run:` block.
+      - name: actionlint
+        run: actionlint
+
   # The only test check the ruleset requires, whatever jobs are added later.
   required:
-    needs: [wait-for-turn, test]
+    needs: [wait-for-turn, test, actions]
     if: always()
     runs-on: ubuntu-latest
     steps:
