@@ -12,24 +12,24 @@ on:
 
 jobs:
   # Only one run at a time may use the AWS test account.
-  wait-for-turn:
+  priority-boarding:
     permissions:
       actions: read
-      contents: write # lock refs under refs/wait-for-turn/
+      contents: write # lock refs under refs/priority-boarding/
       pull-requests: read # labels for label-weights
       statuses: write # queue position as commit status
     # Queue order, the concurrency group that cancels outdated waiting runs and
     # the rebase of branches that are behind main: see
-    # https://github.com/udondan/wait-for-turn#reusable-workflow
+    # https://github.com/udondan/priority-boarding#reusable-workflow
     # The rebase needs OVERRIDE_TOKEN: pushes with github.token don't start new runs.
-    uses: udondan/wait-for-turn/.github/workflows/wait-for-turn.yml@v1
+    uses: udondan/priority-boarding/.github/workflows/priority-boarding.yml@v1
     secrets:
       update-token: ${{ secrets.OVERRIDE_TOKEN }}
 
   test:
-    needs: wait-for-turn
+    needs: priority-boarding
     # A skipped job counts as passed for required checks. Run the job even if
-    # wait-for-turn failed and fail it in the first step.
+    # priority-boarding failed and fail it in the first step.
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     permissions:
@@ -42,7 +42,7 @@ jobs:
 
     steps:
       - name: Check turn
-        if: needs.wait-for-turn.result != 'success'
+        if: needs.priority-boarding.result != 'success'
         run: exit 1
 
       - uses: actions/setup-node@v7
@@ -162,7 +162,7 @@ jobs:
 
   # The only test check the ruleset requires, whatever jobs are added later.
   required:
-    needs: [wait-for-turn, test, actions]
+    needs: [priority-boarding, test, actions]
     if: always()
     runs-on: ubuntu-latest
     steps:
