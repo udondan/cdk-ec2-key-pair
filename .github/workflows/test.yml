@@ -1,0 +1,171 @@
+---
+name: Test
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  # Only one run at a time may use the AWS test account.
+  priority-boarding:
+    permissions:
+      actions: read
+      contents: write # lock refs under refs/priority-boarding/
+      pull-requests: read # labels for label-weights
+      statuses: write # queue position as commit status
+    # Queue order, the concurrency group that cancels outdated waiting runs and
+    # the rebase of branches that are behind main: see
+    # https://github.com/udondan/priority-boarding#reusable-workflow
+    # The rebase needs OVERRIDE_TOKEN: pushes with github.token don't start new runs.
+    uses: udondan/priority-boarding/.github/workflows/priority-boarding.yml@v1
+    secrets:
+      update-token: ${{ secrets.OVERRIDE_TOKEN }}
+
+  test:
+    needs: priority-boarding
+    # A skipped job counts as passed for required checks. Run the job even if
+    # priority-boarding failed and fail it in the first step.
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # OIDC token for assuming the AWS role
+      contents: read # checkout
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Check turn
+        if: needs.priority-boarding.result != 'success'
+        run: exit 1
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26.x
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: 3.x
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Cache node modules
+        id: cache-npm
+        uses: actions/cache@v6
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: .npm
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          make install
+          (cd test && make install)
+          sudo apt-get update
+          sudo apt-get install -y tree
+
+      - name: Linting
+        run: make eslint
+
+      - name: Set Build Permissions
+        run: |
+          set -euo pipefail
+          mkdir "$GITHUB_WORKSPACE/test/cdk.out"
+          chmod 777 "$GITHUB_WORKSPACE/test/cdk.out" --recursive
+          chmod 777 "$GITHUB_WORKSPACE/lambda" --recursive
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ secrets.AWS_IAM_ROLE }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Deploy & Destroy
+        run: |
+          set -euo pipefail
+
+          # The backticks are a JMESPath literal, not a shell expansion.
+          # shellcheck disable=SC2016
+          function get_secret_values() {
+            AWS_REGION=us-east-1 aws secretsmanager describe-secret \
+              --secret-id ec2-ssh-key/CFN-signing-key/private \
+              --query 'Tags[?Key==`Test`].Value' --output text
+          }
+
+          cd test
+          make deploy get-secret-values
+          if [ "$(get_secret_values)" != "default" ]; then
+            echo "Unexpected secret value"
+            exit 1
+          fi
+
+          TAG_VALUE=working make deploy
+          if [ "$(get_secret_values)" != "working" ]; then
+            echo "Unexpected secret value"
+            exit 1
+          fi
+
+          make DESTROY
+
+      - name: Build source w/ jsii
+        run: |
+          lambda/build
+          npx jsii
+          make validate-package
+
+      - name: Build packages w/ jsii-pacmak
+        run: |
+          set -euo pipefail
+          npx jsii-pacmak --verbose
+          tree dist
+
+  # Doesn't wait for the AWS test account.
+  actions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
+        with:
+          install_args: actionlint shellcheck zizmor
+
+      # Also runs shellcheck over every `run:` block.
+      - name: actionlint
+        run: actionlint
+
+      - name: zizmor
+        run: zizmor .
+        env:
+          GH_TOKEN: ${{ github.token }} # zizmor checks the actions online
+
+  # The only test check the ruleset requires, whatever jobs are added later.
+  required:
+    needs: [priority-boarding, test, actions]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check result
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1
