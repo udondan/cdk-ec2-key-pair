@@ -1,0 +1,80 @@
+---
+name: Publish packages
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26.x
+          package-manager-cache: false # no cache restored from another run in the publish job
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: 3.x
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Install dependencies
+        run: |
+          make install
+          sudo apt-get update
+          sudo apt-get install -y tree jq
+
+      - name: Build source w/ jsii
+        run: |
+          lambda/build
+          npx jsii
+          make validate-package
+
+      - name: Build packages w/ jsii-pacmak
+        run: |
+          npx jsii-pacmak --verbose
+          tree dist
+
+      - name: Publish to npm
+        run: npx publib-npm
+        env:
+          NPM_TRUSTED_PUBLISHER: "true"
+          NPM_CONFIG_PROVENANCE: "true"
+
+      - name: Publish to PyPI
+        run: |
+          export PIP_BREAK_SYSTEM_PACKAGES=1
+          npx publib-pypi
+        env:
+          PYPI_TRUSTED_PUBLISHER: "true"
+
+      - name: Publish to NuGet
+        run: |
+          export PIP_BREAK_SYSTEM_PACKAGES=1
+          npx publib-nuget
+        env:
+          NUGET_TRUSTED_PUBLISHER: "true"
+          NUGET_USERNAME: udondan
+#
+#      - name: Publish to Maven GitHub
+#        run: npx publib-maven
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#          GITHUB_REPOSITORY: ${{ github.repository }}
