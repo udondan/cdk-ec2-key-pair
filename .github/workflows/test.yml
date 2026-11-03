@@ -12,24 +12,24 @@ on:
 
 jobs:
   # Only one run at a time may use the AWS test account.
-  priority-boarding:
+  boarding-gate:
     permissions:
       actions: read
-      contents: write # lock refs under refs/priority-boarding/
+      contents: write # lock refs under refs/boarding-gate/
       pull-requests: read # labels for label-weights
       statuses: write # queue position as commit status
     # Queue order, the concurrency group that cancels outdated waiting runs and
     # the rebase of branches that are behind main: see
-    # https://github.com/udondan/priority-boarding#reusable-workflow
+    # https://github.com/udondan/boarding-gate#reusable-workflow
     # The rebase needs OVERRIDE_TOKEN: pushes with github.token don't start new runs.
-    uses: udondan/priority-boarding/.github/workflows/priority-boarding.yml@v1
+    uses: udondan/boarding-gate/.github/workflows/boarding-gate.yml@v1
     secrets:
       update-token: ${{ secrets.OVERRIDE_TOKEN }}
 
   test:
-    needs: priority-boarding
+    needs: boarding-gate
     # A skipped job counts as passed for required checks. Run the job even if
-    # priority-boarding failed and fail it in the first step.
+    # boarding-gate failed and fail it in the first step.
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     permissions:
@@ -42,7 +42,7 @@ jobs:
 
     steps:
       - name: Check turn
-        if: needs.priority-boarding.result != 'success'
+        if: needs.boarding-gate.result != 'success'
         run: exit 1
 
       - uses: actions/setup-node@v7
@@ -162,7 +162,7 @@ jobs:
 
   # The only test check the ruleset requires, whatever jobs are added later.
   required:
-    needs: [priority-boarding, test, actions]
+    needs: [boarding-gate, test, actions]
     if: always()
     runs-on: ubuntu-latest
     steps:
