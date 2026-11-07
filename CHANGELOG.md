@@ -1,5 +1,22 @@
 # Changelog
 
+## [5.1.7](https://github.com/udondan/cdk-ec2-key-pair/compare/v5.1.6...v5.1.7) (2026-11-07)
+
+
+### Dependencies
+
+* **deps:** update aws-sdk-js-v3 monorepo to v3.1161.0 ([#1675](https://github.com/udondan/cdk-ec2-key-pair/issues/1675)) ([ca02718](https://github.com/udondan/cdk-ec2-key-pair/commit/ca02718054410ce708f6c3a88adaf8b846955d9a))
+* **deps:** update dependency @swc/core to v1.16.21 ([#1677](https://github.com/udondan/cdk-ec2-key-pair/issues/1677)) ([d926562](https://github.com/udondan/cdk-ec2-key-pair/commit/d92656218b0ea7d0a4a664e3156dc7ba8cff593b))
+* **deps:** update dependency @swc/helpers to v0.5.24 ([#1685](https://github.com/udondan/cdk-ec2-key-pair/issues/1685)) ([6a58bb1](https://github.com/udondan/cdk-ec2-key-pair/commit/6a58bb146b633e00d0a49765b9a783b1bb68072c))
+* **deps:** update dependency aws-cdk to v2.1147.0 ([#1676](https://github.com/udondan/cdk-ec2-key-pair/issues/1676)) ([59b286b](https://github.com/udondan/cdk-ec2-key-pair/commit/59b286b31441c85c45af768d53f1adcc2a26d7ee))
+* **deps:** update dependency aws-cloudformation-custom-resource to v5.1.5 ([#1672](https://github.com/udondan/cdk-ec2-key-pair/issues/1672)) ([fcc6ce7](https://github.com/udondan/cdk-ec2-key-pair/commit/fcc6ce71f45694cc77696c4af6176bcc16e1a894))
+* **deps:** update dependency eslint to v10.14.0 ([#1673](https://github.com/udondan/cdk-ec2-key-pair/issues/1673)) ([dd25b69](https://github.com/udondan/cdk-ec2-key-pair/commit/dd25b6967ef255f0afede7e36c9ef5a6765e804d))
+* **deps:** update dependency jsii to v6.0.20 ([#1681](https://github.com/udondan/cdk-ec2-key-pair/issues/1681)) ([5eef800](https://github.com/udondan/cdk-ec2-key-pair/commit/5eef8008b461598b91acdb90d97a54d960cd81dc))
+* **deps:** update dependency publib to v0.3.12 ([#1682](https://github.com/udondan/cdk-ec2-key-pair/issues/1682)) ([b9b2be6](https://github.com/udondan/cdk-ec2-key-pair/commit/b9b2be6b5e60d3611e7739bca971aa90333c5a09))
+* **deps:** update dependency zizmor to v1.32.0 ([#1684](https://github.com/udondan/cdk-ec2-key-pair/issues/1684)) ([5615649](https://github.com/udondan/cdk-ec2-key-pair/commit/561564924e5e4eed4d4673841c4418fd1cf9178a))
+* **deps:** update jdx/mise-action action to v5.2.5 ([#1680](https://github.com/udondan/cdk-ec2-key-pair/issues/1680)) ([79535c5](https://github.com/udondan/cdk-ec2-key-pair/commit/79535c5d0aca8bff837d8e1c2b8832c32c9adfcb))
+* **deps:** update jdx/mise-action action to v5.2.6 ([#1683](https://github.com/udondan/cdk-ec2-key-pair/issues/1683)) ([c5cd038](https://github.com/udondan/cdk-ec2-key-pair/commit/c5cd03874ae7ef183433ae45aad9cee151979a85))
+
 ## [5.1.6](https://github.com/udondan/cdk-ec2-key-pair/compare/v5.1.5...v5.1.6) (2026-11-02)
 
 
