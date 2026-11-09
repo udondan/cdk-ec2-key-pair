@@ -33,6 +33,13 @@ const cleanID = ID.replace(/:+/g, '-');
 const lambdaTimeout = 3; // minutes
 
 /**
+ * Secrets Manager allows no recovery window or one of 7 to 30 days
+ */
+function isValidRemovalWindow(days: number): boolean {
+  return days === 0 || (days >= 7 && days <= 30);
+}
+
+/**
  * Definition of EC2 Key Pair
  */
 export interface KeyPairProps extends ResourceProps {
@@ -244,45 +251,7 @@ export class KeyPair extends Resource implements ITaggable, IKeyPair {
   constructor(scope: Construct, id: string, props: KeyPairProps) {
     super(scope, id);
 
-    if (
-      props.removeKeySecretsAfterDays &&
-      (props.removeKeySecretsAfterDays < 0 ||
-        (props.removeKeySecretsAfterDays > 0 &&
-          props.removeKeySecretsAfterDays < 7) ||
-        props.removeKeySecretsAfterDays > 30)
-    ) {
-      Annotations.of(this).addError(
-        `Parameter removeKeySecretsAfterDays must be 0 or between 7 and 30. Got ${props.removeKeySecretsAfterDays}`,
-      );
-    }
-
-    if (
-      props.publicKey?.length &&
-      props.publicKeyFormat !== undefined &&
-      props.publicKeyFormat !== PublicKeyFormat.OPENSSH
-    ) {
-      Annotations.of(this).addError(
-        'When importing a key, the format has to be of type OpenSSH',
-      );
-    }
-
-    if (
-      props.lambdaRuntime !== undefined &&
-      props.lambdaRuntime.family !== aws_lambda.RuntimeFamily.NODEJS
-    ) {
-      Annotations.of(this).addError(
-        `Parameter lambdaRuntime must be a Node.js runtime. Got ${props.lambdaRuntime.name}`,
-      );
-    }
-
-    if (
-      props.keyType == KeyType.ED25519 &&
-      props.publicKeyFormat == PublicKeyFormat.PKCS1
-    ) {
-      Annotations.of(this).addError(
-        'The public key format PKCS1 is not supported for key type ED25519',
-      );
-    }
+    this.validateProps(props);
 
     const stack = Stack.of(this).stackName;
 
@@ -351,28 +320,57 @@ export class KeyPair extends Resource implements ITaggable, IKeyPair {
       );
     }
 
-    if (typeof props.kms !== 'undefined') {
-      props.kms.grantEncryptDecrypt(this.lambdaFunction.role!);
-      key.node.addDependency(props.kms);
-      key.node.addDependency(this.lambdaFunction.role!);
-    }
-
-    if (typeof props.kmsPrivateKey !== 'undefined') {
-      props.kmsPrivateKey.grantEncryptDecrypt(this.lambdaFunction.role!);
-      key.node.addDependency(props.kmsPrivateKey);
-      key.node.addDependency(this.lambdaFunction.role!);
-    }
-
-    if (typeof props.kmsPublicKey !== 'undefined') {
-      props.kmsPublicKey.grantEncryptDecrypt(this.lambdaFunction.role!);
-      key.node.addDependency(props.kmsPublicKey);
-      key.node.addDependency(this.lambdaFunction.role!);
+    const role = this.lambdaFunction.role!;
+    for (const kmsKey of [props.kms, props.kmsPrivateKey, props.kmsPublicKey]) {
+      if (kmsKey !== undefined) {
+        kmsKey.grantEncryptDecrypt(role);
+        key.node.addDependency(kmsKey, role);
+      }
     }
 
     this.publicKeyValue = key.getAttString('PublicKeyValue');
     this.keyPairName = key.getAttString('KeyPairName');
     this.keyPairID = key.getAttString('KeyPairID');
     this.keyPairFingerprint = key.getAttString('KeyPairFingerprint');
+  }
+
+  private validateProps(props: KeyPairProps): void {
+    if (
+      props.removeKeySecretsAfterDays !== undefined &&
+      !isValidRemovalWindow(props.removeKeySecretsAfterDays)
+    ) {
+      Annotations.of(this).addError(
+        `Parameter removeKeySecretsAfterDays must be 0 or between 7 and 30. Got ${props.removeKeySecretsAfterDays}`,
+      );
+    }
+
+    if (
+      props.publicKey?.length &&
+      props.publicKeyFormat !== undefined &&
+      props.publicKeyFormat !== PublicKeyFormat.OPENSSH
+    ) {
+      Annotations.of(this).addError(
+        'When importing a key, the format has to be of type OpenSSH',
+      );
+    }
+
+    if (
+      props.lambdaRuntime !== undefined &&
+      props.lambdaRuntime.family !== aws_lambda.RuntimeFamily.NODEJS
+    ) {
+      Annotations.of(this).addError(
+        `Parameter lambdaRuntime must be a Node.js runtime. Got ${props.lambdaRuntime.name}`,
+      );
+    }
+
+    if (
+      props.keyType == KeyType.ED25519 &&
+      props.publicKeyFormat == PublicKeyFormat.PKCS1
+    ) {
+      Annotations.of(this).addError(
+        'The public key format PKCS1 is not supported for key type ED25519',
+      );
+    }
   }
 
   private ensureLambda(
@@ -485,11 +483,8 @@ export class KeyPair extends Resource implements ITaggable, IKeyPair {
    * @internal
    */
   public _isOsCompatible(osType: OperatingSystemType): boolean {
-    switch (this.keyType) {
-      case KeyType.ED25519:
-        return osType !== OperatingSystemType.WINDOWS;
-      default:
-        return true;
-    }
+    return (
+      this.keyType !== KeyType.ED25519 || osType !== OperatingSystemType.WINDOWS
+    );
   }
 }

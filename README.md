@@ -10,6 +10,7 @@
 [![Test](https://github.com/udondan/cdk-ec2-key-pair/workflows/Test/badge.svg)](https://github.com/udondan/cdk-ec2-key-pair/actions?query=workflow%3ATest)
 [![Docs](https://img.shields.io/badge/Construct%20Hub-cdk--ec2--key--pair-orange)][docs]
 [![codecov](https://codecov.io/gh/udondan/cdk-ec2-key-pair/graph/badge.svg)](https://codecov.io/gh/udondan/cdk-ec2-key-pair)
+[![Maintainability](https://qlty.sh/gh/udondan/projects/cdk-ec2-key-pair/maintainability.svg)][qlty]
 [![GitHub](https://img.shields.io/github/license/udondan/cdk-ec2-key-pair)][license]
 
 [![npm package](https://img.shields.io/npm/v/cdk-ec2-key-pair?color=brightgreen)][npm]
@@ -220,3 +221,4 @@ const trustedKeyGroupForCF = new cloudfront.KeyGroup(
 [docs]: https://constructs.dev/packages/cdk-ec2-key-pair
 [source]: https://github.com/udondan/cdk-ec2-key-pair
 [license]: https://github.com/udondan/cdk-ec2-key-pair/blob/main/LICENSE
+[qlty]: https://qlty.sh/gh/udondan/projects/cdk-ec2-key-pair
