@@ -20,6 +20,12 @@ install:
 	@npm clean-install --prefer-offline --cache .npm
 	@npm list
 
+# A directory named test exists, so make must not treat the target as a file.
+.PHONY: test
+test:
+	@echo -e "$(TARGET_COLOR)Running unit tests$(NO_COLOR)"
+	@npm run test:coverage
+
 eslint:
 	@echo -e "$(TARGET_COLOR)Running eslint $$(npx eslint --version)$(NO_COLOR)"
 	@npx eslint .; \

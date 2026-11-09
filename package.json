@@ -36,12 +36,16 @@
     "build": "jsii",
     "build:watch": "jsii -w",
     "package": "jsii-pacmak",
-    "prepackage": "jsii && lambda/build"
+    "prepackage": "jsii && lambda/build",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "jsii": {
     "excludeTypescript": [
       "lambda",
-      "test"
+      "test",
+      "tests",
+      "vitest.config.mts"
     ],
     "outdir": "dist",
     "targets": {
@@ -65,6 +69,7 @@
     "@types/sshpk": "1.17.5",
     "@typescript-eslint/eslint-plugin": "8.72.1",
     "@typescript-eslint/parser": "8.72.1",
+    "@vitest/coverage-v8": "5.1.0",
     "aws-cdk-lib": "2.275.0",
     "aws-cloudformation-custom-resource": "5.1.5",
     "constructs": "10.8.1",
@@ -75,9 +80,11 @@
     "jsii-pacmak": "1.142.0",
     "prettier": "3.9.10",
     "publib": "0.3.12",
+    "sshpk": "1.18.0",
     "ts-node": "10.9.2",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.72.1"
+    "typescript-eslint": "8.72.1",
+    "vitest": "5.1.0"
   },
   "peerDependencies": {
     "aws-cdk-lib": "^2.224.0",

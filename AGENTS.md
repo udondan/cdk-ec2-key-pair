@@ -5,6 +5,7 @@
 - **Build**: `make build` (uses jsii compiler)
 - **Lint**: `make eslint`
 - **Package**: `make package` (builds + runs jsii-pacmak for multi-language support)
+- **Unit tests**: `make test` (vitest with coverage, tests in `tests/`). Coverage of `lib/` and `lambda/` must stay at 100 %; vitest and Codecov both fail below that.
 - **Test (full)**: `cd test && make deploy && make DESTROY` (deploys to AWS and destroys)
 - **Lambda build**: `lambda/build` (must run before jsii)
 

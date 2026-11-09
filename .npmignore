@@ -14,6 +14,10 @@ dist
 !.jsii
 
 test
+tests
+coverage
+codecov.yml
+vitest.config.mts
 .npm
 .github
 .release-please-manifest.json

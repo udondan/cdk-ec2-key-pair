@@ -1,0 +1,20 @@
+---
+codecov:
+  # The Coverage job of the Test workflow waits for the Codecov checks, so
+  # Codecov must not wait for the other checks in turn.
+  require_ci_to_pass: false
+  notify:
+    wait_for_ci: false
+    # Only the Unit tests job uploads coverage.
+    after_n_builds: 1
+
+coverage:
+  status:
+    project:
+      default:
+        # Every line of the project must be tested.
+        target: 100%
+    patch:
+      default:
+        # Every line a pull request changes must be tested.
+        target: 100%
