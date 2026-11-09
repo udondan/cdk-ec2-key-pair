@@ -1,10 +1,10 @@
+# CDK EC2 Key Pair
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/udondan/cdk-ec2-key-pair/main/.github/header-dark.webp">
   <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/udondan/cdk-ec2-key-pair/main/.github/header-light.webp">
   <img alt="CDK EC2 Key Pair" src="https://raw.githubusercontent.com/udondan/cdk-ec2-key-pair/main/.github/header-light.webp">
 </picture>
-
-# CDK EC2 Key Pair
 
 [![Source](https://img.shields.io/badge/Source-GitHub-blue?logo=github)][source]
 [![Test](https://github.com/udondan/cdk-ec2-key-pair/workflows/Test/badge.svg)](https://github.com/udondan/cdk-ec2-key-pair/actions?query=workflow%3ATest)
