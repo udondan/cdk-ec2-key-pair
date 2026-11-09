@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.1.7](https://github.com/udondan/cdk-ec2-key-pair/compare/v5.1.6...v5.1.7) (2026-11-09)
+
+
+### Dependencies
+
+* **deps:** update dependency aws-cloudformation-custom-resource to v5.1.5 ([#1672](https://github.com/udondan/cdk-ec2-key-pair/issues/1672)) ([fcc6ce7](https://github.com/udondan/cdk-ec2-key-pair/commit/fcc6ce71f45694cc77696c4af6176bcc16e1a894))
+
 ## [5.1.6](https://github.com/udondan/cdk-ec2-key-pair/compare/v5.1.5...v5.1.6) (2026-11-02)
 
 
