@@ -20,6 +20,7 @@ codecov.yml
 vitest.config.mts
 .npm
 .github
+.qlty
 .release-please-manifest.json
 CHANGELOG.md
 Makefile
