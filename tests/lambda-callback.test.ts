@@ -11,16 +11,14 @@ const callbackArgs = vi.hoisted((): { error: unknown } => ({
 }));
 
 vi.mock('aws-cloudformation-custom-resource', () => ({
-  CustomResource: class {
-    constructor(
-      _event: unknown,
-      _context: unknown,
-      callback: (e?: unknown) => void,
-    ) {
-      setTimeout(() => callback(callbackArgs.error));
-    }
-  },
-  StandardLogger: class {},
+  CustomResource: vi.fn(function (
+    _event: unknown,
+    _context: unknown,
+    callback: (e?: unknown) => void,
+  ) {
+    setTimeout(() => callback(callbackArgs.error));
+  }),
+  StandardLogger: vi.fn(),
 }));
 
 const event = {
