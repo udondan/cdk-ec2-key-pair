@@ -16,3 +16,4 @@ lambda/*
 tsconfig.tsbuildinfo
 .npm
 *.tgz
+coverage

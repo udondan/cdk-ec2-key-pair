@@ -1,9 +1,17 @@
 # CDK EC2 Key Pair
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/udondan/cdk-ec2-key-pair/main/.github/header-dark.webp">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/udondan/cdk-ec2-key-pair/main/.github/header-light.webp">
+  <img alt="CDK EC2 Key Pair" src="https://raw.githubusercontent.com/udondan/cdk-ec2-key-pair/main/.github/header-light.webp">
+</picture>
+
 [![Source](https://img.shields.io/badge/Source-GitHub-blue?logo=github)][source]
 [![Test](https://github.com/udondan/cdk-ec2-key-pair/workflows/Test/badge.svg)](https://github.com/udondan/cdk-ec2-key-pair/actions?query=workflow%3ATest)
-[![GitHub](https://img.shields.io/github/license/udondan/cdk-ec2-key-pair)][license]
 [![Docs](https://img.shields.io/badge/Construct%20Hub-cdk--ec2--key--pair-orange)][docs]
+[![codecov](https://codecov.io/gh/udondan/cdk-ec2-key-pair/graph/badge.svg)](https://codecov.io/gh/udondan/cdk-ec2-key-pair)
+[![Maintainability](https://qlty.sh/gh/udondan/projects/cdk-ec2-key-pair/maintainability.svg)][qlty]
+[![GitHub](https://img.shields.io/github/license/udondan/cdk-ec2-key-pair)][license]
 
 [![npm package](https://img.shields.io/npm/v/cdk-ec2-key-pair?color=brightgreen)][npm]
 [![PyPI package](https://img.shields.io/pypi/v/cdk-ec2-key-pair?color=brightgreen)][PyPI]
@@ -213,3 +221,4 @@ const trustedKeyGroupForCF = new cloudfront.KeyGroup(
 [docs]: https://constructs.dev/packages/cdk-ec2-key-pair
 [source]: https://github.com/udondan/cdk-ec2-key-pair
 [license]: https://github.com/udondan/cdk-ec2-key-pair/blob/main/LICENSE
+[qlty]: https://qlty.sh/gh/udondan/projects/cdk-ec2-key-pair
