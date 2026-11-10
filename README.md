@@ -8,17 +8,21 @@
 
 [![Source](https://img.shields.io/badge/Source-GitHub-blue?logo=github)][source]
 [![Test](https://github.com/udondan/cdk-ec2-key-pair/workflows/Test/badge.svg)](https://github.com/udondan/cdk-ec2-key-pair/actions?query=workflow%3ATest)
-[![Docs](https://img.shields.io/badge/Construct%20Hub-cdk--ec2--key--pair-orange)][docs]
+[![Construct Hub](https://img.shields.io/badge/Construct%20Hub-cdk--ec2--key--pair-blue)][docs]
 [![codecov](https://codecov.io/gh/udondan/cdk-ec2-key-pair/graph/badge.svg)](https://codecov.io/gh/udondan/cdk-ec2-key-pair)
 [![Maintainability](https://qlty.sh/gh/udondan/projects/cdk-ec2-key-pair/maintainability.svg)][qlty]
 [![GitHub](https://img.shields.io/github/license/udondan/cdk-ec2-key-pair)][license]
 
-[![npm package](https://img.shields.io/npm/v/cdk-ec2-key-pair?color=brightgreen)][npm]
-[![PyPI package](https://img.shields.io/pypi/v/cdk-ec2-key-pair?color=brightgreen)][PyPI]
+[![npm][npm-badge]][npm]
+[![PyPI][pypi-badge]][pypi]
+[![Maven Central][maven-badge]][maven]
+[![NuGet][nuget-badge]][nuget]
+[![Go][go-badge]][go]
 
 ![Downloads](https://img.shields.io/badge/-DOWNLOADS:-brightgreen?color=gray)
 [![npm](https://img.shields.io/npm/dt/cdk-ec2-key-pair?label=npm&color=blueviolet)][npm]
-[![PyPI](https://img.shields.io/pypi/dm/cdk-ec2-key-pair?label=pypi&color=blueviolet)][PyPI]
+[![PyPI](https://img.shields.io/pypi/dm/cdk-ec2-key-pair?label=pypi&color=blueviolet)][pypi]
+[![NuGet](https://img.shields.io/nuget/dt/CDK.EC2.KeyPair?label=nuget&color=blueviolet)][nuget]
 
 [AWS CDK] L3 construct for managing [EC2 Key Pairs].
 
@@ -43,12 +47,36 @@ Support for public key format in:
 
 ## Installation
 
-This package has peer dependencies, which need to be installed along in the expected version.
+The construct is available for TypeScript/JavaScript, Python, Java, C#/.NET and Go:
 
-For TypeScript/NodeJS, add these to your `dependencies` in `package.json`. For Python, add these to your `requirements.txt`:
+| Language                | Package                                |
+| ----------------------- | -------------------------------------- |
+| TypeScript / JavaScript | [![npm][npm-badge]][npm]               |
+| Python                  | [![PyPI][pypi-badge]][pypi]            |
+| Java                    | [![Maven Central][maven-badge]][maven] |
+| C# / .NET               | [![NuGet][nuget-badge]][nuget]         |
+| Go                      | [![Go][go-badge]][go]                  |
 
-- cdk-ec2-key-pair
-- aws-cdk-lib (^2.116.0)
+```bash
+# TypeScript / JavaScript
+npm install cdk-ec2-key-pair
+
+# Python
+pip install cdk-ec2-key-pair
+
+# Java (Maven), with the version of the release
+#   com.udondan:cdk-ec2-key-pair
+
+# C# / .NET
+dotnet add package CDK.EC2.KeyPair
+
+# Go
+go get udondan.github.io/cdk-ec2-key-pair/go/cdkec2keypair/v5
+```
+
+The package has peer dependencies, which need to be installed along with it:
+
+- aws-cdk-lib (^2.224.0)
 - constructs (^10.0.0)
 
 ## Usage
@@ -217,7 +245,15 @@ const trustedKeyGroupForCF = new cloudfront.KeyGroup(
 [EC2 Key Pairs]: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html
 [AWS Secrets Manager]: https://aws.amazon.com/secrets-manager/
 [npm]: https://www.npmjs.com/package/cdk-ec2-key-pair
-[PyPI]: https://pypi.org/project/cdk-ec2-key-pair/
+[npm-badge]: https://img.shields.io/npm/v/cdk-ec2-key-pair?label=npm&color=3178C6&logo=typescript&logoColor=white
+[pypi]: https://pypi.org/project/cdk-ec2-key-pair/
+[pypi-badge]: https://img.shields.io/pypi/v/cdk-ec2-key-pair?label=PyPI&color=3776AB&logo=python&logoColor=white
+[maven]: https://central.sonatype.com/artifact/com.udondan/cdk-ec2-key-pair
+[maven-badge]: https://img.shields.io/maven-central/v/com.udondan/cdk-ec2-key-pair?label=Maven%20Central&color=ED8B00&logo=openjdk&logoColor=white
+[nuget]: https://www.nuget.org/packages/CDK.EC2.KeyPair
+[nuget-badge]: https://img.shields.io/nuget/v/CDK.EC2.KeyPair?label=NuGet&color=512BD4&logo=dotnet&logoColor=white
+[go]: https://pkg.go.dev/udondan.github.io/cdk-ec2-key-pair/go/cdkec2keypair/v5
+[go-badge]: https://img.shields.io/github/v/release/udondan/cdk-ec2-key-pair?label=Go&color=00ADD8&logo=go&logoColor=white
 [docs]: https://constructs.dev/packages/cdk-ec2-key-pair
 [source]: https://github.com/udondan/cdk-ec2-key-pair
 [license]: https://github.com/udondan/cdk-ec2-key-pair/blob/main/LICENSE

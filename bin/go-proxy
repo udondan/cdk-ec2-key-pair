@@ -1,0 +1,154 @@
+#!/usr/bin/env python3
+"""
+Builds the Go module of cdk-ec2-key-pair as a static Go module proxy, served by GitHub Pages.
+
+The module path is udondan.github.io/cdk-ec2-key-pair/go/cdkec2keypair/v<major>, as written into
+go.mod by jsii-pacmak. The pages at this path have a go-import meta tag pointing to the proxy at
+https://udondan.github.io/cdk-ec2-key-pair/go, which serves the files of the GOPROXY protocol
+(@v/list, .info, .mod, .zip).
+
+  go-proxy zip <module dir> <version> <zip>   writes the module zip of a version
+  go-proxy site <out dir> <zip>...            writes the proxy and the go-import pages for zips
+                                              written by `go-proxy zip`
+"""
+
+import json
+import os
+import re
+import sys
+import zipfile
+from datetime import datetime, timezone
+from html import escape
+
+SITE = 'udondan.github.io/cdk-ec2-key-pair'
+PROXY = f'https://{SITE}/go'
+REPO = 'https://github.com/udondan/cdk-ec2-key-pair'
+ZIP_NAME = re.compile(r'(?:^|/)cdk-ec2-key-pair-go-module-(v\d+\.\d+\.\d+)\.zip$')
+MODULE_LINE = re.compile(r'^module\s+(\S+)\s*$', re.MULTILINE)
+
+
+def module_path(go_mod):
+    """The module path of the content of a go.mod file, which must be served by this site"""
+    match = MODULE_LINE.search(go_mod)
+    if not match:
+        sys.exit('go.mod has no module line')
+    module = match.group(1)
+    if not module.startswith(f'{SITE}/go/'):
+        sys.exit(f'The module {module} is not under {SITE}/go/')
+    return module
+
+
+def write_zip(module_dir, version, path):
+    """Writes the module zip in the layout the go command expects: `<module>@<version>/<file>`"""
+    if not version.startswith('v'):
+        version = f'v{version}'
+    match = ZIP_NAME.search(path)
+    if not match or match.group(1) != version:
+        sys.exit(f'Not the name of the Go module zip of {version}: {path}')
+    with open(os.path.join(module_dir, 'go.mod'), encoding='utf-8') as file:
+        module = module_path(file.read())
+    major = version.split('.')[0]
+    if major not in ('v0', 'v1') and not module.endswith(f'/{major}'):
+        sys.exit(f'The module {module} has no suffix /{major} for version {version}')
+    # all files share one timestamp, which is also the version time in the .info file
+    timestamp = datetime.now(timezone.utc).timetuple()[:6]
+    files = []
+    for root, dirs, names in os.walk(module_dir):
+        dirs.sort()
+        for name in sorted(names):
+            if name == 'go.mod' and root != module_dir:
+                sys.exit(f'Nested module in {root}')
+            files.append(os.path.join(root, name))
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+    with zipfile.ZipFile(path, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
+        for file in files:
+            name = os.path.relpath(file, module_dir).replace(os.sep, '/')
+            info = zipfile.ZipInfo(f'{module}@{version}/{name}', timestamp)
+            info.compress_type = zipfile.ZIP_DEFLATED
+            info.external_attr = 0o644 << 16
+            with open(file, 'rb') as content:
+                archive.writestr(info, content.read(), compresslevel=9)
+    print(f'Wrote {path} for {module}: {len(files)} files, {os.path.getsize(path)} bytes')
+
+
+def go_import_page(module, path):
+    title = escape(path)
+    return f'''<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="go-import" content="{module} mod {PROXY}">
+    <title>{title}</title>
+  </head>
+  <body>
+    <p><code>go get {module}</code></p>
+    <p><a href="{REPO}">cdk-ec2-key-pair on GitHub</a></p>
+  </body>
+</html>
+'''
+
+
+def write_site(out_dir, zips):
+    versions = {}
+    packages = {}
+    for path in zips:
+        match = ZIP_NAME.search(path)
+        if not match:
+            sys.exit(f'Not a Go module zip of cdk-ec2-key-pair: {path}')
+        version = match.group(1)
+        with zipfile.ZipFile(path) as archive:
+            names = archive.namelist()
+            mod_name = next((name for name in names if name.endswith(f'@{version}/go.mod')), None)
+            if not mod_name:
+                sys.exit(f'{path} has no go.mod of {version}')
+            prefix = mod_name[: -len('go.mod')]
+            module = module_path(archive.read(mod_name).decode('utf-8'))
+            if prefix != f'{module}@{version}/':
+                sys.exit(f'{path} is not the module {module}')
+            if any(not name.startswith(prefix) for name in names):
+                sys.exit(f'{path} has files outside of {prefix}')
+            mod = archive.read(mod_name)
+            time = datetime(*archive.getinfo(mod_name).date_time, tzinfo=timezone.utc)
+            packages.setdefault(module, set()).update(
+                os.path.dirname(name[len(prefix) :]) for name in names if name.endswith('.go')
+            )
+        proxy_dir = os.path.join(out_dir, 'go', module, '@v')
+        os.makedirs(proxy_dir, exist_ok=True)
+        with open(os.path.join(proxy_dir, f'{version}.mod'), 'wb') as file:
+            file.write(mod)
+        with open(os.path.join(proxy_dir, f'{version}.info'), 'w', encoding='utf-8') as file:
+            json.dump({'Version': version, 'Time': time.strftime('%Y-%m-%dT%H:%M:%SZ')}, file)
+        with open(path, 'rb') as source, open(os.path.join(proxy_dir, f'{version}.zip'), 'wb') as target:
+            target.write(source.read())
+        versions.setdefault(module, []).append(version)
+
+    for module, module_versions in versions.items():
+        with open(os.path.join(out_dir, 'go', module, '@v', 'list'), 'w', encoding='utf-8') as file:
+            file.writelines(f'{version}\n' for version in module_versions)
+
+        # go-import pages for the module and every package in it, under the module path
+        module_page_dir = os.path.join(out_dir, os.path.relpath(module, SITE))
+        for package in sorted(packages[module]):
+            page_dir = os.path.join(module_page_dir, package)
+            os.makedirs(page_dir, exist_ok=True)
+            with open(os.path.join(page_dir, 'index.html'), 'w', encoding='utf-8') as file:
+                file.write(go_import_page(module, f'{module}/{package}'.rstrip('/')))
+
+    with open(os.path.join(out_dir, 'index.html'), 'w', encoding='utf-8') as file:
+        file.write(f'<!doctype html>\n<meta http-equiv="refresh" content="0; url={REPO}">\n')
+    open(os.path.join(out_dir, '.nojekyll'), 'w').close()
+    for module, module_versions in versions.items():
+        print(f'Wrote the Go module proxy of {module} for {len(module_versions)} versions to {out_dir}')
+
+
+def main():
+    if len(sys.argv) == 5 and sys.argv[1] == 'zip':
+        write_zip(*sys.argv[2:])
+    elif len(sys.argv) >= 4 and sys.argv[1] == 'site':
+        write_site(sys.argv[2], sys.argv[3:])
+    else:
+        sys.exit(__doc__)
+
+
+if __name__ == '__main__':
+    main()
