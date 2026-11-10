@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.2.0](https://github.com/udondan/cdk-ec2-key-pair/compare/v5.1.7...v5.2.0) (2026-11-10)
+
+
+### Features
+
+* publish to Maven Central and as Go module ([#1700](https://github.com/udondan/cdk-ec2-key-pair/issues/1700)) ([7314e2d](https://github.com/udondan/cdk-ec2-key-pair/commit/7314e2d092b75815ea171c11951d3e9bf24bdcfc))
+
 ## [5.1.7](https://github.com/udondan/cdk-ec2-key-pair/compare/v5.1.6...v5.1.7) (2026-11-09)
 
 
