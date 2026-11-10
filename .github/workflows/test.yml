@@ -63,6 +63,16 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version: stable
+          cache: false
+
       - name: Checkout code
         uses: actions/checkout@v7
         with:
@@ -144,6 +154,9 @@ jobs:
           set -euo pipefail
           npx jsii-pacmak --verbose
           tree dist
+          VERSION="$(jq -r .version package.json)"
+          bin/go-proxy zip dist/go/cdkec2keypair "v${VERSION}" "dist/go-module/cdk-ec2-key-pair-go-module-v${VERSION}.zip"
+          bin/go-proxy site dist/go-proxy dist/go-module/*.zip
 
   # Doesn't wait for the AWS test account.
   unit:

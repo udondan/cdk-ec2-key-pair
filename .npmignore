@@ -36,3 +36,4 @@ publish_output.txt
 
 lambda/*
 !lambda/code.zip
+bin

@@ -1,20 +1,76 @@
 ---
 name: Publish packages
 
+permissions:
+  contents: read
+
+# release-please.yml starts this workflow with the tag of the draft release that release-please
+# created: the packages are built from the tag, published, and the release is published last.
+# Releases are immutable once published, so the Go module zip can only be attached to the draft.
+# Trusted publishing on npm, PyPI and NuGet is configured for this workflow file.
 on:
-  push:
-    tags:
-      - "v*"
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag of the draft release to publish, e.g. v1.2.3
+        type: string
+        required: true
 
 jobs:
-  publish:
+  check-release:
+    name: Check release
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.VERSION }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.tag }}
 
-    permissions:
-      id-token: write
-      contents: read
+      - name: Get the version
+        id: get_version
+        run: |
+          set -euo pipefail
+          VERSION="$(jq -r .version package.json)"
+          if [[ "v${VERSION}" != "${TAG}" ]]; then
+            echo "::error::The version ${VERSION} in package.json does not match the tag ${TAG}"
+            exit 1
+          fi
+          echo "VERSION=${VERSION}" >> "$GITHUB_OUTPUT"
+        env:
+          TAG: ${{ inputs.tag }}
 
+      - name: Check that the release is a draft
+        run: |
+          if [[ "$(gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" --json isDraft --jq .isDraft)" != "true" ]]; then
+            echo "::error::Release ${TAG} is not a draft"
+            exit 1
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.OVERRIDE_TOKEN }} # draft releases need write access
+          TAG: ${{ inputs.tag }}
+
+  # One package per language, built with jsii-pacmak. js is the npm package.
+  package:
+    name: Package ${{ matrix.name }}
+    needs: check-release
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: js
+            name: TypeScript
+          - language: python
+            name: Python
+          - language: java
+            name: Java
+          - language: dotnet
+            name: .NET
+          - language: go
+            name: Go
     steps:
       - uses: actions/setup-node@v7
         with:
@@ -22,59 +78,278 @@ jobs:
           package-manager-cache: false # no cache restored from another run in the publish job
 
       - uses: actions/setup-python@v7
+        if: matrix.language == 'python'
         with:
           python-version: 3.x
 
+      - uses: actions/setup-java@v6
+        if: matrix.language == 'java'
+        with:
+          distribution: temurin
+          java-version: 21
+
       - uses: actions/setup-dotnet@v6
+        if: matrix.language == 'dotnet'
         with:
           dotnet-version: 10.0.x
+
+      - uses: actions/setup-go@v7
+        if: matrix.language == 'go'
+        with:
+          go-version: stable
+          cache: false
 
       - name: Checkout code
         uses: actions/checkout@v7
         with:
           persist-credentials: false
-          fetch-depth: 1
+          ref: ${{ inputs.tag }}
 
       - name: Install dependencies
-        run: |
-          make install
-          sudo apt-get update
-          sudo apt-get install -y tree jq
+        run: make install
 
       - name: Build source w/ jsii
         run: |
+          set -euo pipefail
           lambda/build
           npx jsii
           make validate-package
 
-      - name: Build packages w/ jsii-pacmak
-        run: |
-          npx jsii-pacmak --verbose
-          tree dist
-
-      - name: Publish to npm
-        run: npx publib-npm
+      - name: Build package w/ jsii-pacmak
+        run: npx jsii-pacmak --verbose --targets "${LANGUAGE}"
         env:
-          NPM_TRUSTED_PUBLISHER: "true"
-          NPM_CONFIG_PROVENANCE: "true"
+          LANGUAGE: ${{ matrix.language }}
+
+      - name: Build Go module zip
+        if: matrix.language == 'go'
+        run: bin/go-proxy zip dist/go/cdkec2keypair "v${VERSION}" "dist/go-module/cdk-ec2-key-pair-go-module-v${VERSION}.zip"
+        env:
+          VERSION: ${{ needs.check-release.outputs.version }}
+
+      - name: Store package
+        uses: actions/upload-artifact@v7
+        with:
+          name: package-${{ matrix.language }}
+          path: dist/${{ matrix.language == 'go' && 'go-module' || matrix.language }}
+          if-no-files-found: error
+          retention-days: 1
+
+  publish-npm:
+    name: Publish to npm
+    needs: package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # OIDC for npm
+    steps:
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26.x
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - name: Fetch package
+        uses: actions/download-artifact@v8
+        with:
+          name: package-js
+          path: dist/js
+
+      # npm authenticates with OIDC and adds the provenance, there is no token
+      - name: Publish to npm
+        run: npm publish dist/js/*.tgz --access public
+
+  publish-python:
+    name: Publish to PyPI
+    needs: package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # OIDC for PyPI
+    steps:
+      - name: Fetch package
+        uses: actions/download-artifact@v8
+        with:
+          name: package-python
+          path: dist/python
 
       - name: Publish to PyPI
-        run: |
-          export PIP_BREAK_SYSTEM_PACKAGES=1
-          npx publib-pypi
-        env:
-          PYPI_TRUSTED_PUBLISHER: "true"
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          packages-dir: dist/python
 
+  publish-dotnet:
+    name: Publish to NuGet
+    needs: package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # OIDC for NuGet
+    steps:
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Fetch package
+        uses: actions/download-artifact@v8
+        with:
+          name: package-dotnet
+          path: dist/dotnet
+
+      - name: Log in to NuGet
+        id: nuget
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
+        with:
+          user: udondan
+
+      # The symbols package (.snupkg) next to it is pushed with it
       - name: Publish to NuGet
         run: |
-          export PIP_BREAK_SYSTEM_PACKAGES=1
-          npx publib-nuget
+          dotnet nuget push dist/dotnet/*.nupkg \
+            --api-key "$NUGET_API_KEY" \
+            --source https://api.nuget.org/v3/index.json
         env:
-          NUGET_TRUSTED_PUBLISHER: "true"
-          NUGET_USERNAME: udondan
-#
-#      - name: Publish to Maven GitHub
-#        run: npx publib-maven
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#          GITHUB_REPOSITORY: ${{ github.repository }}
+          NUGET_API_KEY: ${{ steps.nuget.outputs.NUGET_API_KEY }}
+
+  # Maven Central has no trusted publishing, it needs a user token and a GPG key
+  publish-java:
+    name: Publish to Maven Central
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.tag }}
+
+      - name: Fetch package
+        uses: actions/download-artifact@v8
+        with:
+          name: package-java
+          path: dist/java
+
+      - name: Publish to Maven Central
+        run: bin/publish-maven
+        env:
+          MAVEN_GPG_PRIVATE_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+          MAVEN_GPG_PRIVATE_KEY_PASSPHRASE: ${{ secrets.MAVEN_GPG_PRIVATE_KEY_PASSPHRASE }}
+          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+
+  publish-go:
+    name: Add Go module to release
+    needs:
+      - check-release
+      - package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # release assets
+    steps:
+      - name: Fetch package
+        uses: actions/download-artifact@v8
+        with:
+          name: package-go
+          path: dist/go-module
+
+      - name: Add module zip to release
+        run: gh release upload "v${VERSION}" dist/go-module/*.zip --clobber --repo "${GITHUB_REPOSITORY}"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.check-release.outputs.version }}
+
+  # The Go module is served by GitHub Pages as a static Go module proxy. The module zips of every
+  # version are release assets; the proxy serves the newest of them. It runs after all publish
+  # jobs, so a failed publish leaves the release a draft and the proxy unchanged.
+  publish-go-proxy:
+    name: Publish Go module proxy
+    needs:
+      - check-release
+      - publish-npm
+      - publish-python
+      - publish-dotnet
+      - publish-java
+      - publish-go
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          ref: ${{ inputs.tag }}
+
+      # The release of this version and the newest 29 published releases make 30; releases before
+      # the Go module have no zips.
+      - name: Fetch module zips of the newest releases
+        run: |
+          set -euo pipefail
+          mkdir zips
+          gh release download "v${VERSION}" --repo "${GITHUB_REPOSITORY}" --pattern '*-go-module-*.zip' --dir zips
+          for tag in $(gh release list --repo "${GITHUB_REPOSITORY}" --exclude-drafts --limit 30 --json tagName --jq '.[].tagName' | grep -v -x -F "v${VERSION}" | head -n 29); do
+            if gh release view "${tag}" --repo "${GITHUB_REPOSITORY}" --json assets --jq '.assets[].name' | grep -q -- '-go-module-'; then
+              gh release download "${tag}" --repo "${GITHUB_REPOSITORY}" --pattern '*-go-module-*.zip' --dir zips
+            fi
+          done
+          ls -l zips
+        env:
+          GH_TOKEN: ${{ secrets.OVERRIDE_TOKEN }} # the release of this version is a draft, which needs write access
+          VERSION: ${{ needs.check-release.outputs.version }}
+
+      - name: Build Go module proxy
+        run: bin/go-proxy site site zips/*.zip
+
+      # A re-run uploads to the same run, where deploy-pages fails if two artifacts have its name
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          name: github-pages-${{ github.run_attempt }}
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v5
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}
+
+  # The release stays a draft until everything is published and all assets are attached
+  publish-release:
+    name: Publish release
+    needs:
+      - check-release
+      - publish-go-proxy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish release
+        run: gh release edit "v${VERSION}" --repo "${GITHUB_REPOSITORY}" --draft=false --latest
+        env:
+          GH_TOKEN: ${{ secrets.OVERRIDE_TOKEN }}
+          VERSION: ${{ needs.check-release.outputs.version }}
+
+  # Fetching the module through proxy.golang.org caches it there and adds it to the index of the
+  # Go modules, from which pkg.go.dev adds the documentation
+  seed-go-proxy:
+    name: Seed proxy.golang.org
+    needs:
+      - check-release
+      - publish-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v7
+        with:
+          go-version: stable
+          cache: false
+
+      - name: Fetch the module
+        run: |
+          set -euo pipefail
+          go mod init seed
+          go get "udondan.github.io/cdk-ec2-key-pair/go/cdkec2keypair/v${VERSION%%.*}@v${VERSION}"
+        env:
+          GOPROXY: https://proxy.golang.org
+          VERSION: ${{ needs.check-release.outputs.version }}
