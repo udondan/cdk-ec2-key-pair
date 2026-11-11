@@ -160,7 +160,7 @@ jobs:
       # A prerelease that is never published: the build fails for a version the live site serves
       # with other content, which the version in package.json is between releases
       - name: Build Go module zip
-        uses: udondan/goproxy-gh-pages/pack@v1
+        uses: udondan/goproxy-gh-pages/pack@1bc5f4391f581dea5e41a9b64238111425605a74 # v1
         with:
           module-dir: dist/go/cdkec2keypair
           version: ${{ steps.pacmak.outputs.version }}-test
@@ -168,7 +168,7 @@ jobs:
 
       # Only the zip of this build; the live site is read to check that no published version changes
       - name: Build Go module proxy
-        uses: udondan/goproxy-gh-pages/build@v1
+        uses: udondan/goproxy-gh-pages/build@1bc5f4391f581dea5e41a9b64238111425605a74 # v1
         with:
           output: dist/go-proxy
           base-url: https://udondan.github.io/cdk-ec2-key-pair
