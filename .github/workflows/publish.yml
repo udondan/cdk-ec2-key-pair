@@ -104,6 +104,7 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ inputs.tag }}
+          fetch-depth: 0 # lambda/build takes the time of the last commit of the Lambda
 
       - name: Install dependencies
         run: make install
@@ -122,9 +123,11 @@ jobs:
 
       - name: Build Go module zip
         if: matrix.language == 'go'
-        run: bin/go-proxy zip dist/go/cdkec2keypair "v${VERSION}" "dist/go-module/cdk-ec2-key-pair-go-module-v${VERSION}.zip"
-        env:
-          VERSION: ${{ needs.check-release.outputs.version }}
+        uses: udondan/goproxy-gh-pages/pack@v1
+        with:
+          module-dir: dist/go/cdkec2keypair
+          version: ${{ needs.check-release.outputs.version }}
+          output: dist/go-module/{name}-go-module-{version}.zip
 
       - name: Store package
         uses: actions/upload-artifact@v7
@@ -258,8 +261,9 @@ jobs:
           VERSION: ${{ needs.check-release.outputs.version }}
 
   # The Go module is served by GitHub Pages as a static Go module proxy. The module zips of every
-  # version are release assets; the proxy serves the newest of them. It runs after all publish
-  # jobs, so a failed publish leaves the release a draft and the proxy unchanged.
+  # version are release assets; the proxy serves the newest 30 versions, from the zip of this run,
+  # the live site and the release assets. It runs after all publish jobs, so a failed publish leaves
+  # the release a draft and the proxy unchanged.
   publish-go-proxy:
     name: Publish Go module proxy
     needs:
@@ -277,39 +281,30 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
+    outputs:
+      new-versions: ${{ steps.build.outputs.new-versions }}
+      proxy-url: ${{ steps.build.outputs.proxy-url }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
+      # The release of this version is a draft, so its zip comes from the artifact
+      - name: Fetch module zip
+        uses: actions/download-artifact@v8
         with:
-          persist-credentials: false
-          ref: ${{ inputs.tag }}
-
-      # The release of this version and the newest 29 published releases make 30; releases before
-      # the Go module have no zips.
-      - name: Fetch module zips of the newest releases
-        run: |
-          set -euo pipefail
-          mkdir zips
-          gh release download "v${VERSION}" --repo "${GITHUB_REPOSITORY}" --pattern '*-go-module-*.zip' --dir zips
-          for tag in $(gh release list --repo "${GITHUB_REPOSITORY}" --exclude-drafts --limit 30 --json tagName --jq '.[].tagName' | grep -v -x -F "v${VERSION}" | head -n 29); do
-            if gh release view "${tag}" --repo "${GITHUB_REPOSITORY}" --json assets --jq '.assets[].name' | grep -q -- '-go-module-'; then
-              gh release download "${tag}" --repo "${GITHUB_REPOSITORY}" --pattern '*-go-module-*.zip' --dir zips
-            fi
-          done
-          ls -l zips
-        env:
-          GH_TOKEN: ${{ secrets.OVERRIDE_TOKEN }} # the release of this version is a draft, which needs write access
-          VERSION: ${{ needs.check-release.outputs.version }}
+          name: package-go
+          path: zips
 
       - name: Build Go module proxy
-        run: bin/go-proxy site site zips/*.zip
+        id: build
+        uses: udondan/goproxy-gh-pages/build@v1
+        with:
+          base-url: https://udondan.github.io/cdk-ec2-key-pair
+          zips: zips/*.zip
 
       # A re-run uploads to the same run, where deploy-pages fails if two artifacts have its name
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
         with:
           name: github-pages-${{ github.run_attempt }}
-          path: site
+          path: ${{ steps.build.outputs.path }}
 
       - name: Deploy to GitHub Pages
         id: deploy
@@ -336,20 +331,13 @@ jobs:
   seed-go-proxy:
     name: Seed proxy.golang.org
     needs:
-      - check-release
+      - publish-go-proxy
       - publish-release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v7
+      - name: Seed proxy.golang.org
+        uses: udondan/goproxy-gh-pages/seed@v1
         with:
-          go-version: stable
-          cache: false
-
-      - name: Fetch the module
-        run: |
-          set -euo pipefail
-          go mod init seed
-          go get "udondan.github.io/cdk-ec2-key-pair/go/cdkec2keypair/v${VERSION%%.*}@v${VERSION}"
-        env:
-          GOPROXY: https://proxy.golang.org
-          VERSION: ${{ needs.check-release.outputs.version }}
+          versions: ${{ needs.publish-go-proxy.outputs.new-versions }}
+          site-url: ${{ needs.publish-go-proxy.outputs.proxy-url }}
+          wait-for: proxy,sumdb

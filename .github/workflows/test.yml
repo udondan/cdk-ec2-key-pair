@@ -77,7 +77,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           persist-credentials: false
-          fetch-depth: 1
+          fetch-depth: 0 # lambda/build takes the time of the last commit of the Lambda
 
       - name: Cache node modules
         id: cache-npm
@@ -150,13 +150,33 @@ jobs:
           make validate-package
 
       - name: Build packages w/ jsii-pacmak
+        id: pacmak
         run: |
           set -euo pipefail
           npx jsii-pacmak --verbose
           tree dist
-          VERSION="$(jq -r .version package.json)"
-          bin/go-proxy zip dist/go/cdkec2keypair "v${VERSION}" "dist/go-module/cdk-ec2-key-pair-go-module-v${VERSION}.zip"
-          bin/go-proxy site dist/go-proxy dist/go-module/*.zip
+          echo "version=$(jq -r .version package.json)" >> "$GITHUB_OUTPUT"
+
+      # A prerelease that is never published: the build fails for a version the live site serves
+      # with other content, which the version in package.json is between releases
+      - name: Build Go module zip
+        uses: udondan/goproxy-gh-pages/pack@v1
+        with:
+          module-dir: dist/go/cdkec2keypair
+          version: ${{ steps.pacmak.outputs.version }}-test
+          output: dist/go-module/{name}-go-module-{version}.zip
+
+      # Only the zip of this build; the live site is read to check that no published version changes
+      - name: Build Go module proxy
+        uses: udondan/goproxy-gh-pages/build@v1
+        with:
+          output: dist/go-proxy
+          base-url: https://udondan.github.io/cdk-ec2-key-pair
+          zips: dist/go-module/*.zip
+          release-assets: ""
+          mirror: false
+          fallback-proxy: ""
+          verify-sumdb: false
 
   # Doesn't wait for the AWS test account.
   unit:
