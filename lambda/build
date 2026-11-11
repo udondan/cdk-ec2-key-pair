@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 
-set -e
+set -euo pipefail
 cd "$( dirname "${BASH_SOURCE[0]}" )"
 npm clean-install --prefer-offline --cache ../.npm
 npx tsc
-zip -r code.zip ./*.js node_modules
+# The same sources give the same zip: fixed file times, sorted entries and no extra attributes. The
+# zip ends up in the npm tarball and the Go module, whose hash must not change when a version is
+# built again.
+rm -f code.zip
+find ./*.js node_modules -exec touch -h -t 198001010000 {} +
+find ./*.js node_modules -type f | LC_ALL=C sort | zip -q -X -@ code.zip
 rm ./*.js
