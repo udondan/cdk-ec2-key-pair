@@ -123,7 +123,7 @@ jobs:
 
       - name: Build Go module zip
         if: matrix.language == 'go'
-        uses: udondan/goproxy-gh-pages/pack@8fbc429e699f8d3f731cead58c6ba78a334e5d98 # v1.0.0
+        uses: udondan/goproxy-gh-pages/pack@v1
         with:
           module-dir: dist/go/cdkec2keypair
           version: ${{ needs.check-release.outputs.version }}
@@ -294,7 +294,7 @@ jobs:
 
       - name: Build Go module proxy
         id: build
-        uses: udondan/goproxy-gh-pages@8fbc429e699f8d3f731cead58c6ba78a334e5d98 # v1.0.0
+        uses: udondan/goproxy-gh-pages@v1
         with:
           base-url: https://udondan.github.io/cdk-ec2-key-pair
           zips: zips/*.zip
@@ -336,7 +336,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Seed proxy.golang.org
-        uses: udondan/goproxy-gh-pages/seed@8fbc429e699f8d3f731cead58c6ba78a334e5d98 # v1.0.0
+        uses: udondan/goproxy-gh-pages/seed@v1
         with:
           versions: ${{ needs.publish-go-proxy.outputs.new-versions }}
           site-url: ${{ needs.publish-go-proxy.outputs.proxy-url }}
