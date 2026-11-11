@@ -104,6 +104,7 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ inputs.tag }}
+          fetch-depth: 0 # lambda/build takes the time of the last commit of the Lambda
 
       - name: Install dependencies
         run: make install

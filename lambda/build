@@ -4,10 +4,25 @@ set -euo pipefail
 cd "$( dirname "${BASH_SOURCE[0]}" )"
 npm clean-install --prefer-offline --cache ../.npm
 npx tsc
-# The same sources give the same zip: fixed file times, sorted entries and no extra attributes. The
-# zip ends up in the npm tarball and the Go module, whose hash must not change when a version is
-# built again.
+# The same sources give the same zip, as it ends up in the npm tarball and the Go module, whose hash
+# must not change when a version is built again: sorted entries, no extra attributes, and as file
+# time the time of the last commit that changed the Lambda (or SOURCE_DATE_EPOCH). The files of the
+# build itself all have the time of the build. UTC, as zip stores the time without a time zone.
+export TZ=UTC
+if [[ -n "${SOURCE_DATE_EPOCH:-}" ]]; then
+  FILE_TIME="$(date -u -r "${SOURCE_DATE_EPOCH}" +%Y%m%d%H%M.%S 2> /dev/null || date -u -d "@${SOURCE_DATE_EPOCH}" +%Y%m%d%H%M.%S)"
+elif [[ "$(git rev-parse --is-shallow-repository)" == "true" ]]; then
+  # a shallow clone has no history, its first commit seems to change every file
+  echo "The time of the last commit of the Lambda needs the full history (fetch-depth: 0), or set SOURCE_DATE_EPOCH" >&2
+  exit 1
+else
+  FILE_TIME="$(git log -1 --format=%cd --date=format-local:%Y%m%d%H%M.%S -- .)"
+fi
+if [[ -z "${FILE_TIME}" ]]; then
+  echo "No commit of the Lambda found, set SOURCE_DATE_EPOCH" >&2
+  exit 1
+fi
 rm -f code.zip
-find ./*.js node_modules -exec touch -h -t 198001010000 {} +
+find ./*.js node_modules -exec touch -h -t "${FILE_TIME}" {} +
 find ./*.js node_modules -type f | LC_ALL=C sort | zip -q -X -@ code.zip
 rm ./*.js

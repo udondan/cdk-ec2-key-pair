@@ -77,7 +77,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           persist-credentials: false
-          fetch-depth: 1
+          fetch-depth: 0 # lambda/build takes the time of the last commit of the Lambda
 
       - name: Cache node modules
         id: cache-npm
