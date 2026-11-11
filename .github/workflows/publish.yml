@@ -294,7 +294,7 @@ jobs:
 
       - name: Build Go module proxy
         id: build
-        uses: udondan/goproxy-gh-pages@v1
+        uses: udondan/goproxy-gh-pages/build@v1
         with:
           base-url: https://udondan.github.io/cdk-ec2-key-pair
           zips: zips/*.zip

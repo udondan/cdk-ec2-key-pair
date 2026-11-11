@@ -168,7 +168,7 @@ jobs:
 
       # Only the zip of this build; the live site is read to check that no published version changes
       - name: Build Go module proxy
-        uses: udondan/goproxy-gh-pages@v1
+        uses: udondan/goproxy-gh-pages/build@v1
         with:
           output: dist/go-proxy
           base-url: https://udondan.github.io/cdk-ec2-key-pair

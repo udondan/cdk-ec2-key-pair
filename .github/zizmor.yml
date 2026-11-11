@@ -8,6 +8,5 @@ rules:
         "actions/*": ref-pin
         "github/*": ref-pin
         "udondan/boarding-gate/*": ref-pin
-        "udondan/goproxy-gh-pages": ref-pin
         "udondan/goproxy-gh-pages/*": ref-pin
         "*": hash-pin
