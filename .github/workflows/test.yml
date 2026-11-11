@@ -150,13 +150,31 @@ jobs:
           make validate-package
 
       - name: Build packages w/ jsii-pacmak
+        id: pacmak
         run: |
           set -euo pipefail
           npx jsii-pacmak --verbose
           tree dist
-          VERSION="$(jq -r .version package.json)"
-          bin/go-proxy zip dist/go/cdkec2keypair "v${VERSION}" "dist/go-module/cdk-ec2-key-pair-go-module-v${VERSION}.zip"
-          bin/go-proxy site dist/go-proxy dist/go-module/*.zip
+          echo "version=$(jq -r .version package.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Build Go module zip
+        uses: udondan/goproxy-gh-pages/pack@8fbc429e699f8d3f731cead58c6ba78a334e5d98 # v1.0.0
+        with:
+          module-dir: dist/go/cdkec2keypair
+          version: ${{ steps.pacmak.outputs.version }}
+          output: dist/go-module/{name}-go-module-{version}.zip
+
+      # Only the zip of this build, without the network
+      - name: Build Go module proxy
+        uses: udondan/goproxy-gh-pages@8fbc429e699f8d3f731cead58c6ba78a334e5d98 # v1.0.0
+        with:
+          output: dist/go-proxy
+          base-url: https://udondan.github.io/cdk-ec2-key-pair
+          zips: dist/go-module/*.zip
+          release-assets: ""
+          mirror: false
+          fallback-proxy: ""
+          verify-sumdb: false
 
   # Doesn't wait for the AWS test account.
   unit:
