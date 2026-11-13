@@ -81,7 +81,7 @@
     "@typescript-eslint/eslint-plugin": "8.72.2",
     "@typescript-eslint/parser": "8.72.2",
     "@vitest/coverage-v8": "5.1.0",
-    "aws-cdk-lib": "2.275.0",
+    "aws-cdk-lib": "2.276.0",
     "aws-cloudformation-custom-resource": "5.1.5",
     "constructs": "10.8.1",
     "eslint": "10.14.0",
