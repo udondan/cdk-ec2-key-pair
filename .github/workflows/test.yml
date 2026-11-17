@@ -17,6 +17,7 @@ on:
 jobs:
   # Only one run at a time may use the AWS test account.
   boarding-gate:
+    name: Queue
     # On push to main only the unit tests run, for the coverage report of main.
     if: github.event_name != 'push'
     permissions:
@@ -32,11 +33,52 @@ jobs:
     secrets:
       update-token: ${{ secrets.OVERRIDE_TOKEN }}
 
-  test:
+  # Unit tests and the AWS test only run if code or build config changed.
+  # Skipped outside of pull requests, so pushes to main and workflow_dispatch
+  # always run them. Waits for boarding-gate like everything else: while
+  # another run holds the turn, this one likely needs a rebase anyway.
+  changes:
     needs: boarding-gate
+    # Fail instead of skip if boarding-gate failed, see the test job.
+    if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read # paths-filter lists the PR's files via the API
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - name: Check turn
+        if: needs.boarding-gate.result != 'success'
+        run: exit 1
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        with:
+          filters: |
+            code:
+              - lib/**
+              - lambda/**
+              - test/**
+              - tests/**
+              - package.json
+              - bun.lock
+              - mise.toml
+              - Makefile
+              - tsconfig*.json
+              - eslint.config.js
+              - .prettierrc
+              - .npmignore
+              - vitest.config.mts
+              - codecov.yml
+              - .github/workflows/test.yml
+
+  test:
+    needs: [boarding-gate, unit]
     # A skipped job counts as passed for required checks. Run the job even if
-    # boarding-gate failed and fail it in the first step.
-    if: ${{ !cancelled() && github.event_name != 'push' }}
+    # boarding-gate failed and fail it in the first step. Only run it if the
+    # unit tests passed: they are skipped if no code changed, and if they
+    # failed, the required job fails on their result.
+    if: ${{ !cancelled() && github.event_name != 'push' && needs.unit.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       id-token: write # OIDC token for assuming the AWS role
@@ -50,10 +92,6 @@ jobs:
       - name: Check turn
         if: needs.boarding-gate.result != 'success'
         run: exit 1
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 26.x
 
       - uses: actions/setup-python@v7
         with:
@@ -79,24 +117,16 @@ jobs:
           persist-credentials: false
           fetch-depth: 0 # lambda/build takes the time of the last commit of the Lambda
 
-      - name: Cache node modules
-        id: cache-npm
-        uses: actions/cache@v6
-        env:
-          cache-name: cache-node-modules
+      - name: Set up Node.js and Bun
+        uses: jdx/mise-action@d5574b52816a478f9d4e6529a3f6ff17a8a36785 # v5.2.8
         with:
-          path: .npm
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
+          install_args: node bun # versions from mise.toml
 
+      # The root package and the CDK app in test/ share one bun.lock
       - name: Install dependencies
         run: |
           set -euo pipefail
           make install
-          (cd test && make install)
           sudo apt-get update
           sudo apt-get install -y tree
 
@@ -145,15 +175,16 @@ jobs:
 
       - name: Build source w/ jsii
         run: |
+          set -euo pipefail
           lambda/build
-          npx jsii
+          bunx jsii
           make validate-package
 
       - name: Build packages w/ jsii-pacmak
         id: pacmak
         run: |
           set -euo pipefail
-          npx jsii-pacmak --verbose
+          bunx jsii-pacmak --verbose
           tree dist
           echo "version=$(jq -r .version package.json)" >> "$GITHUB_OUTPUT"
 
@@ -178,36 +209,36 @@ jobs:
           fallback-proxy: ""
           verify-sumdb: false
 
-  # Doesn't wait for the AWS test account.
+  # Unit tests with coverage. The AWS test only runs if they pass. Also runs on
+  # push to main, for the coverage report of main.
   unit:
     name: Unit tests
+    needs: [boarding-gate, changes]
+    # Skip if no code changed. Otherwise fail instead of skip if boarding-gate
+    # failed, see the test job.
+    if: ${{ !cancelled() && (needs.changes.result == 'skipped' || (needs.changes.result == 'success' && needs.changes.outputs.code == 'true')) }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write # Codecov upload via OIDC
     steps:
+      # boarding-gate is skipped on push to main
+      - name: Check turn
+        if: needs.boarding-gate.result == 'failure' || needs.boarding-gate.result == 'cancelled'
+        run: exit 1
+
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
-      - uses: actions/setup-node@v7
+      - name: Set up Node.js and Bun
+        uses: jdx/mise-action@d5574b52816a478f9d4e6529a3f6ff17a8a36785 # v5.2.8
         with:
-          node-version: 26.x
+          install_args: node bun # versions from mise.toml
 
-      - name: Cache node modules
-        uses: actions/cache@v6
-        env:
-          cache-name: cache-node-modules
-        with:
-          path: .npm
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
-
+      # Without the CDK app in test/
       - name: Install dependencies
-        run: make install
+        run: make install-root
 
       - name: Test
         run: make test
@@ -226,12 +257,16 @@ jobs:
   coverage:
     name: Coverage
     runs-on: ubuntu-latest
-    needs: [unit]
-    if: github.event_name == 'pull_request' && needs.unit.result == 'success'
+    needs: [boarding-gate, unit]
+    if: ${{ !cancelled() && github.event_name == 'pull_request' && needs.unit.result == 'success' }}
     timeout-minutes: 10
     permissions:
       checks: read
     steps:
+      - name: Check turn
+        if: needs.boarding-gate.result != 'success'
+        run: exit 1
+
       - name: Wait for Codecov
         env:
           GH_TOKEN: ${{ github.token }}
@@ -255,11 +290,16 @@ jobs:
           done
           echo "::warning::Codecov didn't report within 5 minutes, coverage is not checked."
 
-  # Doesn't wait for the AWS test account.
   actions:
-    if: github.event_name != 'push'
+    needs: boarding-gate
+    # Fail instead of skip if boarding-gate failed, see the test job.
+    if: ${{ !cancelled() && github.event_name != 'push' }}
     runs-on: ubuntu-latest
     steps:
+      - name: Check turn
+        if: needs.boarding-gate.result != 'success'
+        run: exit 1
+
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
@@ -280,11 +320,19 @@ jobs:
   # Code smells (complexity, duplication, nesting) via Qlty. Git-aware: only
   # smells introduced by the PR compared to main fail the job.
   qlty:
+    needs: boarding-gate
+    # Fail instead of skip if boarding-gate failed, see the test job.
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: read
     steps:
+      # boarding-gate is skipped on push to main
+      - name: Check turn
+        if: needs.boarding-gate.result == 'failure' || needs.boarding-gate.result == 'cancelled'
+        run: exit 1
+
       - name: Checkout code
         uses: actions/checkout@v7
         with:
@@ -316,7 +364,7 @@ jobs:
 
   # The only test check the ruleset requires, whatever jobs are added later.
   required:
-    needs: [boarding-gate, test, unit, coverage, actions, qlty]
+    needs: [boarding-gate, changes, test, unit, coverage, actions, qlty]
     if: always()
     runs-on: ubuntu-latest
     steps:

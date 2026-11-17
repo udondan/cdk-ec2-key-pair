@@ -72,11 +72,6 @@ jobs:
           - language: go
             name: Go
     steps:
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 26.x
-          package-manager-cache: false # no cache restored from another run in the publish job
-
       - uses: actions/setup-python@v7
         if: matrix.language == 'python'
         with:
@@ -106,6 +101,12 @@ jobs:
           ref: ${{ inputs.tag }}
           fetch-depth: 0 # lambda/build takes the time of the last commit of the Lambda
 
+      - name: Set up Node.js and Bun
+        uses: jdx/mise-action@d5574b52816a478f9d4e6529a3f6ff17a8a36785 # v5.2.8
+        with:
+          install_args: node bun # versions from mise.toml
+          cache: false # no cache restored from another run in the publish job
+
       - name: Install dependencies
         run: make install
 
@@ -113,11 +114,11 @@ jobs:
         run: |
           set -euo pipefail
           lambda/build
-          npx jsii
+          bunx jsii
           make validate-package
 
       - name: Build package w/ jsii-pacmak
-        run: npx jsii-pacmak --verbose --targets "${LANGUAGE}"
+        run: bunx jsii-pacmak --verbose --targets "${LANGUAGE}"
         env:
           LANGUAGE: ${{ matrix.language }}
 
@@ -145,11 +146,18 @@ jobs:
       contents: read
       id-token: write # OIDC for npm
     steps:
-      - uses: actions/setup-node@v7
+      # Only for mise.toml, the package comes from the package job
+      - name: Checkout code
+        uses: actions/checkout@v7
         with:
-          node-version: 26.x
-          registry-url: https://registry.npmjs.org
-          package-manager-cache: false
+          persist-credentials: false
+          ref: ${{ inputs.tag }}
+
+      - name: Set up Node.js
+        uses: jdx/mise-action@d5574b52816a478f9d4e6529a3f6ff17a8a36785 # v5.2.8
+        with:
+          install_args: node # version from mise.toml
+          cache: false # no cache restored from another run in the publish job
 
       - name: Fetch package
         uses: actions/download-artifact@v8

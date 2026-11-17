@@ -2,8 +2,12 @@
 
 set -euo pipefail
 cd "$( dirname "${BASH_SOURCE[0]}" )"
-npm clean-install --prefer-offline --cache ../.npm
-npx tsc
+# lambda/ has its own bun.lock and is not part of the workspace: its node_modules go into the zip
+# as they are, so they must be real directories (hoisted), not links into a shared store.
+rm -rf node_modules
+bun install --frozen-lockfile --production --linker hoisted
+# TypeScript comes from the root package, see `make install`
+../node_modules/.bin/tsc
 # The same sources give the same zip, as it ends up in the npm tarball and the Go module, whose hash
 # must not change when a version is built again: sorted entries, no extra attributes, and as file
 # time the time of the last commit that changed the Lambda (or SOURCE_DATE_EPOCH). The files of the
