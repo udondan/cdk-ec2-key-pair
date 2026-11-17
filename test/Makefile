@@ -5,30 +5,27 @@ TARGET_COLOR=\x1b[96m
 
 clean:
 	@echo -e "$(TARGET_COLOR)Running clean$(NO_COLOR)"
-	@rm -rf ../node_modules ../package-lock.json
-	@rm -rf node_modules package-lock.json
+	@cd .. && make clean
 
 install:
 	@echo -e "$(TARGET_COLOR)Running install$(NO_COLOR)"
 	@cd .. && make install
-	@npm clean-install --prefer-offline --cache ../.npm
-	@npm list
 
 build: lambda
 	@echo Building application...
-	@npm run build
+	@bun run build
 
 diff: build
 	@echo Running diff...
-	@AWS_REGION=us-east-1 npm run cdk -- diff --color
+	@AWS_REGION=us-east-1 bun run cdk diff --color
 
 deploy: build
 	@echo Deploying application...
-	@AWS_REGION=us-east-1 npm run cdk -- deploy --color --require-approval never
+	@AWS_REGION=us-east-1 bun run cdk deploy --color --require-approval never
 
 DESTROY: build
 	@echo Destroying application...
-	@AWS_REGION=us-east-1 npm run cdk -- destroy --color --force
+	@AWS_REGION=us-east-1 bun run cdk destroy --color --force
 
 lambda:
 	@echo Building Lambda...

@@ -5,7 +5,7 @@
 #
 # Usage: bin/publish-maven [repository, default: dist/java]
 #
-# dist/java is the Maven repository written by `npx jsii-pacmak --targets java`.
+# dist/java is the Maven repository written by `bunx jsii-pacmak --targets java`.
 #
 # Environment:
 #   MAVEN_GPG_PRIVATE_KEY              armored private key to sign with

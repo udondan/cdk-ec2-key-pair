@@ -6,7 +6,7 @@ lambda/*
 !lambda/*.ts
 !lambda/build
 !lambda/package.json
-!lambda/package-lock.json
+!lambda/bun.lock
 !lambda/tsconfig.json
 **/*.js
 !eslint.config.js
@@ -14,6 +14,5 @@ lambda/*
 **/cdk.out
 **/cdk.context.json
 tsconfig.tsbuildinfo
-.npm
 *.tgz
 coverage

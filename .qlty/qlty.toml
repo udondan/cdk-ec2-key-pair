@@ -92,11 +92,3 @@ set.ignored = true
 match.rules = ["radarlint-js:typescript:S1848"]
 match.file_patterns = ["test/bin/test.ts"]
 set.ignored = true
-
-# minimatch 10.x is bundled in aws-cdk-lib (bundleDependencies), so npm
-# overrides can't replace it. aws-cdk-lib is only a dev and peer dependency,
-# users of the construct bring their own.
-[[triage]]
-match.rules = ["osv-scanner:CVE-2026-118764"]
-match.file_patterns = ["package-lock.json"]
-set.ignored = true

@@ -5,30 +5,36 @@ TARGET_COLOR=\x1b[96m
 
 build:
 	@echo -e "$(TARGET_COLOR)Running build$(NO_COLOR)"
-	@npm run build
+	@bun run build
 
 package: build
 	@echo -e "$(TARGET_COLOR)Running package$(NO_COLOR)"
-	@npm run package
+	@bun run package
 
 clean:
 	@echo -e "$(TARGET_COLOR)Running clean$(NO_COLOR)"
-	@rm -rf node_modules package-lock.json
+	@rm -rf node_modules test/node_modules lambda/node_modules
 
+# The root package and the CDK app in test/ (a Bun workspace) share one bun.lock.
 install:
 	@echo -e "$(TARGET_COLOR)Running install$(NO_COLOR)"
-	@npm clean-install --prefer-offline --cache .npm
-	@npm list
+	@bun install --frozen-lockfile
+
+# Only the root package's dependencies, without the CDK app in test/.
+# Enough for the unit tests.
+install-root:
+	@echo -e "$(TARGET_COLOR)Running install-root$(NO_COLOR)"
+	@bun install --frozen-lockfile --filter cdk-ec2-key-pair
 
 # A directory named test exists, so make must not treat the target as a file.
 .PHONY: test
 test:
 	@echo -e "$(TARGET_COLOR)Running unit tests$(NO_COLOR)"
-	@npm run test:coverage
+	@bun run test:coverage
 
 eslint:
-	@echo -e "$(TARGET_COLOR)Running eslint $$(npx eslint --version)$(NO_COLOR)"
-	@npx eslint .; \
+	@echo -e "$(TARGET_COLOR)Running eslint $$(bunx eslint --version)$(NO_COLOR)"
+	@bunx eslint .; \
 	echo "Passed"
 
 validate-package:
