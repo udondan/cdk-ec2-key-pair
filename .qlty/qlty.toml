@@ -67,11 +67,12 @@ default = true
 [[plugin]]
 name = "radarlint-js"
 
-[[plugin]]
-name = "osv-scanner"
-
+# Without fs-vuln: vulnerable dependencies are Dependabot alerts (see
+# .github/workflows/dependency-submission.yml) and don't fail pull requests,
+# which they would even when no fixed version exists yet.
 [[plugin]]
 name = "trivy"
+drivers = ["config", "fs-secret"]
 
 [[plugin]]
 name = "gitleaks"
