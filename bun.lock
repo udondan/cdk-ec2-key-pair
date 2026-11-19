@@ -19,10 +19,10 @@
         "eslint": "10.15.0",
         "eslint-config-prettier": "10.1.8",
         "eslint-plugin-prettier": "5.5.7",
-        "jsii": "6.0.22",
+        "jsii": "6.0.23",
         "jsii-pacmak": "1.142.0",
         "prettier": "3.10.1",
-        "publib": "0.3.13",
+        "publib": "0.3.14",
         "sshpk": "1.18.0",
         "typescript": "6.0.3",
         "typescript-eslint": "8.72.2",
@@ -442,7 +442,7 @@
 
     "jsbn": ["jsbn@0.1.1", "", {}, "sha512-UVU9dibq2JcFWxQPA6KCqj5O42VOmAY3zQUfEKxU0KpTGXwNoCjkX1e13eHNvw/xPynt6pU0rZ1htjWTNTSXsg=="],
 
-    "jsii": ["jsii@6.0.22", "", { "dependencies": { "@jsii/check-node": "1.142.0", "@jsii/spec": "1.142.0", "case": "^1.6.3", "chalk": "^4", "fast-deep-equal": "^3.1.3", "log4js": "^6.9.1", "semver": "^7.8.6", "semver-intersect": "^1.5.0", "sort-json": "^2.0.1", "spdx-license-list": "^6.12.0", "typescript": "~6.0", "yargs": "^17.7.3" }, "bin": "bin/jsii" }, "sha512-BJ0tFyAvCctf66j5sCpSPWRIAzbJKuTsaVWM5eK6Cocb0hqRLrjESKgd0c75jePBX+cobvRO9n/Uc5xcrDU8Ng=="],
+    "jsii": ["jsii@6.0.23", "", { "dependencies": { "@jsii/check-node": "1.142.0", "@jsii/spec": "1.142.0", "case": "^1.6.3", "chalk": "^4", "fast-deep-equal": "^3.1.3", "log4js": "^6.9.1", "semver": "^7.8.6", "semver-intersect": "^1.5.0", "sort-json": "^2.0.1", "spdx-license-list": "^6.12.0", "typescript": "~6.0", "yargs": "^17.7.3" }, "bin": { "jsii": "bin/jsii" } }, "sha512-3ZOUdIR1SyDDmXyiLURf97L6JP9lh5dlHXVMx8BEhERXlLl49rKxwM9XV3XuHuaF1+o7qXyTAfucpmtwdxFovg=="],
 
     "jsii-pacmak": ["jsii-pacmak@1.142.0", "", { "dependencies": { "@jsii/check-node": "1.142.0", "@jsii/spec": "1.142.0", "clone": "^2.1.2", "codemaker": "^1.142.0", "commonmark": "^0.31.2", "escape-string-regexp": "^4.0.0", "fs-extra": "^10.1.0", "jsii-reflect": "^1.142.0", "semver": "^7.8.5", "spdx-license-list": "^6.12.0", "xmlbuilder": "^15.1.1", "yargs": "^17.7.3" }, "peerDependencies": { "jsii-rosetta": ">=5.9.0" }, "bin": "bin/jsii-pacmak" }, "sha512-uj03timc4bD/cXT/+FYHkTH3ZvusWE1MtDnKuf14q1AMr4qtIHpynb0jayR+mig/hroxBiHR3STBJ7eZmamV1w=="],
 
@@ -540,7 +540,7 @@
 
     "prettier-linter-helpers": ["prettier-linter-helpers@1.0.1", "", { "dependencies": { "fast-diff": "^1.1.2" } }, "sha512-SxToR7P8Y2lWmv/kTzVLC1t/GDI2WGjMwNhLLE9qtH8Q13C+aEmuRlzDst4Up4s0Wc8sF2M+J57iB3cMLqftfg=="],
 
-    "publib": ["publib@0.3.13", "", { "dependencies": { "@aws-sdk/client-codeartifact": "^3.1163.0", "@aws-sdk/credential-providers": "^3.1163.0", "fs-extra": "^8.1.0", "p-queue": "6", "shlex": "^2.1.2", "yargs": "^17", "zx": "^8.8.5" }, "bin": { "jsii-release": "bin/jsii-release-shim", "jsii-release-ca": "bin/jsii-release-shim", "jsii-release-github": "bin/jsii-release-shim", "jsii-release-golang": "bin/jsii-release-shim", "jsii-release-maven": "bin/jsii-release-shim", "jsii-release-npm": "bin/jsii-release-shim", "jsii-release-nuget": "bin/jsii-release-shim", "jsii-release-pypi": "bin/jsii-release-shim", "jsii-release-shim": "bin/jsii-release-shim", "publib": "bin/publib", "publib-ca": "bin/publib-ca", "publib-github": "bin/publib-github", "publib-golang": "bin/publib-golang", "publib-maven": "bin/publib-maven", "publib-npm": "bin/publib-npm", "publib-nuget": "bin/publib-nuget", "publib-pypi": "bin/publib-pypi" } }, "sha512-AmEGfq+OLITdknVSOL0WQ2yjney8phnvUO1FQH7BgJfoo/MmEnt2+M+NgIE5ZEp48PWA4FwgIsrN9/95amesnw=="],
+    "publib": ["publib@0.3.14", "", { "dependencies": { "@aws-sdk/client-codeartifact": "^3.1168.0", "@aws-sdk/credential-providers": "^3.1168.0", "fs-extra": "^8.1.0", "p-queue": "6", "shlex": "^2.1.2", "yargs": "^17", "zx": "^8.8.5" }, "bin": { "publib": "bin/publib", "publib-ca": "bin/publib-ca", "publib-npm": "bin/publib-npm", "publib-pypi": "bin/publib-pypi", "jsii-release": "bin/jsii-release-shim", "publib-maven": "bin/publib-maven", "publib-nuget": "bin/publib-nuget", "publib-github": "bin/publib-github", "publib-golang": "bin/publib-golang", "jsii-release-ca": "bin/jsii-release-shim", "jsii-release-npm": "bin/jsii-release-shim", "jsii-release-pypi": "bin/jsii-release-shim", "jsii-release-shim": "bin/jsii-release-shim", "jsii-release-maven": "bin/jsii-release-shim", "jsii-release-nuget": "bin/jsii-release-shim", "jsii-release-github": "bin/jsii-release-shim", "jsii-release-golang": "bin/jsii-release-shim" } }, "sha512-VBRWcrZoF+x/U3Z8g2eek3wZUOSEQBX1mRZQSDojh4GuuWfbWbyTIQoL6nXYT47hUJZxl9cFyA/sWfTGpDCdXg=="],
 
     "punycode": ["punycode@2.3.1", "", {}, "sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg=="],
 
