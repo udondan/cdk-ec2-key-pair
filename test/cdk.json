@@ -1,0 +1,4 @@
+{
+  "app": "bun bin/test.ts",
+  "progress": "events"
+}

@@ -1,0 +1,10 @@
+[tools]
+# Runtime and package manager. The only place for these versions: the workflows
+# install them with jdx/mise-action.
+node = "26"
+bun = "1.4.4"
+# Workflow linting in test.yml
+actionlint = "1.7.12"
+# The runner's own shellcheck is older and reports differently. actionlint runs it over every `run:` block.
+shellcheck = "0.11.0"
+zizmor = "1.32.0"
