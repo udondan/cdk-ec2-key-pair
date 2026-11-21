@@ -24,6 +24,9 @@
 [![PyPI](https://img.shields.io/pypi/dm/cdk-ec2-key-pair?label=pypi&color=blueviolet)][pypi]
 [![NuGet](https://img.shields.io/nuget/dt/CDK.EC2.KeyPair?label=nuget&color=blueviolet)][nuget]
 
+> [!NOTE]
+> Unofficial community project. Not affiliated with, endorsed or authorized by Amazon Web Services (AWS).
+
 [AWS CDK] L3 construct for managing [EC2 Key Pairs].
 
 Manages RSA and ED25519 Key Pairs in EC2 through a Lambda function.
@@ -240,6 +243,10 @@ const trustedKeyGroupForCF = new cloudfront.KeyGroup(
   },
 );
 ```
+
+## Disclaimer
+
+This is an unofficial, independent open-source project and is not affiliated with, funded or endorsed by Amazon Web Services, Inc. or its affiliates. AWS, AWS CDK, Amazon EC2 and the names of other AWS services are trademarks of Amazon.com, Inc. or its affiliates. The names are used only to describe compatibility. Use at your own risk: the construct creates and deletes key pairs and the secrets that hold their keys.
 
 [AWS CDK]: https://aws.amazon.com/cdk/
 [EC2 Key Pairs]: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html
