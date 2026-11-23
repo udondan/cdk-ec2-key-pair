@@ -19,7 +19,7 @@
         "eslint": "10.15.0",
         "eslint-config-prettier": "10.1.8",
         "eslint-plugin-prettier": "5.5.7",
-        "jsii": "6.0.24",
+        "jsii": "6.0.25",
         "jsii-pacmak": "1.143.0",
         "prettier": "3.10.1",
         "publib": "0.3.14",
@@ -152,7 +152,7 @@
 
     "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw=="],
 
-    "@jsii/check-node": ["@jsii/check-node@1.142.0", "", { "dependencies": { "chalk": "^4.1.2", "semver": "^7.8.5" } }, "sha512-viMnVpg4vfa22vYawtQqjkuOsLa5eYRpKfs1aTxBE7/WsXLCfvqCX0XNgi27NmIHUtUzXUpzzS+gmY1731h1tQ=="],
+    "@jsii/check-node": ["@jsii/check-node@1.143.0", "", { "dependencies": { "chalk": "^4.1.2", "semver": "^7.8.6" } }, "sha512-4BawLEyDtjSteM7PRamldWBpLv6yJ1hW6JTBSFMN1Z2fcE2UbN19r+UQ6IvpIRlYapiI1ILYUGhIK39YvqE04Q=="],
 
     "@jsii/spec": ["@jsii/spec@1.143.0", "", {}, "sha512-37FQ1/6yzFBYVMSFkeDajUNjf/9OVgyi1zRh6aMGFjKfgiagVDoI83Pn2h5i3WgJzDXx556+BFevYtfYoS1dqg=="],
 
@@ -442,7 +442,7 @@
 
     "jsbn": ["jsbn@0.1.1", "", {}, "sha512-UVU9dibq2JcFWxQPA6KCqj5O42VOmAY3zQUfEKxU0KpTGXwNoCjkX1e13eHNvw/xPynt6pU0rZ1htjWTNTSXsg=="],
 
-    "jsii": ["jsii@6.0.24", "", { "dependencies": { "@jsii/check-node": "1.142.0", "@jsii/spec": "1.143.0", "case": "^1.6.3", "chalk": "^4", "fast-deep-equal": "^3.1.3", "log4js": "^6.9.1", "semver": "^7.8.6", "semver-intersect": "^1.5.0", "sort-json": "^2.0.1", "spdx-license-list": "^6.12.0", "typescript": "~6.0", "yargs": "^17.7.3" }, "bin": { "jsii": "bin/jsii" } }, "sha512-9V6br5rQDpDNUtIBaNG0mv1gxulkRQMbYbJj0tAHWnnf0Ebr7noYpeD9s63fHzPjwlaYo8QSZLPjFs+H68Mn3w=="],
+    "jsii": ["jsii@6.0.25", "", { "dependencies": { "@jsii/check-node": "1.143.0", "@jsii/spec": "1.143.0", "case": "^1.6.3", "chalk": "^4", "fast-deep-equal": "^3.1.3", "log4js": "^6.9.1", "semver": "^7.8.6", "semver-intersect": "^1.5.0", "sort-json": "^2.0.1", "spdx-license-list": "^6.12.0", "typescript": "~6.0", "yargs": "^17.7.3" }, "bin": { "jsii": "bin/jsii" } }, "sha512-wkpb5ZIWpw4GhmEqEsDSQfkGBkTcJSF0Uy4zP8oNInww1UfPlSlNCdGQfA1pPtlBW1FHbUyAhyzh41r5R0NYJw=="],
 
     "jsii-pacmak": ["jsii-pacmak@1.143.0", "", { "dependencies": { "@jsii/check-node": "1.143.0", "@jsii/spec": "1.143.0", "clone": "^2.1.2", "codemaker": "^1.143.0", "commonmark": "^0.31.2", "escape-string-regexp": "^4.0.0", "fs-extra": "^10.1.0", "jsii-reflect": "^1.143.0", "semver": "^7.8.6", "spdx-license-list": "^6.12.0", "xmlbuilder": "^15.1.1", "yargs": "^17.7.3" }, "peerDependencies": { "jsii-rosetta": ">=5.9.0" }, "bin": { "jsii-pacmak": "bin/jsii-pacmak" } }, "sha512-Uyl/MRBNYc416AIJdxu+T+OdfksyxL78YZOzb3D3bQAh4+dO6AIdUeD4ojYSc9L5zEnoNCpBXw4AfbfqdRcU5A=="],
 
@@ -701,12 +701,6 @@
     "eslint/ignore": ["ignore@5.3.2", "", {}, "sha512-hsBTNUqQTDwkWtcdYI2i06Y/nUBEsNEDJKjWdigLvegy8kDuJAS8uRlpkkcQpyEXL0Z/pjDy5HBmMjRCJ2gq+g=="],
 
     "fast-glob/glob-parent": ["glob-parent@5.1.2", "", { "dependencies": { "is-glob": "^4.0.1" } }, "sha512-AOIgSQCepiJYwP3ARnGx+5VnTu2HBYdzbGP45eLw1vr3zB3vZLeyed1sC9hnbcOc9/SrMyM5RPQrkGz4aS9Zow=="],
-
-    "jsii-pacmak/@jsii/check-node": ["@jsii/check-node@1.143.0", "", { "dependencies": { "chalk": "^4.1.2", "semver": "^7.8.6" } }, "sha512-4BawLEyDtjSteM7PRamldWBpLv6yJ1hW6JTBSFMN1Z2fcE2UbN19r+UQ6IvpIRlYapiI1ILYUGhIK39YvqE04Q=="],
-
-    "jsii-reflect/@jsii/check-node": ["@jsii/check-node@1.143.0", "", { "dependencies": { "chalk": "^4.1.2", "semver": "^7.8.6" } }, "sha512-4BawLEyDtjSteM7PRamldWBpLv6yJ1hW6JTBSFMN1Z2fcE2UbN19r+UQ6IvpIRlYapiI1ILYUGhIK39YvqE04Q=="],
-
-    "jsii-rosetta/@jsii/check-node": ["@jsii/check-node@1.143.0", "", { "dependencies": { "chalk": "^4.1.2", "semver": "^7.8.6" } }, "sha512-4BawLEyDtjSteM7PRamldWBpLv6yJ1hW6JTBSFMN1Z2fcE2UbN19r+UQ6IvpIRlYapiI1ILYUGhIK39YvqE04Q=="],
 
     "micromatch/picomatch": ["picomatch@2.3.2", "", {}, "sha512-V7+vQEJ06Z+c5tSye8S+nHUfI51xoXIXjHQ99cQtKUkQqqO1kO/KCJUfZXuB47h/YBlDhah2H3hdUGXn8ie0oA=="],
 
