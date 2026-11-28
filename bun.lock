@@ -8,7 +8,7 @@
         "@aws-sdk/client-ec2": "3.1177.0",
         "@aws-sdk/client-secrets-manager": "3.1177.0",
         "@aws-sdk/client-sts": "3.1177.0",
-        "@types/node": "26.6.7",
+        "@types/node": "26.6.10",
         "@types/sshpk": "1.17.5",
         "@typescript-eslint/eslint-plugin": "8.74.0",
         "@typescript-eslint/parser": "8.74.0",
@@ -38,7 +38,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@aws-sdk/client-sts": "3.1177.0",
-        "@types/node": "26.6.7",
+        "@types/node": "26.6.10",
         "aws-cdk": "2.1149.0",
         "typescript": "5.9.3",
       },
@@ -232,7 +232,7 @@
 
     "@types/json-schema": ["@types/json-schema@7.0.15", "", {}, "sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA=="],
 
-    "@types/node": ["@types/node@26.6.7", "", { "dependencies": { "undici-types": "~8.9.0" } }, "sha512-tovuRfrUILu6v46bMG+BgXxMvsqPBx2WO2as8Rpln+JTff1dbexMtAM4KFTejmL0axsnSWViCW7MecUQpLuBRA=="],
+    "@types/node": ["@types/node@26.6.10", "", { "dependencies": { "undici-types": "~8.9.0" } }, "sha512-WJuPHoGB8WNQuTksNF7SOQpnH02PXeDYz4iueWbBT6/hTWnShY5F3T/hoJA3fY9+uYReDZ7pyTKKx83jQa7aGg=="],
 
     "@types/sshpk": ["@types/sshpk@1.17.5", "", { "dependencies": { "@types/asn1": "*", "@types/node": "*" } }, "sha512-khJbOFAOnyLaqOoGIlDCF2ZghIb0jM1K1N0rRoKL0ObqUMwfkicu5zlJ5Wsp+Xn2EUduVwONXwsgbGk+COaCug=="],
 
