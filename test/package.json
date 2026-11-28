@@ -6,8 +6,8 @@
     "cdk": "cdk"
   },
   "dependencies": {
-    "@aws-sdk/client-sts": "3.1176.0",
-    "@types/node": "26.6.6",
+    "@aws-sdk/client-sts": "3.1177.0",
+    "@types/node": "26.6.7",
     "aws-cdk": "2.1149.0",
     "typescript": "5.9.3"
   }
