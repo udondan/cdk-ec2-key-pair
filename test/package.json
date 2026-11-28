@@ -1,0 +1,14 @@
+{
+  "name": "test",
+  "version": "0.0.0",
+  "scripts": {
+    "build": "tsc",
+    "cdk": "cdk"
+  },
+  "dependencies": {
+    "@aws-sdk/client-sts": "3.1177.0",
+    "@types/node": "26.6.10",
+    "aws-cdk": "2.1149.0",
+    "typescript": "5.9.3"
+  }
+}

@@ -1,0 +1,39 @@
+---
+name: release-please
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - id: release
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          token: ${{ secrets.OVERRIDE_TOKEN }}
+
+  # release-please creates the release as a draft, which doesn't trigger workflows, so the publish
+  # workflow is started here. It publishes the packages, adds the Go module and publishes the
+  # release.
+  publish:
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Start publish workflow
+        run: gh workflow run publish.yml --repo "${GITHUB_REPOSITORY}" --ref main -f tag="${TAG}"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.release-please.outputs.tag_name }}
