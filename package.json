@@ -81,7 +81,7 @@
     "@types/sshpk": "1.17.5",
     "@typescript-eslint/eslint-plugin": "8.74.0",
     "@typescript-eslint/parser": "8.74.0",
-    "@vitest/coverage-v8": "5.1.1",
+    "@vitest/coverage-v8": "5.1.2",
     "aws-cdk-lib": "2.278.0",
     "aws-cloudformation-custom-resource": "5.1.5",
     "constructs": "10.8.1",
@@ -95,7 +95,7 @@
     "sshpk": "1.18.0",
     "typescript": "6.0.3",
     "typescript-eslint": "8.74.0",
-    "vitest": "5.1.1"
+    "vitest": "5.1.2"
   },
   "peerDependencies": {
     "aws-cdk-lib": "^2.224.0",
